@@ -1,3 +1,4 @@
+import SupportThread from './SupportThread';
 import React,{useEffect,useState} from 'react';
 import {LockKeyhole,Mail,Eye,EyeOff,ArrowRight,ShieldCheck,LogOut,UserRound,CalendarDays,LifeBuoy,BookOpen,RefreshCw,Bell,Clock3,CheckCircle2,AlertCircle,Menu,X,Sparkles,Ticket,MonitorPlay} from 'lucide-react';
 import {supabase,configured} from './supabase';
@@ -115,7 +116,7 @@ return <div className="dashboard"><aside className={'sidebar '+(mobile?'sidebar-
  {ticketNotice&&<p role="status" className="mykioo-profile-success">{ticketNotice}</p>}
  <div className="mykioo-support-card">
   <div className="mykioo-support-header"><h2>{tr('Your requests','Vos demandes')}</h2><button onClick={loadTickets} disabled={ticketLoading}>{tr('Refresh','Actualiser')}</button></div>
-  {ticketLoading?<p>{tr('Loading…','Chargement…')}</p>:tickets.length===0?<p>{tr('No support requests yet.','Aucune demande d’assistance pour le moment.')}</p>:<div className="mykioo-ticket-list">{tickets.map(t=><article className="mykioo-ticket" key={t.id}><div className="mykioo-ticket-heading"><strong>{t.subject}</strong><span className="mykioo-ticket-status">{tr(t.status,({open:'Ouvert',in_progress:'En cours',resolved:'Résolu',closed:'Fermé'})[t.status]||t.status)}</span></div><p>{t.message}</p><small>{new Date(t.created_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA')}</small></article>)}</div>}
+  {ticketLoading?<p>{tr('Loading…','Chargement…')}</p>:tickets.length===0?<p>{tr('No support requests yet.','Aucune demande d’assistance pour le moment.')}</p>:<div className="mykioo-ticket-list">{tickets.map(t=><article className="mykioo-ticket" key={t.id}><div className="mykioo-ticket-heading"><strong>{t.subject}</strong><span className="mykioo-ticket-status">{tr(t.status,({open:'Ouvert',in_progress:'En cours',resolved:'Résolu',closed:'Fermé'})[t.status]||t.status)}</span></div><p>{t.message}</p><small>{new Date(t.created_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA')}</small><SupportThread ticket={t} userId={user.id} language={language}/></article>)}</div>}
  </div>
  </section>}{active==='My profile'&&<section className="mykioo-profile-card">
  <div className="mykioo-profile-head"><UserRound size={24}/><div><h2>{tr('Your preferred name','Votre nom préféré')}</h2><p>{tr('It can be a nickname, stage name, or any name you want us to call you. It does not need to be your real name.','Il peut s’agir d’un surnom, d’un nom d’artiste ou de tout autre nom. Vous n’avez pas besoin d’utiliser votre vrai nom.')}</p></div></div>
