@@ -429,3 +429,54 @@
 .mykioo-template-insert label{font-size:12px;color:#f1d5a4;font-weight:700}
 .mykioo-template-insert small{font-size:11px;color:#c8b7cf;line-height:1.5}
 @media(max-width:650px){.mykioo-template-manager{padding:14px}.mykioo-template-form{grid-template-columns:1fr}.mykioo-template-form label.wide,.mykioo-template-form-actions{grid-column:1}}
+
+
+/* Owner support dashboard: service metrics and first-reply performance */
+.mykioo-support-dashboard{border:1px solid #66506c;background:linear-gradient(145deg,#231b2e,#171522);border-radius:16px;padding:22px;margin:0 0 25px;display:grid;gap:17px;max-width:1200px}
+.mykioo-support-dashboard-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.mykioo-support-dashboard-kicker{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:.07em;color:#e5bd89;margin-bottom:10px}
+.mykioo-support-dashboard-heading h2{font-size:22px;line-height:1.2;margin:0 0 8px;color:#f6e5f4}
+.mykioo-support-dashboard-heading p{font-size:12px;line-height:1.6;margin:0;color:#baadca}
+.mykioo-support-metrics-refresh,.mykioo-support-overview-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#392a40;border:1px solid #9b7b59;border-radius:9px;color:#edcfa2;padding:10px 13px;cursor:pointer;font-size:12px;font-weight:750}
+.mykioo-support-metrics-refresh:hover,.mykioo-support-overview-link:hover{background:#493650}
+.mykioo-support-metric-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.mykioo-support-metric{display:grid;gap:9px;align-content:start;padding:15px 14px;background:#211a2b;border:1px solid #55465f;border-radius:11px;min-width:0}
+.mykioo-support-metric-label{display:flex;align-items:center;gap:8px;color:#d0b8d2;font-size:11px;line-height:1.35;font-weight:700}
+.mykioo-support-metric-label svg{color:#dabb84;flex-shrink:0}
+.mykioo-support-metric strong{font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums;font-weight:800;color:#f7e9ef}
+.mykioo-support-metric small{font-size:10px;line-height:1.5;color:#b6a8c2}
+.mykioo-support-metric.metric-overdue{border-color:#8b5e56;background:#34232c}
+.mykioo-support-metric.metric-overdue .mykioo-support-metric-label svg{color:#eead81}
+.mykioo-support-metric.metric-urgent{border-color:#8e684d}
+.mykioo-support-metric.metric-resolved{border-color:#647961}
+.mykioo-support-dashboard-detail{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:15px}
+.mykioo-support-dashboard-breakdown,.mykioo-support-overdue-panel{background:#1b1724;border:1px solid #51435c;border-radius:11px;padding:16px;min-width:0;display:grid;align-content:start;gap:13px}
+.mykioo-support-dashboard-detail h3{color:#efdbeb;margin:0;font-size:15px;line-height:1.3}
+.mykioo-support-breakdown-row{display:grid;gap:6px}
+.mykioo-support-breakdown-top{display:flex;justify-content:space-between;gap:10px;align-items:center;color:#cbbad1;font-size:12px}
+.mykioo-support-breakdown-top strong{color:#f6eafa;font-variant-numeric:tabular-nums}
+.mykioo-support-track{width:100%;height:7px;background:#352c3f;border-radius:9px;overflow:hidden}
+.mykioo-support-track-bar{height:100%;background:#bea47e;border-radius:9px;min-width:0}
+.mykioo-support-track-bar.bar-working{background:#b9967d}
+.mykioo-support-track-bar.bar-resolved{background:#90a88a}
+.mykioo-support-track-bar.bar-closed{background:#8b8397}
+.mykioo-support-dashboard-breakdown>p,.mykioo-support-overdue-panel>p{font-size:11px;line-height:1.65;color:#b9a9c5;margin:0}
+.mykioo-support-overdue-heading{display:flex;justify-content:space-between;gap:12px;align-items:start;flex-wrap:wrap}
+.mykioo-support-overdue-heading label{display:grid;gap:5px;color:#ddc094;font-size:11px;font-weight:700}
+.mykioo-support-overdue-heading select{padding:7px 9px;background:#2b2235;color:#f6e9f9;border:1px solid #775d78;border-radius:7px;font:inherit}
+.mykioo-support-overdue-list{display:grid;gap:7px}
+.mykioo-support-overdue-list>button{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;border:1px solid #725552;background:#33252b;border-radius:9px;padding:11px;color:#efdfdf;cursor:pointer}
+.mykioo-support-overdue-list>button:hover{border-color:#dba984}
+.mykioo-support-overdue-list>button>span{display:grid;gap:5px;min-width:0}
+.mykioo-support-overdue-list strong{font-size:12px;overflow-wrap:anywhere}
+.mykioo-support-overdue-list small{font-size:11px;color:#c7a9a5}
+.mykioo-support-overdue-clear{display:flex;align-items:center;gap:8px;padding:11px;background:#233027;border:1px solid #516953;border-radius:9px;color:#c7dec9;font-size:12px}
+.mykioo-support-overdue-panel>small{color:#bcaec9;font-size:11px}
+.mykioo-support-asof{font-size:10px;color:#b5a5c1;margin:0;text-align:right}
+.mykioo-support-dashboard.compact{padding:17px}
+.mykioo-support-dashboard.compact .mykioo-support-metric{padding:11px}
+.mykioo-support-dashboard.compact .mykioo-support-metric strong{font-size:24px}
+.mykioo-support-overview-link{justify-self:start}
+@media(max-width:1100px){.mykioo-support-metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.mykioo-support-dashboard-detail{grid-template-columns:minmax(0,1fr)}.mykioo-support-dashboard{padding:16px}}
+@media(max-width:560px){.mykioo-support-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mykioo-support-metric strong{font-size:25px}.mykioo-support-metric.metric-reply{grid-column:1/-1}.mykioo-support-dashboard-heading h2{font-size:19px}}
