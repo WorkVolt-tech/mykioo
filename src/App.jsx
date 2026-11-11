@@ -18,8 +18,8 @@ function Login({onLogin,language='en',onLanguageChange}){const tr=(en,fr)=>langu
  return <div className="entrance"><div className="aura aura-one"/><div className="aura aura-two"/><header className="topbar"><Brand compact/><div className="topbar-right"><div className="mykioo-language-switch" role="group" aria-label="Website language"><button type="button" className={language==='en'?'selected':''} onClick={()=>onLanguageChange('en')}>EN</button><button type="button" className={language==='fr'?'selected':''} onClick={()=>onLanguageChange('fr')}>FR</button></div><span className="top-private"><LockKeyhole size={13}/> PRIVATE MEMBERSHIP</span></div></header><main className="entrance-main"><div className="eyebrow"><Sparkles size={14}/> {tr('BY INVITATION ONLY','SUR INVITATION UNIQUEMENT')}</div><h1>{tr('Your world.','Votre univers.')}<br/><em>{tr('Your entertainment.','Votre divertissement.')}</em></h1><p className="intro">{tr('A private experience, reserved for our members.','Une expérience privée, réservée à nos membres.')}</p><form className="auth-card" onSubmit={submit}><div className="auth-heading"><div className="auth-icon"><LockKeyhole size={23}/></div><h2>{mode==='login'?tr('Welcome back','Bon retour'):tr('Reset your password','Réinitialiser votre mot de passe')}</h2><p>{mode==='login'?tr('Sign in to your private member space.','Connectez-vous à votre espace membre privé.'):tr('Enter your account email to request a reset.','Entrez votre courriel pour réinitialiser votre mot de passe.')}</p></div><label htmlFor="email">{tr('Email address','Adresse courriel')}</label><div className="field"><Mail size={18}/><input id="email" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required/></div>{mode==='login'&&<><div className="label-row"><label htmlFor="password">{tr('Password','Mot de passe')}</label><button type="button" className="text-button" onClick={()=>{setMode('reset');setMessage('')}}>{tr('Forgot password?','Mot de passe oublié?')}</button></div><div className="field"><LockKeyhole size={18}/><input id="password" type={visible?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder={tr('Enter your password','Entrez votre mot de passe')} autoComplete="current-password" required/><button type="button" className="eye-button" onClick={()=>setVisible(!visible)} aria-label={visible?'Hide password':'Show password'}>{visible?<EyeOff size={18}/>:<Eye size={18}/>}</button></div></>}{message&&<div className="message" role="status"><AlertCircle size={16}/>{message}</div>}<Button type="submit" disabled={loading}>{loading?tr('Please wait…','Veuillez patienter…'):mode==='login'?tr('Enter MYKIOO','Entrer dans MYKIOO'):tr('Send recovery email','Envoyer le courriel de récupération')}<ArrowRight size={18}/></Button>{mode==='reset'&&<button type="button" className="back-button" onClick={()=>{setMode('login');setMessage('')}}>{tr('Return to sign in','Retour à la connexion')}</button>}<div className="auth-foot"><ShieldCheck size={15}/> {tr('Access is individually authorized','Accès autorisé individuellement')}</div></form><p className="invite-note">{tr('Don\'t have an invitation?','Pas d’invitation?')} <span>{tr('Membership is by invitation only.','Adhésion sur invitation uniquement.')}</span></p></main><footer className="footer"><span>© {new Date().getFullYear()} MYKIOO</span><span><LockKeyhole size={12}/> {tr('Private & secure access','Accès privé et sécurisé')}</span></footer></div>
 }
 const shortcuts=[{icon:CalendarDays,title:'My subscription',desc:'View status and expiration'},{icon:RefreshCw,title:'Renewal',desc:'Manage your membership'},{icon:MonitorPlay,title:'Device setup',desc:'Installation guides'},{icon:LifeBuoy,title:'Support',desc:'Get help when you need it'}];
-function Shell({user,member,subscriptions,logout,language='en',onLanguageChange,onNameSaved}){const tr=(en,fr)=>language==='fr'?fr:en;const [active,setActive]=useState('Overview'),[mobile,setMobile]=useState(false),[editName,setEditName]=useState(member.display_name||''),[profileError,setProfileError]=useState(''),[profileNotice,setProfileNotice]=useState(''),[profileSaving,setProfileSaving]=useState(false),[tickets,setTickets]=useState([]),[ticketSubject,setTicketSubject]=useState(''),[ticketMessage,setTicketMessage]=useState(''),[ticketLoading,setTicketLoading]=useState(false),[ticketSaving,setTicketSaving]=useState(false),[ticketError,setTicketError]=useState(''),[ticketNotice,setTicketNotice]=useState('');const nav=['Overview','Subscription','Setup guides','Support','My profile'];const activeSub=subscriptions.find(s=>s.status==='active');async function loadTickets(){
- setTicketLoading(true);setTicketError('');
+function Shell({user,member,subscriptions,logout,language='en',onLanguageChange,onNameSaved}){const tr=(en,fr)=>language==='fr'?fr:en;const [active,setActive]=useState('Overview'),[mobile,setMobile]=useState(false),[editName,setEditName]=useState(member.display_name||''),[profileError,setProfileError]=useState(''),[profileNotice,setProfileNotice]=useState(''),[profileSaving,setProfileSaving]=useState(false),[tickets,setTickets]=useState([]),[ticketSubject,setTicketSubject]=useState(''),[ticketMessage,setTicketMessage]=useState(''),[ticketLoading,setTicketLoading]=useState(false),[ticketSaving,setTicketSaving]=useState(false),[ticketError,setTicketError]=useState(''),[ticketNotice,setTicketNotice]=useState('');const nav=['Overview','Subscription','Setup guides','Support','My profile'];const activeSub=subscriptions.find(s=>s.status==='active');async function loadTickets({silent=false}={}){
+ if(!silent){setTicketLoading(true);setTicketError('');}
  try{
   const {data,error}=await supabase.from('mykioo_support_tickets')
    .select('id,subject,message,status,created_at,updated_at')
@@ -27,9 +27,40 @@ function Shell({user,member,subscriptions,logout,language='en',onLanguageChange,
   if(error)throw error;
   setTickets(data||[]);
  }catch(e){setTicketError(tr('Unable to load support requests.','Impossible de charger vos demandes d’assistance.'))}
- finally{setTicketLoading(false)}
+ finally{if(!silent)setTicketLoading(false)}
 }
-useEffect(()=>{if(active==='Support')loadTickets()},[active,user.id]);
+useEffect(()=>{
+ if(active!=='Support'||!supabase)return;
+ let mounted=true;
+ let fetching=false;
+ async function reload(){
+   if(!mounted||fetching)return;
+   fetching=true;
+   try{
+     const {data,error}=await supabase.from('mykioo_support_tickets')
+      .select('id,subject,message,status,created_at,updated_at')
+      .eq('member_id',user.id).order('created_at',{ascending:false}).limit(50);
+     if(!error&&mounted)setTickets(data||[]);
+   }finally{fetching=false}
+ }
+ loadTickets();
+ const channel=supabase.channel('mykioo-my-tickets-'+user.id)
+   .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_support_tickets',filter:'member_id=eq.'+user.id},reload)
+   .subscribe(status=>{if(status==='SUBSCRIBED')reload()});
+ const timer=window.setInterval(()=>{if(document.visibilityState==='visible')reload()},12000);
+ const onResume=()=>{if(document.visibilityState==='visible')reload()};
+ window.addEventListener('focus',onResume);
+ window.addEventListener('online',onResume);
+ document.addEventListener('visibilitychange',onResume);
+ return()=>{
+  mounted=false;
+  clearInterval(timer);
+  window.removeEventListener('focus',onResume);
+  window.removeEventListener('online',onResume);
+  document.removeEventListener('visibilitychange',onResume);
+  supabase.removeChannel(channel);
+ };
+},[active,user.id]);
 async function submitTicket(e){
  e.preventDefault();if(ticketSaving)return;
  setTicketSaving(true);setTicketError('');setTicketNotice('');
@@ -178,32 +209,53 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
  </div></div>;
 }
 export default function App(){const [language,setLanguage]=useState(()=>{try{return localStorage.getItem('mykioo-language')||((navigator.language||'en').toLowerCase().startsWith('fr')?'fr':'en')}catch{return 'en'}});function changeLanguage(value){setLanguage(value);try{localStorage.setItem('mykioo-language',value)}catch{}}const [user,setUser]=useState(null),[member,setMember]=useState(null),[subscriptions,setSubscriptions]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');async function load(sessionUser){if(!sessionUser){setUser(null);setMember(null);setSubscriptions([]);setLoading(false);return}setLoading(true);setUser(sessionUser);const {data,error:err}=await supabase.from('mykioo_members').select('user_id,email,display_name,status,role').eq('user_id',sessionUser.id).maybeSingle();if(err){setError('Unable to confirm membership access. Please try again later.');setMember(null)}else{setError('');setMember(data||{status:'pending'});if(data?.status==='approved'){const r=await supabase.from('mykioo_subscriptions').select('id,status,expires_at').eq('member_id',sessionUser.id);setSubscriptions(r.data||[])}}setLoading(false)}useEffect(()=>{
- if(!supabase || !user?.id || member?.status!=='pending') return;
- let active=true;
- let querying=false;
- async function refreshMember(){
-   if(querying || !active) return;
-   querying=true;
-   try{
-     const {data,error:membershipError}=await supabase.from('mykioo_members')
-       .select('user_id,email,display_name,status,role')
-       .eq('user_id',user.id).maybeSingle();
-     if(!active || membershipError || !data) return;
-     if(data.status!=='pending'){
-       setMember(data);
-       if(data.status==='approved'){
-         const result=await supabase.from('mykioo_subscriptions').select('id,status,expires_at').eq('member_id',user.id);
-         if(active && !result.error) setSubscriptions(result.data||[]);
-       }
-     }
-   }catch{ /* Keep the waiting screen when offline; retry on reconnect. */ }
-   finally{querying=false}
+ if(!supabase||!user?.id)return;
+ let live=true;
+ let checking=false;
+ async function syncMember(){
+  if(!live||checking)return;
+  checking=true;
+  try{
+   const {data,error:memberError}=await supabase.from('mykioo_members')
+     .select('user_id,email,display_name,status,role').eq('user_id',user.id).maybeSingle();
+   if(!live)return;
+   if(memberError)return;
+   if(!data){
+     // Do not grant dashboard access if the member row was removed.
+     setMember({status:'pending'});
+     setSubscriptions([]);
+     return;
+   }
+   setMember(previous=>
+     previous?.status===data.status&&previous?.role===data.role&&
+     previous?.display_name===data.display_name&&previous?.email===data.email?previous:data
+   );
+   if(data.status!=='approved'){setSubscriptions([]);return;}
+   const r=await supabase.from('mykioo_subscriptions')
+     .select('id,status,expires_at').eq('member_id',user.id);
+   if(live&&!r.error)setSubscriptions(previous=>{
+      const current=JSON.stringify(previous),incoming=JSON.stringify(r.data||[]);
+      return current===incoming?previous:r.data||[];
+   });
+  }catch(error){console.warn('MYKIOO member sync failed',error)}
+  finally{checking=false}
  }
- const timer=window.setInterval(refreshMember,5000);
- const onResume=()=>{if(document.visibilityState==='visible')refreshMember()};
+ const channel=supabase.channel('mykioo-member-live-'+user.id)
+   .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_members',filter:'user_id=eq.'+user.id},syncMember)
+   .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_subscriptions',filter:'member_id=eq.'+user.id},syncMember)
+   .subscribe(status=>{if(status==='SUBSCRIBED')syncMember()});
+ const timer=window.setInterval(()=>{if(document.visibilityState==='visible')syncMember()},12000);
+ const onResume=()=>{if(document.visibilityState==='visible')syncMember()};
  window.addEventListener('focus',onResume);
  window.addEventListener('online',onResume);
  document.addEventListener('visibilitychange',onResume);
- return()=>{active=false;window.clearInterval(timer);window.removeEventListener('focus',onResume);window.removeEventListener('online',onResume);document.removeEventListener('visibilitychange',onResume)};
-},[user?.id,member?.status]);
+ return()=>{
+  live=false;
+  clearInterval(timer);
+  window.removeEventListener('focus',onResume);
+  window.removeEventListener('online',onResume);
+  document.removeEventListener('visibilitychange',onResume);
+  supabase.removeChannel(channel);
+ };
+},[user?.id]);
 useEffect(()=>{if(!supabase){setLoading(false);return}let live=true;supabase.auth.getUser().then(({data})=>{if(live)load(data.user)});const {data:{subscription}}=supabase.auth.onAuthStateChange((evt,session)=>{if(live&&['SIGNED_IN','SIGNED_OUT','USER_UPDATED'].includes(evt)){setTimeout(()=>{if(live)load(session?.user||null)},0)}});return()=>{live=false;subscription.unsubscribe()}},[]);async function logout(){await supabase.auth.signOut();setUser(null);setMember(null);setSubscriptions([])}if(loading)return <div className="loading"><Brand/><span>Checking your access…</span></div>;if(!user)return <Login onLogin={()=>{}} language={language} onLanguageChange={changeLanguage}/>;if(error)return <div className="holding"><Brand/><div className="hold-card"><AlertCircle size={32}/><h2>Temporarily unavailable</h2><p>{error}</p><button className="outline-button" onClick={logout}>Sign out</button></div></div>;if(member?.status==='approved' && member.role==='owner')return <AdminDashboard user={user} logout={logout} language={language} onLanguageChange={changeLanguage} logo={LOGO_WEBP} fallbackLogo={LOGO_FALLBACK}/>;if(member?.status==='approved')return <Shell user={user} member={member} subscriptions={subscriptions} logout={logout} language={language} onLanguageChange={changeLanguage} onNameSaved={name=>setMember(current=>({...current,display_name:name}))}/>;return <Holding user={user} member={member} logout={logout} language={language} onLanguageChange={changeLanguage} onProfileSaved={name=>setMember(current=>current?{...current,display_name:name}:current)}/>}
