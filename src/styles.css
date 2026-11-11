@@ -100,3 +100,12 @@
 .mykioo-modal-confirm{background:linear-gradient(130deg,#f2d7a0,#c69d65);color:#271c29!important;border-color:#e7cb91!important}
 .mykioo-modal-buttons button:focus-visible{outline:3px solid #fff;outline-offset:2px}
 @media(max-width:580px){.mykioo-modal{padding:23px 17px}.mykioo-modal h2{font-size:20px}}
+
+
+/* True-aspect WebP logo presentation. Never upscale the image by forcing a square. */
+.logo-image{width:140px;height:auto;max-height:100px;object-fit:contain;image-rendering:auto}
+.brand-small .logo-image{width:112px;height:auto;max-height:74px}
+.hero-orb{height:auto;width:260px;max-width:100%;border:0;border-radius:0;background:none;box-shadow:none;color:inherit;font-size:inherit;display:flex;align-items:center;justify-content:center}
+.hero-orb img{display:block;width:100%;max-height:210px;height:auto;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 12px 26px rgba(0,0,0,.23))}
+.admin-logo{height:auto;max-height:105px;object-fit:contain;image-rendering:auto}
+@media(max-width:580px){.hero-orb{width:170px}.hero-orb img{max-height:145px}}
