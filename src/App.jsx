@@ -82,7 +82,7 @@ async function submitTicket(e){
   const result=await response.json().catch(()=>({}));
   if(!response.ok||!result.ok)throw new Error(result.error||tr('Request could not be submitted.','Impossible d’envoyer la demande.'));
   setTicketSubject('');setTicketCategory('other');setTicketMessage('');
-  setTicketNotice(tr('Your request was submitted. You can follow its status below.','Votre demande a été envoyée. Vous pouvez suivre son statut ci-dessous.'));
+  setTicketNotice(tr('Your request was submitted. Please allow up to 24 hours for an initial reply. You can follow its status below.','Votre demande a été envoyée. Veuillez prévoir un délai allant jusqu’à 24 heures pour une première réponse. Vous pouvez suivre son statut ci-dessous.'));
   await loadTickets();
  }catch(err){setTicketError(err.message||tr('Request could not be submitted.','Impossible d’envoyer la demande.'))}
  finally{setTicketSaving(false)}
@@ -119,6 +119,7 @@ return <div className="dashboard"><aside className={'sidebar '+(mobile?'sidebar-
  <div className="mykioo-support-card">
   <h2>{tr('Contact MYKIOO support','Contacter l’assistance MYKIOO')}</h2>
   <p>{tr('Tell us what you need help with. Your request is private and visible to the MYKIOO team.','Expliquez-nous votre problème. Votre demande est privée et visible par l’équipe MYKIOO.')}</p>
+  <p className="mykioo-support-response-policy">{tr('MYKIOO is operated by one person. Please allow up to 24 hours for a first response after submitting your request, including nights and weekends. Resolving the issue may take longer.','MYKIOO est géré par une seule personne. Veuillez prévoir un délai allant jusqu’à 24 heures pour une première réponse après l’envoi de votre demande, y compris les nuits et les fins de semaine. La résolution du problème peut prendre plus de temps.')}</p>
   <form onSubmit={submitTicket}>
    <label htmlFor="mykioo-ticket-category">{tr('What do you need help with?','Avec quoi avez-vous besoin d’aide ?')}</label>
    <select id="mykioo-ticket-category" value={ticketCategory} onChange={e=>setTicketCategory(e.target.value)} required>
