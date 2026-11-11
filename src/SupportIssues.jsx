@@ -99,6 +99,16 @@ export function OwnerIssuePanel({tickets=[],language='en',selected=[],setSelecte
    tr('Tickets linked. Members have been notified.','Demandes associées. Les membres ont été avisés.'));
   if(result)setSelected([]);
  }
+ async function resolveLinked(){
+  if(!issueId)return;
+  const issue=issues.find(x=>x.id===issueId);
+  if(!issue||issue.status!=='resolved'){setError(tr('Mark this main issue resolved before completing linked tickets.','Marquez le problème principal comme résolu avant de terminer les demandes liées.'));return}
+  const affected=tickets.filter(t=>t.main_issue_id===issueId&&!['resolved','closed'].includes(t.status)).length;
+  if(!affected){setNotice(tr('No unresolved linked tickets remain.','Aucune demande liée non résolue.'));return}
+  if(!window.confirm(tr('Resolve '+affected+' linked ticket(s) for '+issue.title+'? Each member will receive a completion notice.','Résoudre '+affected+' demande(s) associée(s) à '+issue.title+' ? Chaque membre recevra un avis de résolution.')))return;
+  await act({action:'resolve_issue_tickets',issue_id:issueId,status:'resolved'},
+   tr('Linked tickets resolved. Completion notifications have been queued.','Demandes associées résolues. Les notifications de résolution ont été programmées.'));
+ }
  async function bulk(status){
   if(!selected.length)return;
   if(!window.confirm(tr('Update '+selected.length+' selected ticket(s) to '+status+'?','Mettre à jour '+selected.length+' demande(s) sélectionnée(s) comme '+status+' ?')))return;
@@ -126,7 +136,8 @@ export function OwnerIssuePanel({tickets=[],language='en',selected=[],setSelecte
    <div className="mykioo-issue-form">
     <h3>{tr('Link tickets and broadcast updates','Associer les demandes et envoyer les mises à jour')}</h3>
     <label>{tr('Main issue','Problème principal')}<select value={issueId} onChange={e=>setIssueId(e.target.value)}><option value="">{tr('Select main issue','Choisir un problème principal')}</option>{issues.map(i=><option key={i.id} value={i.id}>{i.title} ({statuses[i.status]?.[fr?1:0]})</option>)}</select></label>
-    <button type="button" disabled={!issueId||!selected.length||busy} onClick={link}>{tr('Link selected tickets','Associer les demandes sélectionnées')}</button>
+    <button type="button" disabled={!issueId||!selected.length||busy} onClick={link}>{tr('Link selected tickets','Associer les demandes sélectionnées')}</button><button type="button" className="mykioo-issue-resolve-all" disabled={!issueId||busy||issues.find(x=>x.id===issueId)?.status!=='resolved'} onClick={resolveLinked}>{tr('Resolve all linked tickets','Résoudre toutes les demandes associées')}</button>
+    <small>{tr('First publish an update with status Resolved. This button then completes all outstanding tickets linked to that issue and sends individual completion notices.','Publiez d’abord une mise à jour avec le statut Résolu. Ce bouton termine ensuite toutes les demandes non résolues associées au problème et envoie un avis de résolution à chaque membre.')}</small>
     <form onSubmit={publish} className="mykioo-issue-publish">
      <label>{tr('Update for all linked members','Mise à jour pour tous les membres associés')}<textarea required rows={3} minLength={3} maxLength={4000} value={updateText} onChange={e=>setUpdateText(e.target.value)}/></label>
      <label>{tr('Progress','Progression')}<select value={status} onChange={e=>setStatus(e.target.value)}>{Object.entries(statuses).map(([k,v])=><option key={k} value={k}>{v[fr?1:0]}</option>)}</select></label>
