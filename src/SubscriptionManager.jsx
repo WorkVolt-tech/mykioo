@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 
-const blank={id:'',member_id:'',service_name:'',device_label:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:''};
+const blank={id:'',member_id:'',service_name:'',device_label:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:'',service_password:''};
 const dateOnly=value=>value?new Date(value).toISOString().slice(0,10):'';
 
 export default function SubscriptionManager({members=[],subscriptions=[],language='en',onSaved}){
@@ -9,7 +9,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],languag
  const [form,setForm]=useState(blank),[saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const clients=members.filter(m=>m.role==='member');
  function update(field,value){setForm(current=>({...current,[field]:value}));setNotice('');setError('')}
- function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',device_label:row.device_label||'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at)});setError('');setNotice('')}
+ function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',device_label:row.device_label||'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:''});setError('');setNotice('')}
  async function save(e){
   e.preventDefault();if(saving)return;
   setSaving(true);setError('');setNotice('');
@@ -38,13 +38,16 @@ export default function SubscriptionManager({members=[],subscriptions=[],languag
     <label>{tr('Service / package name','Service / nom du forfait')}<input required maxLength={80} value={form.service_name} onChange={e=>update('service_name',e.target.value)} placeholder={tr('e.g. Living room service','ex. Service du salon')}/></label>
     <label>{tr('Device or location','Appareil ou emplacement')}<input maxLength={80} value={form.device_label} onChange={e=>update('device_label',e.target.value)} placeholder={tr('e.g. Bedroom TV, phone','ex. Télé du salon, téléphone')}/></label>
     <label>{tr('Service login username','Identifiant du service')}<input maxLength={160} autoComplete="off" value={form.service_username} onChange={e=>update('service_username',e.target.value)} placeholder={tr('Username / login ID','Nom d’utilisateur / identifiant')}/></label>
+    <label>{form.id?tr('Replace service password (leave blank to keep)','Remplacer le mot de passe du service (laisser vide pour conserver)'):tr('Service password','Mot de passe du service')}
+      <input type="password" autoComplete="new-password" maxLength={256} value={form.service_password} onChange={e=>update('service_password',e.target.value)}
+       placeholder={tr('Encrypted when saved','Chiffré lors de l’enregistrement')}/></label>
     <label>{tr('Provider reference (optional)','Référence du fournisseur (facultatif)')}<input maxLength={160} value={form.supplier_reference} onChange={e=>update('supplier_reference',e.target.value)}/></label>
     <label>{tr('Status','Statut')}<select value={form.status} onChange={e=>update('status',e.target.value)}>
      {['pending','active','expired','suspended','cancelled'].map(status=><option key={status} value={status}>{tr(({pending:'Pending',active:'Active',expired:'Expired',suspended:'Suspended',cancelled:'Cancelled'})[status],({pending:'En attente',active:'Actif',expired:'Expiré',suspended:'Suspendu',cancelled:'Annulé'})[status])}</option>)}
     </select></label>
     <label>{tr('Start date','Date de début')}<input type="date" value={form.starts_at} onChange={e=>update('starts_at',e.target.value)}/></label>
     <label>{tr('Expiry date','Date d’expiration')}<input type="date" value={form.expires_at} onChange={e=>update('expires_at',e.target.value)}/></label>
-    <p className="mykioo-sub-note">{tr('Do not enter passwords here. Secure password storage is not yet enabled.','N’inscrivez pas de mots de passe ici. Le stockage sécurisé des mots de passe n’est pas encore activé.')}</p>
+    <p className="mykioo-sub-note">{tr('Passwords are encrypted on the server. Members must verify their email before viewing them. Encryption must first be configured in Supabase.','Les mots de passe sont chiffrés sur le serveur. Les membres doivent vérifier leur adresse courriel avant de les afficher. Le chiffrement doit d’abord être configuré dans Supabase.')}</p>
     {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
     {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
     <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!clients.length} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):tr('Save subscription','Enregistrer l’abonnement')}</button>
@@ -60,7 +63,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],languag
       return <article className="mykioo-sub-item" key={sub.id}>
        <div><strong>{sub.service_name||tr('Unnamed service','Service sans nom')}</strong><span>{member?.display_name||member?.email||sub.member_id}</span>
        <small>{[sub.device_label,sub.service_username,sub.expires_at&&dateOnly(sub.expires_at)].filter(Boolean).join(' · ')}</small></div>
-       <span className="mykioo-ticket-status">{sub.status}</span>
+       <span className="mykioo-ticket-status">{sub.status}</span>{sub.has_password&&<span className="mykioo-credentials-chip">{tr('Password saved','Mot de passe enregistré')}</span>}
        <button className="admin-mini" onClick={()=>edit(sub)}>{tr('Edit','Modifier')}</button>
       </article>
     })}
