@@ -45,3 +45,21 @@
 .admin-table td{color:#d4c9d9}
 @media(max-width:850px){.admin-side{width:190px}.admin-main{padding:25px}.admin-stats{grid-template-columns:repeat(2,1fr)}.admin-account span{display:none}}
 @media(max-width:580px){.admin-layout{display:block}.admin-side{width:100%;min-height:0;padding:12px}.admin-logo{width:100px;height:65px;margin:0}.admin-side-label{display:none}.admin-side nav{flex-direction:row;overflow-x:auto}.admin-nav{white-space:nowrap;width:auto;font-size:11px;padding:9px}.admin-bottom{display:none}.admin-main{padding:22px 15px}.admin-bar h1{font-size:28px}.admin-stat{padding:15px}.admin-stat strong{font-size:25px}}
+
+
+/* Secure owner actions and invitation workflow */
+.admin-success{display:flex;align-items:center;gap:9px;padding:14px;margin-bottom:20px;border:1px solid #41634e;border-radius:9px;background:#15271d;color:#c1e9c9;font-size:13px}
+.admin-invite{background:#1c1a28;border:1px solid #4a3a4c;padding:24px;border-radius:14px;margin-bottom:25px}
+.admin-invite strong{font-family:Outfit,sans-serif;font-size:18px}
+.admin-invite p{font-size:13px;color:#bbb0c6;margin:8px 0 18px}
+.admin-invite small{color:#aaa0b4;font-size:11px;display:block;margin-top:11px}
+.admin-invite-row{display:flex;gap:12px}
+.admin-invite-row input{flex:1;min-width:0;outline:none;border:1px solid #5a4a60;border-radius:9px;background:#292333;color:#fff;padding:13px;font-size:14px}
+.admin-invite-row input:focus{border-color:#dabb80}
+.admin-action{padding:12px 18px;border-radius:9px;border:1px solid #796449;background:#2d2533;color:#e9cf9b;font-weight:700}
+.admin-action.primary{background:linear-gradient(120deg,#efd59d,#bc965d);color:#251b25;border:0}
+.admin-action:disabled,.admin-mini:disabled{opacity:.55;cursor:not-allowed}
+.admin-controls{display:flex;align-items:center;gap:7px}
+.admin-mini{border:1px solid #67536c;background:#302639;color:#eccd9b;font-size:11px;border-radius:7px;padding:7px 11px}
+.admin-mini.positive{border-color:#4f765f;background:#244632;color:#d1f0d6}
+@media(max-width:580px){.admin-invite{padding:15px}.admin-invite-row{flex-direction:column}}
