@@ -80,3 +80,23 @@
 .mykioo-language-switch button.selected{background:#dabc84;color:#241928}
 .mykioo-language-switch button:focus-visible{outline:2px solid #dabc84;outline-offset:2px}
 @media(max-width:580px){.topbar-right{gap:6px}.mykioo-language-switch button{padding:6px 7px}.top-private{font-size:10px}}
+
+
+/* Branded membership action confirmation dialog */
+.mykioo-modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(3,3,9,.79);backdrop-filter:blur(6px);display:flex;justify-content:center;align-items:center;padding:20px}
+.mykioo-modal{width:100%;max-width:470px;padding:32px;background:linear-gradient(145deg,#231b31,#15121f);border:1px solid #695272;border-radius:18px;box-shadow:0 30px 90px rgba(0,0,0,.6);text-align:center;color:#f6f2fa}
+.mykioo-modal-icon{width:54px;height:54px;margin:0 auto 17px;border:1px solid #97784e;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#e6c181;background:rgba(230,193,129,.08)}
+.mykioo-modal h2{font-size:23px;line-height:1.3;margin:12px 0;font-weight:750;color:#f8f5fa}
+.mykioo-modal p{font-size:14px;line-height:1.65;color:#c8bbc9;margin:0 0 22px}
+.mykioo-modal-member{background:#110f19;border:1px solid #46374f;border-radius:11px;padding:17px 12px;display:grid;gap:12px;overflow-wrap:anywhere}
+.mykioo-modal-member>span{font-size:13px;color:#e8d9e9;font-weight:600}
+.mykioo-modal-member>div{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap}
+.mykioo-status-chip{font-size:11px;text-transform:capitalize;padding:7px 10px;border:1px solid #66576d;border-radius:999px;color:#c8bad0;background:#292234}
+.mykioo-status-chip.target{color:#e8cf9d;border-color:#97794c;background:#3a2c30}
+.mykioo-modal-arrow{color:#d9b879}
+.mykioo-modal-buttons{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:25px}
+.mykioo-modal-buttons button{border-radius:9px;font-weight:700;font-size:13px;padding:13px;border:1px solid #65516d;cursor:pointer}
+.mykioo-modal-cancel{background:#2b2335;color:#f3eaf4}
+.mykioo-modal-confirm{background:linear-gradient(130deg,#f2d7a0,#c69d65);color:#271c29!important;border-color:#e7cb91!important}
+.mykioo-modal-buttons button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+@media(max-width:580px){.mykioo-modal{padding:23px 17px}.mykioo-modal h2{font-size:20px}}
