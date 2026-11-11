@@ -224,3 +224,18 @@
 .mykioo-member-sub>.mykioo-ticket-status{align-self:flex-start}
 .mykioo-member-sub p{font-size:13px;color:#c6b8ce;margin:0;overflow-wrap:anywhere}
 @media(max-width:630px){.mykioo-sub-form{grid-template-columns:1fr}.mykioo-sub-item{flex-wrap:wrap}}
+
+
+/* Protected subscription password retrieval */
+.mykioo-password-reveal{padding-top:15px;margin-top:5px;border-top:1px solid #4d3c57;display:grid;gap:11px}
+.mykioo-reveal-button,.mykioo-reveal-buttons button{background:#30253b;border:1px solid #c5a574;border-radius:9px;padding:11px 14px;color:#e9ca96;font-size:12px;font-weight:700;cursor:pointer;align-self:flex-start}
+.mykioo-reveal-button:disabled,.mykioo-reveal-buttons button:disabled{opacity:.5;cursor:wait}
+.mykioo-reveal-form{display:grid;gap:11px}
+.mykioo-reveal-form>p,.mykioo-password-open>p{margin:0;font-size:12px;color:#cbbdd3}
+.mykioo-reveal-form label{font-size:12px;color:#e2c28b;font-weight:700}
+.mykioo-reveal-form input{border:1px solid #776183;background:#251e31;color:#fff;border-radius:9px;padding:12px 15px;max-width:180px;font-size:20px;letter-spacing:4px}
+.mykioo-reveal-form small{font-size:11px;color:#b8a6c3}
+.mykioo-reveal-buttons{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:5px}
+.mykioo-password-open{display:grid;gap:12px}
+.mykioo-password-open code{display:block;padding:15px;border:1px solid #8b7158;border-radius:9px;background:#130f1b;color:#fff;overflow-wrap:anywhere;user-select:text;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:15px}
+.mykioo-credentials-chip{font-size:11px;color:#d9c69d}
