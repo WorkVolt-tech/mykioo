@@ -480,3 +480,26 @@
 @media(max-width:1100px){.mykioo-support-metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){.mykioo-support-dashboard-detail{grid-template-columns:minmax(0,1fr)}.mykioo-support-dashboard{padding:16px}}
 @media(max-width:560px){.mykioo-support-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mykioo-support-metric strong{font-size:25px}.mykioo-support-metric.metric-reply{grid-column:1/-1}.mykioo-support-dashboard-heading h2{font-size:19px}}
+
+
+/* Clear 24-hour first-response expectation for solo MYKIOO support */
+.mykioo-support-card .mykioo-support-response-policy{
+  padding:13px 15px;
+  margin:12px 0 18px;
+  border-left:3px solid #d6ae77;
+  border-radius:6px;
+  background:#2a2331;
+  color:#ebd9ed;
+  font-size:13px;
+  line-height:1.65;
+}
+.mykioo-response-window-label{
+  display:flex;
+  align-items:center;
+  background:#30273a;
+  border:1px solid #95734d;
+  border-radius:8px;
+  padding:10px 12px;
+  font-size:12px;
+  color:#edd1a3;
+}
