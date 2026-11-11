@@ -48,72 +48,84 @@ return <div className="dashboard"><aside className={'sidebar '+(mobile?'sidebar-
  {profileNotice&&<p role="status" className="mykioo-profile-success">{profileNotice}</p>}
  <button type="submit" disabled={profileSaving||editName.trim()===member.display_name} className="mykioo-profile-save">{profileSaving?tr('Saving…','Enregistrement…'):tr('Save changes','Enregistrer les modifications')}</button>
  </form></section>}</main></div></div>}
-function Holding({user,member,logout,language='en',onLanguageChange,onProfileSaved}) {
+function Holding({user,member,logout,language='en',onProfileSaved}) {
  const tr=(en,fr)=>language==='fr'?fr:en;
  const pending=(member?.status||'pending')==='pending';
  const [password,setPassword]=useState('');
  const [displayName,setDisplayName]=useState(member?.display_name||'');
- const [nameSaved,setNameSaved]=useState(Boolean(member?.display_name));
- const [nameMessage,setNameMessage]=useState('');
  const [message,setMessage]=useState('');
+ const [sessionExpired,setSessionExpired]=useState(false);
  const [working,setWorking]=useState(false);
- const [nameWorking,setNameWorking]=useState(false);
- useEffect(()=>{if(member?.display_name){setDisplayName(member.display_name);setNameSaved(true)}},[member?.display_name]);
- async function setMyName(e){
-   e.preventDefault();setNameMessage('');
-   const name=displayName.trim().replace(/\s+/g,' ');
-   if(name.length<2||name.length>40){setNameMessage(tr('Please choose a name between 2 and 40 characters.','Veuillez choisir un nom de 2 à 40 caractères.'));return}
-   setNameWorking(true);
-   try{
-     const {data:{session},error:sessionError}=await supabase.auth.getSession();
-     if(sessionError||!session)throw new Error(tr('Session expired. Sign in again.','Session expirée. Reconnectez-vous.'));
-     const response=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-profile',{
-       method:'POST',
-       headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},
-       body:JSON.stringify({display_name:name})
-     });
-     const data=await response.json().catch(()=>({}));
-     if(!response.ok||!data.ok)throw new Error(data.error||tr('Unable to save your name.','Impossible d’enregistrer votre nom.'));
-     setNameSaved(true);setDisplayName(data.display_name);
-     setNameMessage(tr('Saved! We’ll call you '+data.display_name+'.','Enregistré ! Nous vous appellerons '+data.display_name+'.'));
-     onProfileSaved?.(data.display_name);
-   }catch(err){setNameMessage(err.message||tr('Unable to save your name.','Impossible d’enregistrer votre nom.'))}
-   finally{setNameWorking(false)}
- }
- async function setMyPassword(e){
-   e.preventDefault();setMessage('');
-   if(password.length<12){setMessage(tr('Use at least 12 characters.','Utilisez au moins 12 caractères.'));return}
-   setWorking(true);
-   try{
-     const {error}=await supabase.auth.updateUser({password});
-     if(error)throw error;
-     setPassword('');
-     setMessage(tr('Password saved. Your membership still requires approval.','Mot de passe enregistré. Votre adhésion doit encore être approuvée.'));
-   }catch(err){setMessage(err.message||tr('Unable to save password.','Impossible d’enregistrer le mot de passe.'))}
-   finally{setWorking(false)}
+ const [complete,setComplete]=useState(false);
+ useEffect(()=>{if(member?.display_name)setDisplayName(member.display_name)},[member?.display_name]);
+ async function saveSetup(e){
+  e.preventDefault();
+  if(working)return;
+  setMessage('');setSessionExpired(false);
+  const name=displayName.trim().replace(/\s+/g,' ');
+  if(name.length<2||name.length>40){setMessage(tr('Choose a name between 2 and 40 characters.','Choisissez un nom de 2 à 40 caractères.'));return}
+  if(password && password.length<12){setMessage(tr('Your password must contain at least 12 characters.','Votre mot de passe doit contenir au moins 12 caractères.'));return}
+  if(!password&&!member?.display_name){setMessage(tr('Please enter a password to finish account setup.','Veuillez créer un mot de passe pour terminer votre inscription.'));return}
+  setWorking(true);
+  try{
+    // A cached session is not proof that the Auth user still exists.
+    // Re-check against the auth server before attempting either write.
+    const {data:identity,error:identityError}=await supabase.auth.getUser();
+    if(identityError||!identity.user||identity.user.id!==user.id){
+      setSessionExpired(true);
+      throw new Error(tr('Your invitation session is no longer valid. Sign out and sign in again to continue.','Votre session d’invitation n’est plus valide. Déconnectez-vous, puis reconnectez-vous pour continuer.'));
+    }
+    const {data:sessionData,error:sessionError}=await supabase.auth.getSession();
+    if(sessionError||!sessionData.session){
+      setSessionExpired(true);
+      throw new Error(tr('Your session has expired. Sign out and sign in again.','Votre session a expiré. Déconnectez-vous, puis reconnectez-vous.'));
+    }
+    if(password){
+      const {error:passwordError}=await supabase.auth.updateUser({password});
+      if(passwordError){
+        if(/jwt|token|expired|session|sub claim|user.*not exist/i.test(passwordError.message||''))setSessionExpired(true);
+        throw passwordError;
+      }
+      setPassword('');
+    }
+    const {data:latestSession,error:latestSessionError}=await supabase.auth.getSession();
+    if(latestSessionError||!latestSession?.session){
+      setSessionExpired(true);
+      throw new Error(tr('Session expired. Sign out and sign in again.','Session expirée. Déconnectez-vous, puis reconnectez-vous.'));
+    }
+    const response=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-profile',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+latestSession.session.access_token},
+      body:JSON.stringify({display_name:name})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result.ok){
+      if(response.status===401)setSessionExpired(true);
+      throw new Error(result.error||tr('Could not save your preferred name.','Impossible d’enregistrer votre nom préféré.'));
+    }
+    onProfileSaved?.(result.display_name);
+    setComplete(true);
+    setMessage(tr('Your details are saved. You will enter MYKIOO automatically once approved.','Vos informations sont enregistrées. Vous accéderez automatiquement à MYKIOO après approbation.'));
+  }catch(err){
+    setMessage(err.message||tr('Unable to save your account details.','Impossible d’enregistrer les informations du compte.'));
+  }finally{setWorking(false)}
  }
  return <div className="holding"><Brand/><div className="hold-card">
-   <div className="hold-icon">{pending?<Clock3 size={34}/>:<LockKeyhole size={34}/>}</div>
-   <div className="eyebrow">{tr('MYKIOO MEMBERSHIP','ADHÉSION MYKIOO')}</div>
-   <h1>{pending?tr('Awaiting approval','En attente d’approbation'):tr('Access restricted','Accès restreint')}</h1>
-   <p>{pending?tr('Your account is registered. An administrator must approve your membership before your private dashboard is available.','Votre compte est enregistré. Un administrateur doit approuver votre adhésion avant que votre espace privé soit accessible.'):tr('Your account currently does not have permission to enter the member space. Please contact the administrator.','Votre compte n’a pas actuellement accès à l’espace membre. Veuillez communiquer avec l’administrateur.')}</p>
-   <div className="hold-user"><Mail size={17}/>{user.email}</div>
-   {pending&&<>
-     <form className="pending-password member-name-form" onSubmit={setMyName}>
-       <label htmlFor="member-display-name">{tr('What should we call you?','Comment pouvons-nous vous appeler ?')}</label>
-       <p className="member-name-hint">{tr('It does not have to be your real name. Choose a nickname or any name you would like us to use.','Il n’est pas nécessaire d’utiliser votre vrai nom. Choisissez un surnom ou le nom par lequel vous souhaitez être appelé(e).')}</p>
-       <input id="member-display-name" type="text" value={displayName} onChange={e=>{setDisplayName(e.target.value);setNameSaved(false)}} placeholder={tr('Your preferred name or nickname','Votre nom ou surnom préféré')} maxLength={40} minLength={2} autoComplete="nickname" required/>
-       <button type="submit" className="outline-button" disabled={nameWorking||nameSaved}>{nameWorking?tr('Saving…','Enregistrement…'):nameSaved?tr('Name saved','Nom enregistré'):tr('Save my name','Enregistrer mon nom')}</button>
-       {nameMessage&&<p className="member-field-message" role="status">{nameMessage}</p>}
-     </form>
-     <form className="pending-password" onSubmit={setMyPassword}>
-       <label htmlFor="pending-password">{tr('Set or change your member password','Créer ou modifier votre mot de passe')}</label>
-       <input id="pending-password" type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="new-password" placeholder={tr('At least 12 characters','Au moins 12 caractères')} minLength={12} required/>
-       <button type="submit" className="outline-button" disabled={working}>{working?tr('Saving…','Enregistrement…'):tr('Save password','Enregistrer le mot de passe')}</button>
-     </form>
-   </>}
-   {message&&<p role="status" className="password-status">{message}</p>}
-   <button className="outline-button" onClick={logout}><LogOut size={17}/>{tr('Sign out','Déconnexion')}</button>
+  <div className="hold-icon">{pending?<Clock3 size={34}/>:<LockKeyhole size={34}/>}</div>
+  <div className="eyebrow">{tr('MYKIOO MEMBERSHIP','ADHÉSION MYKIOO')}</div>
+  <h1>{pending?tr('Awaiting approval','En attente d’approbation'):tr('Access restricted','Accès restreint')}</h1>
+  <p>{pending?tr('Your account is registered. An administrator must approve your membership before your private dashboard is available.','Votre compte est enregistré. Un administrateur doit approuver votre adhésion avant que votre espace privé soit accessible.'):tr('Your account currently does not have permission to enter the member space. Please contact the administrator.','Votre compte n’a pas actuellement accès à l’espace membre. Veuillez communiquer avec l’administrateur.')}</p>
+  <div className="hold-user"><Mail size={17}/>{user.email}</div>
+  {pending&&<form className="pending-password mykioo-setup-form" onSubmit={saveSetup}>
+   <label htmlFor="member-display-name">{tr('What should we call you?','Comment pouvons-nous vous appeler ?')}</label>
+   <p className="member-name-hint">{tr('It does not have to be your real name. Choose a nickname or any name you would like us to use.','Il n’est pas nécessaire d’utiliser votre vrai nom. Choisissez un surnom ou le nom par lequel vous souhaitez être appelé(e).')}</p>
+   <input id="member-display-name" type="text" value={displayName} onChange={e=>{setDisplayName(e.target.value);setComplete(false)}} placeholder={tr('Your preferred name or nickname','Votre nom ou surnom préféré')} maxLength={40} minLength={2} autoComplete="nickname" disabled={working} required/>
+   <label htmlFor="pending-password">{tr(member?.display_name?'Change your password (optional)':'Create your member password',member?.display_name?'Modifier votre mot de passe (facultatif)':'Créer votre mot de passe')}</label>
+   <input id="pending-password" type="password" value={password} onChange={e=>{setPassword(e.target.value);setComplete(false)}} autoComplete="new-password" placeholder={tr(member?.display_name?'Leave blank to keep your current password':'At least 12 characters',member?.display_name?'Laissez vide pour conserver votre mot de passe':'Au moins 12 caractères')} minLength={12} disabled={working} required={!member?.display_name}/>
+   {message&&<p role={sessionExpired?'alert':'status'} className={sessionExpired?'mykioo-setup-error':'member-field-message'}>{message}</p>}
+   {sessionExpired?<button type="button" className="outline-button" onClick={logout}>{tr('Sign out and sign in again','Se déconnecter et se reconnecter')}</button>:<button type="submit" className="outline-button" disabled={working||complete}>{working?tr('Saving…','Enregistrement…'):complete?tr('Details saved','Informations enregistrées'):tr('Save my account details','Enregistrer mes informations')}</button>}
+  </form>}
+  <button className="outline-button" onClick={logout}><LogOut size={17}/>{tr('Sign out','Déconnexion')}</button>
  </div></div>;
 }
 export default function App(){const [language,setLanguage]=useState(()=>{try{return localStorage.getItem('mykioo-language')||((navigator.language||'en').toLowerCase().startsWith('fr')?'fr':'en')}catch{return 'en'}});function changeLanguage(value){setLanguage(value);try{localStorage.setItem('mykioo-language',value)}catch{}}const [user,setUser]=useState(null),[member,setMember]=useState(null),[subscriptions,setSubscriptions]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');async function load(sessionUser){if(!sessionUser){setUser(null);setMember(null);setSubscriptions([]);setLoading(false);return}setLoading(true);setUser(sessionUser);const {data,error:err}=await supabase.from('mykioo_members').select('user_id,email,display_name,status,role').eq('user_id',sessionUser.id).maybeSingle();if(err){setError('Unable to confirm membership access. Please try again later.');setMember(null)}else{setError('');setMember(data||{status:'pending'});if(data?.status==='approved'){const r=await supabase.from('mykioo_subscriptions').select('id,status,expires_at').eq('member_id',sessionUser.id);setSubscriptions(r.data||[])}}setLoading(false)}useEffect(()=>{
