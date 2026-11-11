@@ -258,3 +258,7 @@
 .mykioo-sub-request-actions button:disabled{opacity:.5;cursor:not-allowed}
 .mykioo-sub-request-actions button:first-child{background:linear-gradient(120deg,#e9cd91,#b6945d);color:#261b2d}
 @media(max-width:650px){.mykioo-sub-requests{padding:15px}.mykioo-sub-request-row{padding:13px}}
+
+/* Subscription contract selection matches existing form fields */
+.mykioo-request-area .mykioo-support-card select{background:#272232;color:#f7f2fa;border:1px solid #594766;border-radius:9px;padding:13px 14px;width:100%;box-sizing:border-box;font:inherit}
+.mykioo-request-area .mykioo-support-card select:focus{outline:2px solid #dfc28a}
