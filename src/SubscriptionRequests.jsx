@@ -10,7 +10,7 @@ const labels={
 };
 export default function SubscriptionRequests({userId,language='en'}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
- const [service,setService]=useState(''),[device,setDevice]=useState(''),[notes,setNotes]=useState('');
+ const [service,setService]=useState(''),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState('');
  const [rows,setRows]=useState([]),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{
   if(!supabase||!userId)return;
@@ -19,7 +19,7 @@ export default function SubscriptionRequests({userId,language='en'}){
    if(!active||running)return;running=true;
    try{
     const {data,error:err}=await supabase.from('mykioo_subscription_requests')
-     .select('id,service_name,device_label,notes,status,created_at,updated_at,subscription_id')
+     .select('id,service_name,contract_days,notes,status,created_at,updated_at,subscription_id')
      .eq('member_id',userId).order('created_at',{ascending:false}).limit(50);
     if(!err&&active){setRows(data||[]);setError('')}
    }finally{running=false;if(active)setLoading(false)}
@@ -39,11 +39,11 @@ export default function SubscriptionRequests({userId,language='en'}){
   try{
    const {data:{session},error:authError}=await supabase.auth.getSession();
    if(authError||!session)throw Error(tr('Your session has expired. Sign in again.','Votre session a expiré. Reconnectez-vous.'));
-   const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify({action:'create',service_name:service.trim(),device_label:device.trim(),notes:notes.trim()})});
+   const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify({action:'create',service_name:service.trim(),contract_days:contractDays,notes:notes.trim()})});
    const result=await response.json().catch(()=>({}));
    if(!response.ok||!result.ok)throw Error(result.error||tr('Could not send request.','Impossible d’envoyer la demande.'));
-   setService('');setDevice('');setNotes('');
-   setRows(previous=>[{id:result.request.id,service_name:service.trim(),device_label:device.trim(),notes:notes.trim(),status:'pending',created_at:result.request.created_at},...previous]);
+   setService('');setContractDays(365);setNotes('');
+   setRows(previous=>[{id:result.request.id,service_name:service.trim(),contract_days:contractDays,notes:notes.trim(),status:'pending',created_at:result.request.created_at},...previous]);
    setNotice(tr('Your request has been sent for review. You can follow its status below.','Votre demande a été envoyée pour approbation. Vous pouvez suivre son statut ci-dessous.'));
   }catch(err){setError(err.message||tr('Could not send request.','Impossible d’envoyer la demande.'))}
   finally{setSaving(false)}
@@ -51,12 +51,18 @@ export default function SubscriptionRequests({userId,language='en'}){
  return <section className="mykioo-request-area">
   <div className="mykioo-support-card">
    <h2>{tr('Request a subscription','Demander un abonnement')}</h2>
-   <p>{tr('Tell us which service and device you need. This is a request, not an active subscription. MYKIOO will review it and add your access details once ready.','Indiquez le service et l’appareil souhaités. Il s’agit d’une demande, et non d’un abonnement actif. MYKIOO l’examinera et ajoutera les accès une fois prêts.')}</p>
+   <p>{tr('Tell us which service and subscription duration you need. This is a request, not an active subscription. MYKIOO will review it and add your access details once ready.','Indiquez le service et la durée d’abonnement souhaités. Il s’agit d’une demande, et non d’un abonnement actif. MYKIOO l’examinera et ajoutera les accès une fois prêts.')}</p>
    <form onSubmit={submit}>
     <label htmlFor="mykioo-request-service">{tr('Service or package requested','Service ou forfait demandé')}</label>
     <input id="mykioo-request-service" required minLength={3} maxLength={80} value={service} onChange={e=>setService(e.target.value)} placeholder={tr('Which service would you like?','Quel service souhaitez-vous ?')}/>
-    <label htmlFor="mykioo-request-device">{tr('Device or location','Appareil ou emplacement')}</label>
-    <input id="mykioo-request-device" required minLength={2} maxLength={80} value={device} onChange={e=>setDevice(e.target.value)} placeholder={tr('e.g. Bedroom TV, phone','ex. Télé de la chambre, téléphone')}/>
+    <label htmlFor="mykioo-request-duration">{tr('Subscription duration','Durée de l’abonnement')}</label>
+    <select id="mykioo-request-duration" value={contractDays} onChange={e=>setContractDays(Number(e.target.value))}>
+     <option value={30}>{tr('1 month (30 days)','1 mois (30 jours)')}</option>
+     <option value={90}>{tr('3 months (90 days)','3 mois (90 jours)')}</option>
+     <option value={183}>{tr('6 months (183 days)','6 mois (183 jours)')}</option>
+     <option value={365}>{tr('1 year (365 days)','1 an (365 jours)')}</option>
+     <option value={730}>{tr('2 years (730 days)','2 ans (730 jours)')}</option>
+    </select>
     <label htmlFor="mykioo-request-notes">{tr('Additional details (optional)','Détails supplémentaires (facultatif)')}</label>
     <textarea id="mykioo-request-notes" maxLength={1000} rows={3} value={notes} onChange={e=>setNotes(e.target.value)} placeholder={tr('Tell us anything else we should know','Autres renseignements utiles')}/>
     <button type="submit" disabled={saving}>{saving?tr('Sending…','Envoi…'):tr('Submit request','Envoyer la demande')}</button>
@@ -69,7 +75,7 @@ export default function SubscriptionRequests({userId,language='en'}){
    {loading?<p>{tr('Loading requests…','Chargement des demandes…')}</p>:rows.length===0?<p>{tr('You have not requested any subscriptions yet.','Vous n’avez encore fait aucune demande d’abonnement.')}</p>:
    <div className="mykioo-ticket-list">{rows.map(r=><article className="mykioo-ticket" key={r.id}>
      <div className="mykioo-ticket-heading"><strong>{r.service_name}</strong><span className="mykioo-ticket-status">{labels[r.status]?.[fr?1:0]||r.status}</span></div>
-     <p>{tr('Device','Appareil')}: {r.device_label}</p>
+     <p>{tr('Duration','Durée')}: {({30:tr('1 month','1 mois'),90:tr('3 months','3 mois'),183:tr('6 months','6 mois'),365:tr('1 year','1 an'),730:tr('2 years','2 ans')})[r.contract_days]||tr('Not specified','Non précisée')}</p>
      {r.notes&&<p>{r.notes}</p>}
      <small>{new Date(r.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small>
      {r.status==='fulfilled'&&<p className="mykioo-request-completed">{tr('Completed. View your new subscription above for login details.','Demande terminée. Consultez votre nouvel abonnement ci-dessus pour les identifiants.')}</p>}
