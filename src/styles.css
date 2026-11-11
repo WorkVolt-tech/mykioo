@@ -69,3 +69,6 @@
 .pending-password input{border:1px solid #554660;background:#2a2235;color:#fff;border-radius:8px;padding:12px;min-width:0;width:100%}
 .pending-password button{width:100%;justify-content:center}
 .password-status{color:#ead29d;font-size:12px}
+
+.admin-language{background:#292333;color:#f6f0fa;border:1px solid #5a4a60;border-radius:9px;padding:12px;font-size:13px;min-width:112px}
+.admin-language:focus{outline:2px solid #dabb80}
