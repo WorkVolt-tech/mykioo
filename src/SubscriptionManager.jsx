@@ -1,15 +1,35 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 
-const blank={id:'',member_id:'',service_name:'',device_label:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:'',service_password:''};
+const blank={id:'',member_id:'',service_name:'',device_label:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:'',service_password:'',request_id:''};
 const dateOnly=value=>value?new Date(value).toISOString().slice(0,10):'';
 
-export default function SubscriptionManager({members=[],subscriptions=[],language='en',onSaved}){
+export default function SubscriptionManager({members=[],subscriptions=[],requests=[],language='en',onSaved}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
  const [form,setForm]=useState(blank),[saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const clients=members.filter(m=>m.role==='member');
  function update(field,value){setForm(current=>({...current,[field]:value}));setNotice('');setError('')}
- function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',device_label:row.device_label||'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:''});setError('');setNotice('')}
+ function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',device_label:row.device_label||'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',request_id:''});setError('');setNotice('')}
+ function completeRequest(r){
+   setForm({...blank,request_id:r.id,member_id:r.member_id,service_name:r.service_name,device_label:r.device_label,status:'active'});
+   setNotice('');setError('');
+   document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'});
+ }
+ async function changeRequest(r,status){
+  if(saving)return;setSaving(true);setError('');setNotice('');
+  try{
+   const {data:{session},error:authError}=await supabase.auth.getSession();
+   if(authError||!session)throw Error(tr('Please sign in again.','Veuillez vous reconnecter.'));
+   const response=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-subscription-requests',{
+     method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},
+     body:JSON.stringify({action:'change_status',request_id:r.id,status})
+   });
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok||!result.ok)throw Error(result.error||tr('Could not update request.','Impossible de mettre à jour la demande.'));
+   setNotice(tr('Request updated.','Demande mise à jour.'));onSaved?.();
+  }catch(err){setError(err.message||tr('Could not update request.','Impossible de mettre à jour la demande.'))}
+  finally{setSaving(false)}
+ }
  async function save(e){
   e.preventDefault();if(saving)return;
   setSaving(true);setError('');setNotice('');
@@ -27,9 +47,29 @@ export default function SubscriptionManager({members=[],subscriptions=[],languag
   finally{setSaving(false)}
  }
  return <div className="mykioo-sub-manager">
-  <section className="admin-invite">
-   <strong>{form.id?tr('Edit subscription','Modifier l’abonnement'):tr('Add a member subscription','Ajouter un abonnement membre')}</strong>
-   <p>{tr('Each device or service login can have its own subscription, dates and status.','Chaque appareil ou identifiant de service peut avoir son propre abonnement, ses dates et son statut.')}</p>
+  <section className="mykioo-sub-requests">
+   <h2>{tr('Subscription requests','Demandes d’abonnement')}{requests.some(r=>r.status==='pending')&&<span className="mykioo-unread-dot">{requests.filter(r=>r.status==='pending').length}</span>}</h2>
+   <p>{tr('Review member requests. Complete one to assign a subscription and its service login.','Examinez les demandes des membres. Terminez une demande pour attribuer un abonnement et ses identifiants.')}</p>
+   {requests.length===0?<p>{tr('No requests yet.','Aucune demande pour le moment.')}</p>:
+    requests.map(r=>{
+      const client=clients.find(m=>m.user_id===r.member_id);
+      const status=fr?({pending:'En attente',in_review:'En cours',fulfilled:'Terminé',declined:'Refusé'})[r.status]:({pending:'Pending',in_review:'In review',fulfilled:'Completed',declined:'Declined'})[r.status];
+      return <article key={r.id} className="mykioo-sub-request-row">
+       <div className="mykioo-sub-request-content"><strong>{r.service_name}</strong><span>{client?.display_name||client?.email||tr('Member','Membre')} · {r.device_label}</span>
+       {r.notes&&<p>{r.notes}</p>}<small>{new Date(r.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>
+       <span className="mykioo-ticket-status">{status||r.status}</span>
+       {['pending','in_review'].includes(r.status)&&<div className="mykioo-sub-request-actions">
+         <button type="button" disabled={saving} onClick={()=>completeRequest(r)}>{tr('Complete / add login','Terminer / ajouter les accès')}</button>
+         {r.status==='pending'&&<button type="button" disabled={saving} onClick={()=>changeRequest(r,'in_review')}>{tr('Mark reviewing','Marquer en cours')}</button>}
+         <button type="button" disabled={saving} onClick={()=>changeRequest(r,'declined')}>{tr('Decline','Refuser')}</button>
+       </div>}
+       {r.status==='declined'&&<button type="button" disabled={saving} onClick={()=>changeRequest(r,'in_review')}>{tr('Reopen','Rouvrir')}</button>}
+      </article>;
+    })}
+  </section>
+  <section className="admin-invite" id="mykioo-subscription-editor">
+   <strong>{form.request_id?tr('Complete member request','Terminer la demande du membre'):form.id?tr('Edit subscription','Modifier l’abonnement'):tr('Add a member subscription','Ajouter un abonnement membre')}</strong>
+   <p>{form.request_id?tr("Add the service credentials and dates to complete this request. The member will then see the subscription in their account.","Ajoutez les identifiants et les dates pour terminer cette demande. Le membre verra alors l’abonnement dans son compte."):tr("Each device or service login can have its own subscription, dates and status.","Chaque appareil ou identifiant de service peut avoir son propre abonnement, ses dates et son statut.")}</p>
    <form className="mykioo-sub-form" onSubmit={save}>
     <label>{tr('Member','Membre')}<select required value={form.member_id} onChange={e=>update('member_id',e.target.value)}>
      <option value="">{tr('Choose a member','Choisir un membre')}</option>
@@ -51,7 +91,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],languag
     {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
     {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
     <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!clients.length} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):tr('Save subscription','Enregistrer l’abonnement')}</button>
-     {form.id&&<button className="admin-action" type="button" onClick={()=>{setForm(blank);setError('')}}>{tr('Cancel editing','Annuler')}</button>}
+     {(form.id||form.request_id)&&<button className="admin-action" type="button" onClick={()=>{setForm(blank);setError('')}}>{tr("Cancel editing","Annuler")}</button>}
     </div>
    </form>
   </section>
