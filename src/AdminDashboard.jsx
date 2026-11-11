@@ -1,3 +1,4 @@
+import {ReplyTemplateEditor} from './ReplyTemplates';
 import {OwnerIssuePanel} from './SupportIssues';
 import {useNotifications,NotificationCenter} from './NotificationCenter';
 import {useServiceAlerts,ServiceAlertBanner,ServiceAlertEditor,ServiceAlertHistory} from './ServiceAlerts';
@@ -190,6 +191,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  {tab==='overview'&&<><NotificationCenter compact owner items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>setTab(section)}/><ServiceAlertBanner alerts={serviceAlerts} language={language} onOpen={()=>setTab('support')}/><ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner onOpen={()=>setTab('subscriptions')}/><p className="admin-description">{tr("Welcome to your MYKIOO management space. All information comes from your private Supabase project.","Bienvenue dans votre espace de gestion MYKIOO. Toutes les informations proviennent de votre projet Supabase privé.")}</p><div className="admin-stats">{cards.map(([label,n,Icon])=><div className="admin-stat" key={label}><Icon size={22}/><small>{label}</small><strong>{loading?'…':n}</strong></div>)}</div><div className="admin-info"><CheckCircle2 size={22}/><div><strong>{tr("Owner access is active","Accès propriétaire activé")}</strong><p>{tr("Your account is approved. You can now invite members and manage approval requests from the Members and Invitations sections.","Votre compte est approuvé. Vous pouvez inviter des membres et gérer les demandes d’approbation dans les sections Membres et Invitations.")}</p></div></div></>}
   {tab==='subscriptions'&&<ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner/>}{tab==='subscriptions'&&<SubscriptionManager members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>}
  {tab==='notifications'&&<NotificationCenter owner items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>setTab(section)}/>}{tab==='support'&&<section className="admin-support-section">
+ <ReplyTemplateEditor language={language}/>
  <OwnerIssuePanel tickets={rows.support||[]} language={language} selected={selectedTicketIds} setSelected={setSelectedTicketIds} onRefresh={()=>refresh({silent:true})}/>
  <ServiceAlertEditor alerts={serviceAlerts} subscriptions={rows.subscriptions||[]} language={language} onRefresh={async()=>{const {data,error}=await supabase.from('mykioo_service_alerts').select('*').order('created_at',{ascending:false}).limit(100);if(!error)setServiceAlerts(data||[])}}/>
  <ServiceAlertHistory alerts={serviceAlerts} language={language}/>
@@ -271,7 +273,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
       <option value="normal">{tr('Normal','Normale')}</option>
       <option value="high">{tr('High','Élevée')}</option>
       <option value="urgent">{tr('Urgent','Urgente')}</option>
-    </select></div>{ticket.main_issue_id&&<p className="mykioo-owner-linked-indicator">{tr('Linked to main issue','Associé au problème principal')} · {ticket.main_issue_id.slice(0,8)}</p>}<SupportThread ticket={ticket} userId={user.id} language={language} owner unread={unreadCounts[ticket.id]||0} onRead={syncUnread}/>
+    </select></div>{ticket.main_issue_id&&<p className="mykioo-owner-linked-indicator">{tr('Linked to main issue','Associé au problème principal')} · {ticket.main_issue_id.slice(0,8)}</p>}<SupportThread ticket={ticket} userId={user.id} language={language} recipientLanguage={requester?.preferred_language||"en"} owner unread={unreadCounts[ticket.id]||0} onRead={syncUnread}/>
    </article>
  })}</div>}
  </section>}
