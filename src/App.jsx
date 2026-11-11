@@ -1,3 +1,4 @@
+import {RelatedIssue} from './SupportIssues';
 import {useNotifications,NotificationCenter} from './NotificationCenter';
 import {useServiceAlerts,ServiceAlertBanner,ServiceAlertHistory} from './ServiceAlerts';
 import {ExpiryAlerts} from './ExpiryAlerts';
@@ -29,7 +30,7 @@ function Shell({user,member,subscriptions,logout,language='en',onLanguageChange,
  if(!silent){setTicketLoading(true);setTicketError('');}
  try{
   const {data,error}=await supabase.from('mykioo_support_tickets')
-   .select('id,subject,message,status,created_at,updated_at')
+   .select('id,subject,message,status,main_issue_id,created_at,updated_at')
    .eq('member_id',user.id).order('created_at',{ascending:false}).limit(50);
   if(error)throw error;
   setTickets(data||[]);
@@ -45,7 +46,7 @@ useEffect(()=>{
    fetching=true;
    try{
      const {data,error}=await supabase.from('mykioo_support_tickets')
-      .select('id,subject,message,status,created_at,updated_at')
+      .select('id,subject,message,status,main_issue_id,created_at,updated_at')
       .eq('member_id',user.id).order('created_at',{ascending:false}).limit(50);
      if(!error&&mounted)setTickets(data||[]);
    }finally{fetching=false}
@@ -130,7 +131,7 @@ return <div className="dashboard"><aside className={'sidebar '+(mobile?'sidebar-
  {ticketNotice&&<p role="status" className="mykioo-profile-success">{ticketNotice}</p>}
  <div className="mykioo-support-card">
   <div className="mykioo-support-header"><h2>{tr('Your requests','Vos demandes')}</h2><button onClick={loadTickets} disabled={ticketLoading}>{tr('Refresh','Actualiser')}</button></div>
-  {ticketLoading?<p>{tr('Loading…','Chargement…')}</p>:tickets.length===0?<p>{tr('No support requests yet.','Aucune demande d’assistance pour le moment.')}</p>:<div className="mykioo-ticket-list">{tickets.map(t=><article className="mykioo-ticket" key={t.id}><div className="mykioo-ticket-heading"><strong>{t.subject}</strong>{unreadCounts[t.id]>0&&<span className="mykioo-unread-dot">{unreadCounts[t.id]}</span>}<span className="mykioo-ticket-status">{tr(({open:'Open',in_progress:'In progress',resolved:'Resolved',closed:'Closed'})[t.status]||t.status,({open:'Ouvert',in_progress:'En cours',resolved:'Résolu',closed:'Fermé'})[t.status]||t.status)}</span></div><p>{t.message}</p><small>{new Date(t.created_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA')}</small><SupportThread ticket={t} userId={user.id} language={language} unread={unreadCounts[t.id]||0} onRead={syncUnread}/></article>)}</div>}
+  {ticketLoading?<p>{tr('Loading…','Chargement…')}</p>:tickets.length===0?<p>{tr('No support requests yet.','Aucune demande d’assistance pour le moment.')}</p>:<div className="mykioo-ticket-list">{tickets.map(t=><article className="mykioo-ticket" key={t.id}><div className="mykioo-ticket-heading"><strong>{t.subject}</strong>{unreadCounts[t.id]>0&&<span className="mykioo-unread-dot">{unreadCounts[t.id]}</span>}<span className="mykioo-ticket-status">{tr(({open:'Open',in_progress:'In progress',resolved:'Resolved',closed:'Closed'})[t.status]||t.status,({open:'Ouvert',in_progress:'En cours',resolved:'Résolu',closed:'Fermé'})[t.status]||t.status)}</span></div><p>{t.message}</p><small>{new Date(t.created_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA')}</small><RelatedIssue issueId={t.main_issue_id} language={language}/><SupportThread ticket={t} userId={user.id} language={language} unread={unreadCounts[t.id]||0} onRead={syncUnread}/></article>)}</div>}
  </div>
  </section>}{active==='My profile'&&<section className="mykioo-profile-card">
  <div className="mykioo-profile-head"><UserRound size={24}/><div><h2>{tr('Your preferred name','Votre nom préféré')}</h2><p>{tr('It can be a nickname, stage name, or any name you want us to call you. It does not need to be your real name.','Il peut s’agir d’un surnom, d’un nom d’artiste ou de tout autre nom. Vous n’avez pas besoin d’utiliser votre vrai nom.')}</p></div></div>
