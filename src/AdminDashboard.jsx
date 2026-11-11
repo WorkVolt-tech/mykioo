@@ -1,3 +1,4 @@
+import SupportThread from './SupportThread';
 import React,{useEffect,useState} from 'react';
 import {Users,MailPlus,ShieldCheck,CalendarDays,Receipt,Headphones,LogOut,RefreshCw,Clock3,LockKeyhole,AlertCircle,CheckCircle2} from 'lucide-react';
 import {supabase} from './supabase';
@@ -142,7 +143,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
       <option value="in_progress">{tr('In progress','En cours')}</option>
       <option value="resolved">{tr('Resolved','Résolu')}</option>
       <option value="closed">{tr('Closed','Fermé')}</option>
-    </select></div>
+    </select></div><SupportThread ticket={ticket} userId={user.id} language={language} owner/>
    </article>
  })}</div>}
  </section>}
