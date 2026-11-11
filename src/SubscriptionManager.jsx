@@ -1,17 +1,28 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 
-const blank={id:'',member_id:'',service_name:'',device_label:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:'',service_password:'',request_id:''};
+const blank={id:'',member_id:'',service_name:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:'',contract_days:365,service_password:'',request_id:''};
+const todayLocal=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
+const addDays=(date,days)=>{if(!date||!days)return '';const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+Number(days));return d.toISOString().slice(0,10)};
+const newForm=()=>({...blank,starts_at:todayLocal(),expires_at:addDays(todayLocal(),365)});
 const dateOnly=value=>value?new Date(value).toISOString().slice(0,10):'';
 
 export default function SubscriptionManager({members=[],subscriptions=[],requests=[],language='en',onSaved}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
- const [form,setForm]=useState(blank),[saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [form,setForm]=useState(newForm),[saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const clients=members.filter(m=>m.role==='member');
- function update(field,value){setForm(current=>({...current,[field]:value}));setNotice('');setError('')}
- function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',device_label:row.device_label||'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',request_id:''});setError('');setNotice('')}
+ function update(field,value){
+  setForm(current=>{
+    const next={...current,[field]:value};
+    if((field==='starts_at'||field==='contract_days')&&next.starts_at&&next.contract_days)
+      next.expires_at=addDays(next.starts_at,next.contract_days);
+    return next;
+  });setNotice('');setError('');
+}
+ function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',request_id:''});setError('');setNotice('')}
  function completeRequest(r){
-   setForm({...blank,request_id:r.id,member_id:r.member_id,service_name:r.service_name,device_label:r.device_label,status:'active'});
+   const start=todayLocal();const days=r.contract_days||365;
+   setForm({...blank,request_id:r.id,member_id:r.member_id,service_name:r.service_name,contract_days:days,starts_at:start,expires_at:addDays(start,days),status:'active'});
    setNotice('');setError('');
    document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'});
  }
@@ -36,13 +47,13 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
   try{
    const {data:{session},error:authError}=await supabase.auth.getSession();
    if(authError||!session)throw Error(tr('Please sign in again.','Veuillez vous reconnecter.'));
-   const payload={action:'save',...form,starts_at:form.starts_at||null,expires_at:form.expires_at||null};
+   const payload={action:'save',...form,contract_days:form.contract_days||null,starts_at:form.starts_at||null,expires_at:form.expires_at||null};
    const response=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-subscriptions',{
     method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
     'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify(payload)});
    const result=await response.json().catch(()=>({}));
    if(!response.ok||!result.ok)throw Error(result.error||tr('Unable to save subscription.','Impossible d’enregistrer l’abonnement.'));
-   setForm(blank);setNotice(tr('Subscription saved.','Abonnement enregistré.'));onSaved?.();
+   setForm(newForm());setNotice(tr('Subscription saved.','Abonnement enregistré.'));onSaved?.();
   }catch(err){setError(err.message||tr('Unable to save subscription.','Impossible d’enregistrer l’abonnement.'))}
   finally{setSaving(false)}
  }
@@ -55,7 +66,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
       const client=clients.find(m=>m.user_id===r.member_id);
       const status=fr?({pending:'En attente',in_review:'En cours',fulfilled:'Terminé',declined:'Refusé'})[r.status]:({pending:'Pending',in_review:'In review',fulfilled:'Completed',declined:'Declined'})[r.status];
       return <article key={r.id} className="mykioo-sub-request-row">
-       <div className="mykioo-sub-request-content"><strong>{r.service_name}</strong><span>{client?.display_name||client?.email||tr('Member','Membre')} · {r.device_label}</span>
+       <div className="mykioo-sub-request-content"><strong>{r.service_name}</strong><span>{client?.display_name||client?.email||tr('Member','Membre')} · {({30:tr('1 month','1 mois'),90:tr('3 months','3 mois'),183:tr('6 months','6 mois'),365:tr('1 year','1 an'),730:tr('2 years','2 ans')})[r.contract_days]||tr('Custom duration','Durée personnalisée')}</span>
        {r.notes&&<p>{r.notes}</p>}<small>{new Date(r.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>
        <span className="mykioo-ticket-status">{status||r.status}</span>
        {['pending','in_review'].includes(r.status)&&<div className="mykioo-sub-request-actions">
@@ -69,14 +80,14 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
   </section>
   <section className="admin-invite" id="mykioo-subscription-editor">
    <strong>{form.request_id?tr('Complete member request','Terminer la demande du membre'):form.id?tr('Edit subscription','Modifier l’abonnement'):tr('Add a member subscription','Ajouter un abonnement membre')}</strong>
-   <p>{form.request_id?tr("Add the service credentials and dates to complete this request. The member will then see the subscription in their account.","Ajoutez les identifiants et les dates pour terminer cette demande. Le membre verra alors l’abonnement dans son compte."):tr("Each device or service login can have its own subscription, dates and status.","Chaque appareil ou identifiant de service peut avoir son propre abonnement, ses dates et son statut.")}</p>
+   <p>{form.request_id?tr("Add the service credentials and dates to complete this request. The member will then see the subscription in their account.","Ajoutez les identifiants et les dates pour terminer cette demande. Le membre verra alors l’abonnement dans son compte."):tr("Each service login can have its own subscription, contract and status.","Chaque identifiant de service peut avoir son propre abonnement, sa durée et son statut.")}</p>
    <form className="mykioo-sub-form" onSubmit={save}>
     <label>{tr('Member','Membre')}<select required value={form.member_id} onChange={e=>update('member_id',e.target.value)}>
      <option value="">{tr('Choose a member','Choisir un membre')}</option>
      {clients.map(m=><option key={m.user_id} value={m.user_id}>{m.display_name||m.email} ({m.email})</option>)}
     </select></label>
-    <label>{tr('Service / package name','Service / nom du forfait')}<input required maxLength={80} value={form.service_name} onChange={e=>update('service_name',e.target.value)} placeholder={tr('e.g. Living room service','ex. Service du salon')}/></label>
-    <label>{tr('Device or location','Appareil ou emplacement')}<input maxLength={80} value={form.device_label} onChange={e=>update('device_label',e.target.value)} placeholder={tr('e.g. Bedroom TV, phone','ex. Télé du salon, téléphone')}/></label>
+    <label>{tr('Service / package name','Service / nom du forfait')}<input required maxLength={80} value={form.service_name} onChange={e=>update('service_name',e.target.value)} placeholder={tr('e.g. Premium package','ex. Forfait premium')}/></label>
+
     <label>{tr('Service login username','Identifiant du service')}<input required={Boolean(form.request_id)} maxLength={160} autoComplete="off" value={form.service_username} onChange={e=>update('service_username',e.target.value)} placeholder={tr('Username / login ID','Nom d’utilisateur / identifiant')}/></label>
     <label>{form.id?tr('Replace service password (leave blank to keep)','Remplacer le mot de passe du service (laisser vide pour conserver)'):tr('Service password','Mot de passe du service')}
       <input type="password" required={Boolean(form.request_id)} autoComplete="new-password" maxLength={256} value={form.service_password} onChange={e=>update('service_password',e.target.value)}
@@ -85,13 +96,22 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     <label>{tr('Status','Statut')}<select value={form.status} onChange={e=>update('status',e.target.value)}>
      {['pending','active','expired','suspended','cancelled'].map(status=><option key={status} value={status}>{tr(({pending:'Pending',active:'Active',expired:'Expired',suspended:'Suspended',cancelled:'Cancelled'})[status],({pending:'En attente',active:'Actif',expired:'Expiré',suspended:'Suspendu',cancelled:'Annulé'})[status])}</option>)}
     </select></label>
+    <label>{tr('Service contract','Durée du contrat')}
+     <select value={form.contract_days} onChange={e=>update('contract_days',e.target.value?Number(e.target.value):'')}>
+      <option value={30}>{tr('1 month (30 days)','1 mois (30 jours)')}</option>
+      <option value={90}>{tr('3 months (90 days)','3 mois (90 jours)')}</option>
+      <option value={183}>{tr('6 months (183 days)','6 mois (183 jours)')}</option>
+      <option value={365}>{tr('1 year (365 days)','1 an (365 jours)')}</option>
+      <option value={730}>{tr('2 years (730 days)','2 ans (730 jours)')}</option>
+      <option value="">{tr('Custom / no preset','Personnalisé / sans durée prédéfinie')}</option>
+     </select></label>
     <label>{tr('Start date','Date de début')}<input type="date" value={form.starts_at} onChange={e=>update('starts_at',e.target.value)}/></label>
-    <label>{tr('Expiry date','Date d’expiration')}<input type="date" value={form.expires_at} onChange={e=>update('expires_at',e.target.value)}/></label>
+    <label>{tr('Expiry date — automatically calculated; editable','Date d’expiration — calculée automatiquement, modifiable')}<input type="date" value={form.expires_at} onChange={e=>update('expires_at',e.target.value)}/></label>
     <p className="mykioo-sub-note">{tr('Passwords are encrypted on the server. Members must verify their email before viewing them. Encryption must first be configured in Supabase.','Les mots de passe sont chiffrés sur le serveur. Les membres doivent vérifier leur adresse courriel avant de les afficher. Le chiffrement doit d’abord être configuré dans Supabase.')}</p>
     {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
     {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
     <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!clients.length} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):tr('Save subscription','Enregistrer l’abonnement')}</button>
-     {(form.id||form.request_id)&&<button className="admin-action" type="button" onClick={()=>{setForm(blank);setError('')}}>{tr("Cancel editing","Annuler")}</button>}
+     {(form.id||form.request_id)&&<button className="admin-action" type="button" onClick={()=>{setForm(newForm());setError('')}}>{tr("Cancel editing","Annuler")}</button>}
     </div>
    </form>
   </section>
@@ -102,7 +122,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
       const member=clients.find(m=>m.user_id===sub.member_id);
       return <article className="mykioo-sub-item" key={sub.id}>
        <div><strong>{sub.service_name||tr('Unnamed service','Service sans nom')}</strong><span>{member?.display_name||member?.email||sub.member_id}</span>
-       <small>{[sub.device_label,sub.service_username,sub.expires_at&&dateOnly(sub.expires_at)].filter(Boolean).join(' · ')}</small></div>
+       <small>{[sub.service_username,sub.expires_at&&dateOnly(sub.expires_at)].filter(Boolean).join(' · ')}</small></div>
        <span className="mykioo-ticket-status">{sub.status}</span>{sub.has_password&&<span className="mykioo-credentials-chip">{tr('Password saved','Mot de passe enregistré')}</span>}
        <button className="admin-mini" onClick={()=>edit(sub)}>{tr('Edit','Modifier')}</button>
       </article>
