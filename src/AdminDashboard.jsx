@@ -14,7 +14,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  const [serviceAlerts,setServiceAlerts]=useServiceAlerts();
  const fr=language==='fr';
  const tr=(english,french)=>fr?french:english;
- const [tab,setTab]=useState('overview'),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [selectedTicketIds,setSelectedTicketIds]=useState([]);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
+ const [tab,setTab]=useState('overview'),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [selectedTicketIds,setSelectedTicketIds]=useState([]);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all'),[supportPriorityFilter,setSupportPriorityFilter]=useState('all'),[supportSort,setSupportSort]=useState('priority');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
  async function refresh({silent=false}={}){
   if(!silent){setLoading(true);setError('')}
   try{
@@ -58,6 +58,23 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      if(payload.action==='invite')setEmail('');
      await refresh();
    }catch(e){setError(e.message||'Request failed.')}finally{setSaving(false)}
+ }
+ async function updatePriority(ticket,priority){
+   if(saving||ticket.priority===priority)return;
+   setSaving(true);setError('');setNotice('');
+   try{
+    const {data:{session},error:authError}=await supabase.auth.getSession();
+    if(authError||!session)throw new Error(tr('Please sign in again.','Veuillez vous reconnecter.'));
+    const response=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-support',{
+     method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
+     'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},
+     body:JSON.stringify({action:'set_priority',ticket_id:ticket.id,priority})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result.ok)throw Error(result.error||tr('Unable to set priority.','Impossible de modifier la priorité.'));
+    setNotice(tr('Priority updated.','Priorité mise à jour.'));await refresh({silent:true});
+   }catch(err){setError(err.message||tr('Unable to set priority.','Impossible de modifier la priorité.'))}
+   finally{setSaving(false)}
  }
  async function updateTicket(ticket,status){
    if(saving||ticket.status===status)return;
@@ -135,9 +152,15 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
   const term=supportSearch.trim().toLocaleLowerCase();
   if(term&&![ticket.subject,ticket.message,member?.display_name,member?.email].some(value=>(value||'').toLocaleLowerCase().includes(term)))return false;
   if(supportStatusFilter!=='all'&&ticket.status!==supportStatusFilter)return false;
+  if(supportPriorityFilter!=='all'&&ticket.priority!==supportPriorityFilter)return false;
   if(supportIssueFilter==='linked'&&!ticket.main_issue_id)return false;
   if(supportIssueFilter==='unlinked'&&ticket.main_issue_id)return false;
   return true;
+ }).sort((a,b)=>{
+  if(supportSort==='newest')return new Date(b.created_at)-new Date(a.created_at);
+  if(supportSort==='oldest')return new Date(a.created_at)-new Date(b.created_at);
+  const ranks={urgent:4,high:3,normal:2,low:1};
+  return (ranks[b.priority]||2)-(ranks[a.priority]||2)||new Date(a.created_at)-new Date(b.created_at);
  });
 
  const cards=[[tr('Total members','Total des membres'),rows.members?.length||0,Users],[tr('Pending approval','En attente d’approbation'),rows.members?.filter(m=>m.status==='pending').length||0,Clock3],[tr('Active subscriptions','Abonnements actifs'),rows.subscriptions?.filter(s=>s.status==='active').length||0,CalendarDays],[tr('Open support tickets','Demandes d’assistance ouvertes'),rows.support?.filter(t=>t.status==='open').length||0,Headphones]];
@@ -174,8 +197,24 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     <option value="unlinked">{tr('Not linked','Non associées')}</option>
    </select>
   </label>
+  <label>{tr('Priority','Priorité')}
+   <select value={supportPriorityFilter} onChange={e=>setSupportPriorityFilter(e.target.value)}>
+    <option value="all">{tr('All priorities','Toutes les priorités')}</option>
+    <option value="urgent">{tr('Urgent','Urgente')}</option>
+    <option value="high">{tr('High','Élevée')}</option>
+    <option value="normal">{tr('Normal','Normale')}</option>
+    <option value="low">{tr('Low','Faible')}</option>
+   </select>
+  </label>
+  <label>{tr('Sort tickets','Trier les demandes')}
+   <select value={supportSort} onChange={e=>setSupportSort(e.target.value)}>
+    <option value="priority">{tr('Highest priority first','Priorité la plus élevée')}</option>
+    <option value="newest">{tr('Newest first','Plus récentes en premier')}</option>
+    <option value="oldest">{tr('Oldest first','Plus anciennes en premier')}</option>
+   </select>
+  </label>
   <span className="mykioo-filter-count">{filteredTickets.length} / {(rows.support||[]).length} {tr('tickets shown','demandes affichées')}</span>
-  <button type="button" onClick={()=>{setSupportSearch('');setSupportStatusFilter('all');setSupportIssueFilter('all')}}>{tr('Clear filters','Effacer les filtres')}</button>
+  <button type="button" onClick={()=>{setSupportSearch('');setSupportStatusFilter('all');setSupportIssueFilter('all');setSupportPriorityFilter('all');setSupportSort('priority')}}>{tr('Clear filters','Effacer les filtres')}</button>
  </div>
  {loading?<div className="admin-empty">{tr('Loading requests…','Chargement des demandes…')}</div>:
  (rows.support||[]).length===0?<div className="admin-empty"><Headphones size={28}/><strong>{tr('No support requests yet','Aucune demande d’assistance')}</strong></div>:
@@ -183,13 +222,18 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  <div className="admin-support-list">{filteredTickets.map(ticket=>{
    const requester=(rows.members||[]).find(m=>m.user_id===ticket.member_id);
    return <article key={ticket.id} className="admin-support-ticket">
-    <div className="admin-support-ticket-top"><label className="mykioo-ticket-select"><input type="checkbox" checked={selectedTicketIds.includes(ticket.id)} onChange={e=>setSelectedTicketIds(old=>e.target.checked?[...old,ticket.id]:old.filter(id=>id!==ticket.id))} aria-label={tr('Select ticket','Sélectionner la demande')+' '+ticket.subject}/></label><div><strong>{ticket.subject}</strong><small>{requester?.display_name||requester?.email||tr('Member','Membre')} · {new Date(ticket.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>{unreadCounts[ticket.id]>0&&<span className="mykioo-unread-dot">{unreadCounts[ticket.id]}</span>}<span className="mykioo-ticket-status">{tr(({open:'Open',in_progress:'In progress',resolved:'Resolved',closed:'Closed'})[ticket.status]||ticket.status,({open:'Ouvert',in_progress:'En cours',resolved:'Résolu',closed:'Fermé'})[ticket.status]||ticket.status)}</span></div>
+    <div className="admin-support-ticket-top"><label className="mykioo-ticket-select"><input type="checkbox" checked={selectedTicketIds.includes(ticket.id)} onChange={e=>setSelectedTicketIds(old=>e.target.checked?[...old,ticket.id]:old.filter(id=>id!==ticket.id))} aria-label={tr('Select ticket','Sélectionner la demande')+' '+ticket.subject}/></label><div><strong>{ticket.subject}</strong><small>{requester?.display_name||requester?.email||tr('Member','Membre')} · {new Date(ticket.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>{unreadCounts[ticket.id]>0&&<span className="mykioo-unread-dot">{unreadCounts[ticket.id]}</span>}<span className={'mykioo-priority-badge priority-'+(ticket.priority||'normal')}>{tr(({low:'Low',normal:'Normal',high:'High',urgent:'Urgent'})[ticket.priority]||'Normal',({low:'Faible',normal:'Normale',high:'Élevée',urgent:'Urgente'})[ticket.priority]||'Normale')}</span><span className="mykioo-ticket-status">{tr(({open:'Open',in_progress:'In progress',resolved:'Resolved',closed:'Closed'})[ticket.status]||ticket.status,({open:'Ouvert',in_progress:'En cours',resolved:'Résolu',closed:'Fermé'})[ticket.status]||ticket.status)}</span></div>
     <p>{ticket.message}</p>
     <div className="admin-support-ticket-actions"><label htmlFor={'ticket-status-'+ticket.id}>{tr('Status','Statut')}</label><select id={'ticket-status-'+ticket.id} value={ticket.status} disabled={saving} onChange={e=>updateTicket(ticket,e.target.value)}>
       <option value="open">{tr('Open','Ouvert')}</option>
       <option value="in_progress">{tr('In progress','En cours')}</option>
       <option value="resolved">{tr('Resolved','Résolu')}</option>
       <option value="closed">{tr('Closed','Fermé')}</option>
+    </select><label htmlFor={'ticket-priority-'+ticket.id}>{tr('Priority','Priorité')}</label><select id={'ticket-priority-'+ticket.id} value={ticket.priority||'normal'} disabled={saving} onChange={e=>updatePriority(ticket,e.target.value)}>
+      <option value="low">{tr('Low','Faible')}</option>
+      <option value="normal">{tr('Normal','Normale')}</option>
+      <option value="high">{tr('High','Élevée')}</option>
+      <option value="urgent">{tr('Urgent','Urgente')}</option>
     </select></div>{ticket.main_issue_id&&<p className="mykioo-owner-linked-indicator">{tr('Linked to main issue','Associé au problème principal')} · {ticket.main_issue_id.slice(0,8)}</p>}<SupportThread ticket={ticket} userId={user.id} language={language} owner unread={unreadCounts[ticket.id]||0} onRead={syncUnread}/>
    </article>
  })}</div>}
