@@ -1,5 +1,5 @@
 import React,{useEffect,useState,useCallback} from 'react';
-import {Bell,CheckCheck,LifeBuoy,CalendarDays,AlertTriangle} from 'lucide-react';
+import {Bell,CheckCheck,LifeBuoy,CalendarDays,AlertTriangle,ClipboardList,MessageSquarePlus} from 'lucide-react';
 import {supabase} from './supabase';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-notifications';
@@ -42,7 +42,7 @@ export function useNotifications(userId){
  },[sync]);
  return {notifications:items,unread:items.filter(x=>!x.read_at).length,markRead};
 }
-const icons={support_reply:LifeBuoy,subscription_update:CalendarDays,service_alert:AlertTriangle};
+const icons={support_reply:LifeBuoy,support_ticket:MessageSquarePlus,subscription_update:CalendarDays,subscription_request:ClipboardList,service_alert:AlertTriangle};
 export function NotificationCenter({items=[],language='en',owner=false,onSelect,markRead,compact=false}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [error,setError]=useState('');
