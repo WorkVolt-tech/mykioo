@@ -134,3 +134,12 @@
 .mykioo-profile-error{font-size:12px;color:#f0afa7;margin:0}
 .mykioo-profile-success{font-size:12px;color:#b7e7bd;margin:0}
 @media(max-width:580px){.mykioo-profile-card{padding:17px}.mykioo-profile-head h2{font-size:20px}}
+
+
+/* Single account setup form: nickname + password, one submission */
+.mykioo-setup-form{margin:18px 0 14px;gap:12px}
+.mykioo-setup-form .member-name-hint{margin:0 0 2px!important}
+.mykioo-setup-form label:not(:first-child){margin-top:9px}
+.mykioo-setup-form input:disabled{opacity:.65}
+.mykioo-setup-form button[type="submit"]{margin-top:5px}
+.mykioo-setup-error{font-size:12px!important;line-height:1.55!important;color:#f5afa9!important;text-align:left;margin:2px 0!important}
