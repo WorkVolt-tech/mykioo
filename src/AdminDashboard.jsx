@@ -1,3 +1,4 @@
+import SupportDashboard from './SupportDashboard';
 import {ReplyTemplateEditor} from './ReplyTemplates';
 import {OwnerIssuePanel} from './SupportIssues';
 import {useNotifications,NotificationCenter} from './NotificationCenter';
@@ -15,7 +16,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  const [serviceAlerts,setServiceAlerts]=useServiceAlerts();
  const fr=language==='fr';
  const tr=(english,french)=>fr?french:english;
- const [tab,setTab]=useState('overview'),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [selectedTicketIds,setSelectedTicketIds]=useState([]);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all'),[supportPriorityFilter,setSupportPriorityFilter]=useState('all'),[supportCategoryFilter,setSupportCategoryFilter]=useState('all'),[supportSort,setSupportSort]=useState('priority');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
+ const [tab,setTab]=useState('overview'),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [selectedTicketIds,setSelectedTicketIds]=useState([]);const [focusedTicket,setFocusedTicket]=useState(null);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all'),[supportPriorityFilter,setSupportPriorityFilter]=useState('all'),[supportCategoryFilter,setSupportCategoryFilter]=useState('all'),[supportSort,setSupportSort]=useState('priority');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
  async function refresh({silent=false}={}){
   if(!silent){setLoading(true);setError('')}
   try{
@@ -164,10 +165,11 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
   };
  },[user.id]);
  const {counts:unreadCounts,total:unreadTotal,sync:syncUnread}=useSupportUnread(user.id,rows.support||[]);
- const filteredTickets=(rows.support||[]).filter(ticket=>{
+ const allVisibleTickets=[...(rows.support||[]),...(focusedTicket&&!(rows.support||[]).some(x=>x.id===focusedTicket.id)?[focusedTicket]:[])];
+ const filteredTickets=allVisibleTickets.filter(ticket=>{
   const member=(rows.members||[]).find(m=>m.user_id===ticket.member_id);
   const term=supportSearch.trim().toLocaleLowerCase();
-  if(term&&![ticket.subject,ticket.message,member?.display_name,member?.email].some(value=>(value||'').toLocaleLowerCase().includes(term)))return false;
+  if(term&&![ticket.id,ticket.subject,ticket.message,member?.display_name,member?.email].some(value=>(value||'').toLocaleLowerCase().includes(term)))return false;
   if(supportStatusFilter!=='all'&&ticket.status!==supportStatusFilter)return false;
   if(supportPriorityFilter!=='all'&&ticket.priority!==supportPriorityFilter)return false;
   if(supportCategoryFilter!=='all'&&(ticket.category||'other')!==supportCategoryFilter)return false;
@@ -181,6 +183,19 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
   return (ranks[b.priority]||2)-(ranks[a.priority]||2)||new Date(a.created_at)-new Date(b.created_at);
  });
 
+ async function viewSupportTicket(ticket){
+  setTab('support');
+  setSupportSearch(ticket.id);
+  setSupportStatusFilter('all');
+  setSupportIssueFilter('all');
+  setSupportPriorityFilter('all');
+  setSupportCategoryFilter('all');
+  if(!(rows.support||[]).some(t=>t.id===ticket.id)){
+    const {data,error}=await supabase.from('mykioo_support_tickets').select('*').eq('id',ticket.id).maybeSingle();
+    if(!error&&data)setFocusedTicket(data);
+  }
+  window.requestAnimationFrame(()=>document.getElementById('mykioo-support-ticket-results')?.scrollIntoView({behavior:'smooth',block:'start'}));
+ }
  const cards=[[tr('Total members','Total des membres'),rows.members?.length||0,Users],[tr('Pending approval','En attente d’approbation'),rows.members?.filter(m=>m.status==='pending').length||0,Clock3],[tr('Active subscriptions','Abonnements actifs'),rows.subscriptions?.filter(s=>s.status==='active').length||0,CalendarDays],[tr('Open support tickets','Demandes d’assistance ouvertes'),rows.support?.filter(t=>t.status==='open').length||0,Headphones]];
  const columns={members:['display_name','email','status','role','created_at'],invitations:['email','status','expires_at','created_at'],subscriptions:['member_id','status','starts_at','expires_at'],orders:['member_id','status','total_amount','created_at'],support:['subject','status','member_id','created_at']};
  const list=rows[tab]||[];
@@ -188,15 +203,16 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  <aside className="admin-side"><img className="admin-logo" src={logo} onError={e=>{if(fallbackLogo&&e.currentTarget.src!==fallbackLogo)e.currentTarget.src=fallbackLogo}} alt="MYKIOO"/><div className="admin-side-label">{tr("OWNER CONTROL CENTER","CENTRE DE GESTION")}</div><nav>{tabs.map(({id,name,icon:Icon})=><button key={id} className={'admin-nav '+(tab===id?'active':'')} onClick={()=>setTab(id)}><Icon size={18}/>{name==='Support'&&unreadTotal>0&&<span className="mykioo-unread-dot">{unreadTotal>99?'99+':unreadTotal}</span>}{name==='Notifications'&&notificationUnread>0&&<span className="mykioo-unread-dot">{notificationUnread>99?'99+':notificationUnread}</span>}{tr(name,({Overview:"Vue d’ensemble",Members:"Membres",Invitations:"Invitations",Subscriptions:"Abonnements",Orders:"Commandes",Support:"Assistance",Notifications:"Notifications"})[name])}</button>)}</nav><div className="admin-bottom"><div className="admin-owner"><ShieldCheck size={16}/> {tr("Owner account","Compte propriétaire")}</div><button className="admin-nav" onClick={logout}><LogOut size={18}/> {tr("Sign out","Déconnexion")}</button></div></aside>
  <main className="admin-main"><header className="admin-bar"><div><span className="admin-tag">{tr("PRIVATE ADMINISTRATION","ADMINISTRATION PRIVÉE")}</span><h1>{tr(tabs.find(t=>t.id===tab)?.name,({overview:'Vue d’ensemble',members:'Membres',invitations:'Invitations',subscriptions:'Abonnements',orders:'Commandes',support:'Assistance',notifications:'Notifications'})[tab])}</h1></div><div className="admin-account"><button type="button" className="mykioo-bell-button" onClick={()=>setTab('notifications')} aria-label={tr('Open notifications','Ouvrir les notifications')}><Bell size={18}/>{notificationUnread>0&&<span className="mykioo-unread-dot">{notificationUnread>99?'99+':notificationUnread}</span>}</button><span>{user.email}</span><div className="mykioo-language-switch" role="group" aria-label="Website language"><button type="button" className={fr?'':'selected'} aria-pressed={!fr} onClick={()=>onLanguageChange('en')}>EN</button><button type="button" className={fr?'selected':''} aria-pressed={fr} onClick={()=>onLanguageChange('fr')}>FR</button></div><button onClick={refresh} title="Refresh data" aria-label="Refresh data"><RefreshCw size={19}/></button></div></header>
  {error&&<div className="admin-error" role="alert"><AlertCircle size={18}/>{error}</div>}{notice&&<div className="admin-success" role="status"><CheckCircle2 size={18}/>{notice}</div>}
- {tab==='overview'&&<><NotificationCenter compact owner items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>setTab(section)}/><ServiceAlertBanner alerts={serviceAlerts} language={language} onOpen={()=>setTab('support')}/><ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner onOpen={()=>setTab('subscriptions')}/><p className="admin-description">{tr("Welcome to your MYKIOO management space. All information comes from your private Supabase project.","Bienvenue dans votre espace de gestion MYKIOO. Toutes les informations proviennent de votre projet Supabase privé.")}</p><div className="admin-stats">{cards.map(([label,n,Icon])=><div className="admin-stat" key={label}><Icon size={22}/><small>{label}</small><strong>{loading?'…':n}</strong></div>)}</div><div className="admin-info"><CheckCircle2 size={22}/><div><strong>{tr("Owner access is active","Accès propriétaire activé")}</strong><p>{tr("Your account is approved. You can now invite members and manage approval requests from the Members and Invitations sections.","Votre compte est approuvé. Vous pouvez inviter des membres et gérer les demandes d’approbation dans les sections Membres et Invitations.")}</p></div></div></>}
+ {tab==='overview'&&<><SupportDashboard compact language={language} onOpenSupport={()=>setTab('support')}/><NotificationCenter compact owner items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>setTab(section)}/><ServiceAlertBanner alerts={serviceAlerts} language={language} onOpen={()=>setTab('support')}/><ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner onOpen={()=>setTab('subscriptions')}/><p className="admin-description">{tr("Welcome to your MYKIOO management space. All information comes from your private Supabase project.","Bienvenue dans votre espace de gestion MYKIOO. Toutes les informations proviennent de votre projet Supabase privé.")}</p><div className="admin-stats">{cards.map(([label,n,Icon])=><div className="admin-stat" key={label}><Icon size={22}/><small>{label}</small><strong>{loading?'…':n}</strong></div>)}</div><div className="admin-info"><CheckCircle2 size={22}/><div><strong>{tr("Owner access is active","Accès propriétaire activé")}</strong><p>{tr("Your account is approved. You can now invite members and manage approval requests from the Members and Invitations sections.","Votre compte est approuvé. Vous pouvez inviter des membres et gérer les demandes d’approbation dans les sections Membres et Invitations.")}</p></div></div></>}
   {tab==='subscriptions'&&<ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner/>}{tab==='subscriptions'&&<SubscriptionManager members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>}
  {tab==='notifications'&&<NotificationCenter owner items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>setTab(section)}/>}{tab==='support'&&<section className="admin-support-section">
+ <SupportDashboard language={language} onViewTicket={viewSupportTicket}/>
  <ReplyTemplateEditor language={language}/>
  <OwnerIssuePanel tickets={rows.support||[]} language={language} selected={selectedTicketIds} setSelected={setSelectedTicketIds} onRefresh={()=>refresh({silent:true})}/>
  <ServiceAlertEditor alerts={serviceAlerts} subscriptions={rows.subscriptions||[]} language={language} onRefresh={async()=>{const {data,error}=await supabase.from('mykioo_service_alerts').select('*').order('created_at',{ascending:false}).limit(100);if(!error)setServiceAlerts(data||[])}}/>
  <ServiceAlertHistory alerts={serviceAlerts} language={language}/>
  <p className="admin-description">{tr('Review support requests and update their status.','Consultez les demandes d’assistance et modifiez leur statut.')}</p>
- <div className="mykioo-ticket-filters">
+ <div id="mykioo-support-ticket-results" className="mykioo-ticket-filters">
   <label>{tr('Search tickets or members','Rechercher des demandes ou des membres')}
    <input type="search" value={supportSearch} onChange={e=>setSupportSearch(e.target.value)} placeholder={tr('Subject, message, name, or email','Sujet, message, nom ou courriel')}/>
   </label>
@@ -243,8 +259,8 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     <option value="oldest">{tr('Oldest first','Plus anciennes en premier')}</option>
    </select>
   </label>
-  <span className="mykioo-filter-count">{filteredTickets.length} / {(rows.support||[]).length} {tr('tickets shown','demandes affichées')}</span>
-  <button type="button" onClick={()=>{setSupportSearch('');setSupportStatusFilter('all');setSupportIssueFilter('all');setSupportPriorityFilter('all');setSupportCategoryFilter('all');setSupportSort('priority')}}>{tr('Clear filters','Effacer les filtres')}</button>
+  <span className="mykioo-filter-count">{filteredTickets.length} / {allVisibleTickets.length} {tr('tickets shown','demandes affichées')}</span>
+  <button type="button" onClick={()=>{setSupportSearch('');setSupportStatusFilter('all');setSupportIssueFilter('all');setSupportPriorityFilter('all');setSupportCategoryFilter('all');setSupportSort('priority');setFocusedTicket(null)}}>{tr('Clear filters','Effacer les filtres')}</button>
  </div>
  {loading?<div className="admin-empty">{tr('Loading requests…','Chargement des demandes…')}</div>:
  (rows.support||[]).length===0?<div className="admin-empty"><Headphones size={28}/><strong>{tr('No support requests yet','Aucune demande d’assistance')}</strong></div>:
