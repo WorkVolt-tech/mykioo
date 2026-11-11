@@ -12,7 +12,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  async function refresh({silent=false}={}){
   if(!silent){setLoading(true);setError('')}
   try{
-   const collections={members:'mykioo_members',invitations:'mykioo_invitations',subscriptions:'mykioo_subscriptions',orders:'mykioo_orders',support:'mykioo_support_tickets'};
+   const collections={members:'mykioo_members',invitations:'mykioo_invitations',subscriptions:'mykioo_subscriptions',orders:'mykioo_orders',support:'mykioo_support_tickets',subscription_requests:'mykioo_subscription_requests'};
    const all=await Promise.all(Object.entries(collections).map(async ([key,table])=>{
     const {data,error}=await supabase.from(table).select('*').order('created_at',{ascending:false}).limit(100);
     if(error)throw Error(table+': '+error.message);
@@ -105,7 +105,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    }finally{running=false}
   }
   refresh();
-  const tables=['mykioo_members','mykioo_invitations','mykioo_membership_history','mykioo_plans','mykioo_subscriptions','mykioo_orders','mykioo_support_tickets','mykioo_audit_logs'];
+  const tables=['mykioo_members','mykioo_invitations','mykioo_membership_history','mykioo_plans','mykioo_subscriptions','mykioo_orders','mykioo_support_tickets','mykioo_subscription_requests','mykioo_audit_logs'];
   let channel=supabase.channel('mykioo-admin-live-'+user.id);
   tables.forEach(table=>{channel=channel.on('postgres_changes',{event:'*',schema:'public',table},sync)});
   channel.subscribe(status=>{if(status==='SUBSCRIBED')sync()});
@@ -132,7 +132,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  <main className="admin-main"><header className="admin-bar"><div><span className="admin-tag">{tr("PRIVATE ADMINISTRATION","ADMINISTRATION PRIVÉE")}</span><h1>{tr(tabs.find(t=>t.id===tab)?.name,({overview:'Vue d’ensemble',members:'Membres',invitations:'Invitations',subscriptions:'Abonnements',orders:'Commandes',support:'Assistance'})[tab])}</h1></div><div className="admin-account"><span>{user.email}</span><div className="mykioo-language-switch" role="group" aria-label="Website language"><button type="button" className={fr?'':'selected'} aria-pressed={!fr} onClick={()=>onLanguageChange('en')}>EN</button><button type="button" className={fr?'selected':''} aria-pressed={fr} onClick={()=>onLanguageChange('fr')}>FR</button></div><button onClick={refresh} title="Refresh data" aria-label="Refresh data"><RefreshCw size={19}/></button></div></header>
  {error&&<div className="admin-error" role="alert"><AlertCircle size={18}/>{error}</div>}{notice&&<div className="admin-success" role="status"><CheckCircle2 size={18}/>{notice}</div>}
  {tab==='overview'&&<><p className="admin-description">{tr("Welcome to your MYKIOO management space. All information comes from your private Supabase project.","Bienvenue dans votre espace de gestion MYKIOO. Toutes les informations proviennent de votre projet Supabase privé.")}</p><div className="admin-stats">{cards.map(([label,n,Icon])=><div className="admin-stat" key={label}><Icon size={22}/><small>{label}</small><strong>{loading?'…':n}</strong></div>)}</div><div className="admin-info"><CheckCircle2 size={22}/><div><strong>{tr("Owner access is active","Accès propriétaire activé")}</strong><p>{tr("Your account is approved. You can now invite members and manage approval requests from the Members and Invitations sections.","Votre compte est approuvé. Vous pouvez inviter des membres et gérer les demandes d’approbation dans les sections Membres et Invitations.")}</p></div></div></>}
-  {tab==='subscriptions'&&<SubscriptionManager members={rows.members||[]} subscriptions={rows.subscriptions||[]} language={language} onSaved={()=>refresh({silent:true})}/>}
+  {tab==='subscriptions'&&<SubscriptionManager members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>}
  {tab==='support'&&<section className="admin-support-section">
  <p className="admin-description">{tr('Review support requests and update their status.','Consultez les demandes d’assistance et modifiez leur statut.')}</p>
  {loading?<div className="admin-empty">{tr('Loading requests…','Chargement des demandes…')}</div>:
