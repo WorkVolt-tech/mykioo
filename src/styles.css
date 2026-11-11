@@ -239,3 +239,22 @@
 .mykioo-password-open{display:grid;gap:12px}
 .mykioo-password-open code{display:block;padding:15px;border:1px solid #8b7158;border-radius:9px;background:#130f1b;color:#fff;overflow-wrap:anywhere;user-select:text;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:15px}
 .mykioo-credentials-chip{font-size:11px;color:#d9c69d}
+
+
+/* Subscription request workflow */
+.mykioo-request-area{display:grid;gap:22px;margin-top:24px;text-align:left}
+.mykioo-request-area .mykioo-support-card{width:100%;box-sizing:border-box}
+.mykioo-request-completed{font-size:12px;color:#dfc58e!important;font-weight:700}
+.mykioo-sub-requests{margin-bottom:24px;border:1px solid #554160;border-radius:14px;background:#1c1827;padding:23px}
+.mykioo-sub-requests h2{margin:0 0 10px;color:#f6f0f8;font-size:21px}
+.mykioo-sub-requests>p{color:#bdafc9;font-size:13px;line-height:1.65}
+.mykioo-sub-request-row{margin-top:13px;display:flex;align-items:center;gap:15px;flex-wrap:wrap;background:#14111c;border:1px solid #4e3e58;border-radius:12px;padding:17px}
+.mykioo-sub-request-content{display:grid;gap:6px;flex:1;min-width:210px}
+.mykioo-sub-request-content strong{color:#f3eff8;font-size:14px;overflow-wrap:anywhere}
+.mykioo-sub-request-content span,.mykioo-sub-request-content small{color:#bcaec7;font-size:12px}
+.mykioo-sub-request-content p{color:#d3c4da;font-size:12px;margin:5px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.mykioo-sub-request-actions{display:flex;gap:8px;flex-wrap:wrap;width:100%}
+.mykioo-sub-request-actions button,.mykioo-sub-request-row>button{border-radius:8px;padding:10px 13px;border:1px solid #a28357;background:#32263b;color:#efd29e;font-size:12px;font-weight:700;cursor:pointer}
+.mykioo-sub-request-actions button:disabled{opacity:.5;cursor:not-allowed}
+.mykioo-sub-request-actions button:first-child{background:linear-gradient(120deg,#e9cd91,#b6945d);color:#261b2d}
+@media(max-width:650px){.mykioo-sub-requests{padding:15px}.mykioo-sub-request-row{padding:13px}}
