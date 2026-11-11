@@ -116,7 +116,7 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
   <div className="eyebrow">{tr('MYKIOO MEMBERSHIP','ADHÉSION MYKIOO')}</div>
   <h1>{pending?tr('Awaiting approval','En attente d’approbation'):tr('Access restricted','Accès restreint')}</h1>
   <p>{pending?tr('Your account is registered. An administrator must approve your membership before your private dashboard is available.','Votre compte est enregistré. Un administrateur doit approuver votre adhésion avant que votre espace privé soit accessible.'):tr('Your account currently does not have permission to enter the member space. Please contact the administrator.','Votre compte n’a pas actuellement accès à l’espace membre. Veuillez communiquer avec l’administrateur.')}</p>
-  {(!pending||!setupDone)&&null}{(!pending||!setupDone)?null:<div className="hold-user"><Mail size={17}/>{user.email}</div>}
+  {pending&&!setupDone&&<div className="hold-user"><Mail size={17}/>{user.email}</div>}
   {pending&&!setupDone&&<form className="pending-password mykioo-setup-form" onSubmit={saveSetup}>
    <label htmlFor="member-display-name">{tr('What should we call you?','Comment pouvons-nous vous appeler ?')}</label>
    <p className="member-name-hint">{tr('It does not have to be your real name. Choose a nickname or any name you would like us to use.','Il n’est pas nécessaire d’utiliser votre vrai nom. Choisissez un surnom ou le nom par lequel vous souhaitez être appelé(e).')}</p>
