@@ -374,3 +374,16 @@
 .mykioo-linked-issue-updates h4{font-size:13px;color:#f2d9aa;margin:0}
 .mykioo-linked-issue-updates>div{padding:10px;border:1px solid #554560;border-radius:7px;background:#1d1825;display:grid;gap:5px}
 @media(max-width:700px){.mykioo-issue-columns{grid-template-columns:1fr}.mykioo-issue-manager{padding:14px}}
+
+
+/* Support search/filter and issue-wide completion */
+.mykioo-ticket-filters{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin:16px 0 20px;padding:14px;border:1px solid #5a4765;border-radius:12px;background:#231c2b}
+.mykioo-ticket-filters label{display:flex;flex-direction:column;gap:7px;color:#e8cb99;font-size:12px;font-weight:700;min-width:165px;flex:1}
+.mykioo-ticket-filters label:first-child{min-width:230px;flex:2}
+.mykioo-ticket-filters input,.mykioo-ticket-filters select{width:100%;box-sizing:border-box;border:1px solid #685572;border-radius:8px;padding:11px;background:#191523;color:#f6edf9;font:inherit}
+.mykioo-ticket-filters input:focus,.mykioo-ticket-filters select:focus{outline:2px solid #e1ba82}
+.mykioo-ticket-filters>button{border:1px solid #a4865d;border-radius:8px;padding:11px;color:#e9cb97;background:#34283c;cursor:pointer;font-size:12px;font-weight:700}
+.mykioo-filter-count{font-size:12px;color:#c9b9d1;white-space:nowrap;padding-bottom:10px}
+.mykioo-issue-form>.mykioo-issue-resolve-all{border-color:#a6b68d;color:#e1eecf;background:#314032}
+.mykioo-issue-form>small{font-size:11px;color:#c1b0ca;line-height:1.6}
+@media(max-width:640px){.mykioo-ticket-filters label,.mykioo-ticket-filters label:first-child{min-width:100%;flex:none}.mykioo-filter-count{width:100%}}
