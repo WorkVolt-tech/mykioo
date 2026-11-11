@@ -42,7 +42,7 @@ export function useNotifications(userId){
  },[sync]);
  return {notifications:items,unread:items.filter(x=>!x.read_at).length,markRead};
 }
-const icons={support_reply:LifeBuoy,support_ticket:MessageSquarePlus,subscription_update:CalendarDays,subscription_request:ClipboardList,service_alert:AlertTriangle};
+const icons={support_reply:LifeBuoy,support_ticket:MessageSquarePlus,support_completed:LifeBuoy,support_issue_update:AlertTriangle,subscription_update:CalendarDays,subscription_request:ClipboardList,service_alert:AlertTriangle};
 export function NotificationCenter({items=[],language='en',owner=false,onSelect,markRead,compact=false}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [error,setError]=useState('');
