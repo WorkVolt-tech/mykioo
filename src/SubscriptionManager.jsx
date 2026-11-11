@@ -77,9 +77,9 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     </select></label>
     <label>{tr('Service / package name','Service / nom du forfait')}<input required maxLength={80} value={form.service_name} onChange={e=>update('service_name',e.target.value)} placeholder={tr('e.g. Living room service','ex. Service du salon')}/></label>
     <label>{tr('Device or location','Appareil ou emplacement')}<input maxLength={80} value={form.device_label} onChange={e=>update('device_label',e.target.value)} placeholder={tr('e.g. Bedroom TV, phone','ex. Télé du salon, téléphone')}/></label>
-    <label>{tr('Service login username','Identifiant du service')}<input maxLength={160} autoComplete="off" value={form.service_username} onChange={e=>update('service_username',e.target.value)} placeholder={tr('Username / login ID','Nom d’utilisateur / identifiant')}/></label>
+    <label>{tr('Service login username','Identifiant du service')}<input required={Boolean(form.request_id)} maxLength={160} autoComplete="off" value={form.service_username} onChange={e=>update('service_username',e.target.value)} placeholder={tr('Username / login ID','Nom d’utilisateur / identifiant')}/></label>
     <label>{form.id?tr('Replace service password (leave blank to keep)','Remplacer le mot de passe du service (laisser vide pour conserver)'):tr('Service password','Mot de passe du service')}
-      <input type="password" autoComplete="new-password" maxLength={256} value={form.service_password} onChange={e=>update('service_password',e.target.value)}
+      <input type="password" required={Boolean(form.request_id)} autoComplete="new-password" maxLength={256} value={form.service_password} onChange={e=>update('service_password',e.target.value)}
        placeholder={tr('Encrypted when saved','Chiffré lors de l’enregistrement')}/></label>
     <label>{tr('Provider reference (optional)','Référence du fournisseur (facultatif)')}<input maxLength={160} value={form.supplier_reference} onChange={e=>update('supplier_reference',e.target.value)}/></label>
     <label>{tr('Status','Statut')}<select value={form.status} onChange={e=>update('status',e.target.value)}>
