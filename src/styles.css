@@ -197,3 +197,30 @@
 .mykioo-thread-form textarea:focus{outline:2px solid #e5c282}
 .mykioo-thread-form button{align-self:flex-start;background:linear-gradient(120deg,#e9c88b,#b99158);color:#241b29;border:0;border-radius:8px;padding:11px 16px;font-weight:700;cursor:pointer}
 .mykioo-thread-form button:disabled{opacity:.5;cursor:not-allowed}
+
+
+/* Unread support replies */
+.mykioo-unread-dot{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;box-sizing:border-box;padding:0 5px;border-radius:99px;background:#d6ae73;color:#251929;font-size:10px;font-weight:900;line-height:1;vertical-align:middle;margin-left:7px}
+.mykioo-bell-wrap{position:relative;display:inline-flex;align-items:center}
+.mykioo-bell-wrap .mykioo-unread-dot{position:absolute;top:-13px;right:-14px}
+.mykioo-thread-toggle .mykioo-unread-dot{margin-left:10px}
+.mykioo-ticket-heading .mykioo-unread-dot{margin-left:auto}
+.admin-support-ticket-top .mykioo-unread-dot{margin-left:auto}
+.mykioo-sub-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:22px}
+.mykioo-sub-form label{display:flex;flex-direction:column;gap:7px;color:#e4c990;font-size:12px;font-weight:700}
+.mykioo-sub-form input,.mykioo-sub-form select{border:1px solid #5a4764;border-radius:8px;background:#282134;color:#f6eef9;padding:12px;font:inherit;min-width:0;width:100%;box-sizing:border-box}
+.mykioo-sub-form input:focus,.mykioo-sub-form select:focus{outline:2px solid #d5b27d}
+.mykioo-sub-note,.mykioo-sub-actions,.mykioo-sub-form>.mykioo-profile-error,.mykioo-sub-form>.mykioo-profile-success{grid-column:1/-1}
+.mykioo-sub-note{color:#b7aabe;font-size:12px!important;margin:0!important}
+.mykioo-sub-actions{display:flex;gap:10px;flex-wrap:wrap}
+.mykioo-sub-list{margin-top:24px}
+.mykioo-sub-list h2{font-size:20px}
+.mykioo-sub-item{display:flex;align-items:center;justify-content:space-between;gap:15px;background:#1d1927;border:1px solid #55435c;border-radius:12px;padding:16px;margin:12px 0}
+.mykioo-sub-item>div{display:grid;gap:7px;min-width:0}
+.mykioo-sub-item>div strong{font-size:14px;color:#f8f2fc;overflow-wrap:anywhere}
+.mykioo-sub-item>div span,.mykioo-sub-item small{color:#bcb0c6;font-size:12px;overflow-wrap:anywhere}
+.mykioo-member-sub{margin:15px 0;text-align:left;border:1px solid #514059;border-radius:10px;background:#1b1728;padding:16px;display:flex;flex-direction:column;gap:9px}
+.mykioo-member-sub>strong{font-size:17px;color:#f5e4ff}
+.mykioo-member-sub>.mykioo-ticket-status{align-self:flex-start}
+.mykioo-member-sub p{font-size:13px;color:#c6b8ce;margin:0;overflow-wrap:anywhere}
+@media(max-width:630px){.mykioo-sub-form{grid-template-columns:1fr}.mykioo-sub-item{flex-wrap:wrap}}
