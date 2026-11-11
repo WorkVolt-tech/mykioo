@@ -278,3 +278,40 @@
 .mykioo-expiry-alerts>button{justify-self:start;border-radius:8px;background:#dbb57d;color:#221a2a;padding:11px 16px;font-size:12px;font-weight:700;border:0;cursor:pointer}
 .mykioo-expiry-alerts>small{font-size:12px;color:#c5b4c6}
 @media(max-width:580px){.mykioo-expiry-alerts{padding:15px}.mykioo-expiry-alert{flex-wrap:wrap}.mykioo-expiry-count{margin-left:27px}}
+
+
+/* Service notices, outage banners, and live incident history */
+.mykioo-alert-banner{background:linear-gradient(120deg,#392829,#241c29);border:1px solid #c28a5b;color:#f5e5d1;border-radius:13px;padding:19px;margin-bottom:21px;display:grid;gap:12px}
+.mykioo-alert-banner-heading{display:flex;align-items:center;gap:10px;color:#f4c18e}
+.mykioo-alert-banner-entry{padding:11px 13px;border-radius:9px;background:#201920;border:1px solid #795943}
+.mykioo-alert-banner-entry>strong{font-size:14px;color:#fff1dc}
+.mykioo-alert-banner-entry p{font-size:13px;color:#efddd9;line-height:1.6;margin:6px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.mykioo-alert-banner-entry small{font-size:11px;color:#e6c295}
+.mykioo-alert-banner>button{justify-self:start;border:1px solid #bb986a;border-radius:8px;background:#e5bc86;color:#2a1e2c;font-weight:700;padding:10px 14px;cursor:pointer}
+.mykioo-alert-history{margin-bottom:20px}
+.mykioo-alert-history-list{display:grid;gap:11px;margin-top:16px}
+.mykioo-alert-history-card{border:1px solid #493e51;background:#1b1726;padding:15px;border-radius:10px;display:grid;gap:8px}
+.mykioo-alert-history-card.active{border-color:#a17b4d}
+.mykioo-alert-history-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between}
+.mykioo-alert-history-card strong{font-size:14px;color:#f5eaf8}
+.mykioo-alert-history-card p{font-size:12px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;color:#ddcfdf;margin:0}
+.mykioo-alert-history-card small{font-size:11px;color:#bbacc6}
+.mykioo-alert-all-clear{display:flex;align-items:center;gap:10px;color:#cfdbbb;font-size:13px;margin-top:14px}
+.mykioo-alert-editor{border:1px solid #765e43;border-radius:14px;background:#231c29;padding:22px;margin-bottom:22px;display:grid;gap:13px}
+.mykioo-alert-editor h2{font-size:20px;color:#ead0a3;margin:0}
+.mykioo-alert-editor>p{font-size:12px;line-height:1.65;color:#c5b5c8;margin:0}
+.mykioo-alert-editor-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.mykioo-alert-editor-form label{display:grid;gap:7px;color:#edcc9c;font-weight:700;font-size:12px}
+.mykioo-alert-editor-form label:has(textarea){grid-column:1/-1}
+.mykioo-alert-editor-form input,.mykioo-alert-editor-form select,.mykioo-alert-editor-form textarea{width:100%;min-width:0;box-sizing:border-box;padding:11px 12px;border:1px solid #5f4f6b;border-radius:8px;color:#f8f0fd;background:#1b1826;font:inherit}
+.mykioo-alert-editor-form textarea{resize:vertical}
+.mykioo-alert-editor-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:9px}
+.mykioo-alert-editor-actions button,.mykioo-alert-admin-row button{border:1px solid #b18b5c;border-radius:8px;background:#332738;color:#e8c695;padding:10px 13px;font-weight:700;cursor:pointer}
+.mykioo-alert-editor-actions button:first-child{background:#e4bd86;color:#261a2b}
+.mykioo-alert-admin-list{display:grid;gap:10px}
+.mykioo-alert-admin-list h3{font-size:16px;margin:5px 0;color:#f1deee}
+.mykioo-alert-admin-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#1b1724;border:1px solid #55435d;padding:13px;border-radius:9px}
+.mykioo-alert-admin-row>div{flex:1;display:grid;gap:5px;min-width:190px}
+.mykioo-alert-admin-row strong{font-size:13px;color:#f3ebf7}
+.mykioo-alert-admin-row small{font-size:11px;color:#bfb0c8}
+@media(max-width:680px){.mykioo-alert-editor{padding:15px}.mykioo-alert-editor-form{grid-template-columns:1fr}}
