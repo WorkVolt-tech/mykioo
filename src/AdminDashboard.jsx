@@ -6,10 +6,24 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  const fr=language==='fr';
  const tr=(english,french)=>fr?french:english;
  const [tab,setTab]=useState('overview'),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
- async function refresh(){setLoading(true);setError('');try{
- const collections={members:'mykioo_members',invitations:'mykioo_invitations',subscriptions:'mykioo_subscriptions',orders:'mykioo_orders',support:'mykioo_support_tickets'};
- const all=await Promise.all(Object.entries(collections).map(async ([key,table])=>{const {data,error}=await supabase.from(table).select('*').order('created_at',{ascending:false}).limit(100);if(error)throw Error(table+': '+error.message);return [key,data||[]]}));setRows(Object.fromEntries(all));
- }catch(err){setError('Could not load administration data: '+err.message)}finally{setLoading(false)}}
+ async function refresh({silent=false}={}){
+  if(!silent){setLoading(true);setError('')}
+  try{
+   const collections={members:'mykioo_members',invitations:'mykioo_invitations',subscriptions:'mykioo_subscriptions',orders:'mykioo_orders',support:'mykioo_support_tickets'};
+   const all=await Promise.all(Object.entries(collections).map(async ([key,table])=>{
+    const {data,error}=await supabase.from(table).select('*').order('created_at',{ascending:false}).limit(100);
+    if(error)throw Error(table+': '+error.message);
+    return [key,data||[]];
+   }));
+   setRows(previous=>{
+    const fresh=Object.fromEntries(all);
+    return JSON.stringify(previous)===JSON.stringify(fresh)?previous:fresh;
+   });
+  }catch(err){
+   if(!silent)setError('Could not load administration data: '+err.message);
+   else console.warn('MYKIOO background sync error',err);
+  }finally{if(!silent)setLoading(false)}
+ }
  async function runAction(payload) {
    setSaving(true);setError('');setNotice('');
    try {
@@ -71,7 +85,41 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    document.addEventListener('keydown',onKeyDown);
    return()=>document.removeEventListener('keydown',onKeyDown);
  },[pendingChange,saving]);
- useEffect(()=>{refresh()},[]);
+ useEffect(()=>{
+  if(!supabase)return;
+  let live=true;
+  let running=false;
+  let again=false;
+  async function sync(){
+   if(!live)return;
+   if(running){again=true;return}
+   running=true;
+   try{
+    do{
+      again=false;
+      if(live)await refresh({silent:true});
+    }while(live&&again);
+   }finally{running=false}
+  }
+  refresh();
+  const tables=['mykioo_members','mykioo_invitations','mykioo_membership_history','mykioo_plans','mykioo_subscriptions','mykioo_orders','mykioo_support_tickets','mykioo_audit_logs'];
+  let channel=supabase.channel('mykioo-admin-live-'+user.id);
+  tables.forEach(table=>{channel=channel.on('postgres_changes',{event:'*',schema:'public',table},sync)});
+  channel.subscribe(status=>{if(status==='SUBSCRIBED')sync()});
+  const timer=window.setInterval(()=>{if(document.visibilityState==='visible')sync()},12000);
+  const onResume=()=>{if(document.visibilityState==='visible')sync()};
+  window.addEventListener('focus',onResume);
+  window.addEventListener('online',onResume);
+  document.addEventListener('visibilitychange',onResume);
+  return()=>{
+   live=false;
+   clearInterval(timer);
+   window.removeEventListener('focus',onResume);
+   window.removeEventListener('online',onResume);
+   document.removeEventListener('visibilitychange',onResume);
+   supabase.removeChannel(channel);
+  };
+ },[user.id]);
  const cards=[[tr('Total members','Total des membres'),rows.members?.length||0,Users],[tr('Pending approval','En attente d’approbation'),rows.members?.filter(m=>m.status==='pending').length||0,Clock3],[tr('Active subscriptions','Abonnements actifs'),rows.subscriptions?.filter(s=>s.status==='active').length||0,CalendarDays],[tr('Open support tickets','Demandes d’assistance ouvertes'),rows.support?.filter(t=>t.status==='open').length||0,Headphones]];
  const columns={members:['display_name','email','status','role','created_at'],invitations:['email','status','expires_at','created_at'],subscriptions:['member_id','status','starts_at','expires_at'],orders:['member_id','status','total_amount','created_at'],support:['subject','status','member_id','created_at']};
  const list=rows[tab]||[];
