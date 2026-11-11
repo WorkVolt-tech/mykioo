@@ -387,3 +387,14 @@
 .mykioo-issue-form>.mykioo-issue-resolve-all{border-color:#a6b68d;color:#e1eecf;background:#314032}
 .mykioo-issue-form>small{font-size:11px;color:#c1b0ca;line-height:1.6}
 @media(max-width:640px){.mykioo-ticket-filters label,.mykioo-ticket-filters label:first-child{min-width:100%;flex:none}.mykioo-filter-count{width:100%}}
+
+
+/* Support ticket owner priority levels */
+.mykioo-priority-badge{font-size:10px;line-height:1.3;font-weight:800;padding:5px 9px;border:1px solid transparent;border-radius:99px;white-space:nowrap}
+.mykioo-priority-badge.priority-low{color:#c2c6d5;background:#35343e;border-color:#676779}
+.mykioo-priority-badge.priority-normal{color:#d3e2fa;background:#273b51;border-color:#53749a}
+.mykioo-priority-badge.priority-high{color:#f5ddb0;background:#483a24;border-color:#b69158}
+.mykioo-priority-badge.priority-urgent{color:#ffe2dd;background:#54282d;border-color:#d47769}
+.admin-support-ticket-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.admin-support-ticket-actions label{font-weight:700;font-size:12px}
+.admin-support-ticket-actions select{max-width:180px}
