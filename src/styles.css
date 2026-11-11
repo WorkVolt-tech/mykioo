@@ -315,3 +315,26 @@
 .mykioo-alert-admin-row strong{font-size:13px;color:#f3ebf7}
 .mykioo-alert-admin-row small{font-size:11px;color:#bfb0c8}
 @media(max-width:680px){.mykioo-alert-editor{padding:15px}.mykioo-alert-editor-form{grid-template-columns:1fr}}
+
+
+/* Unified member and owner notification center */
+.mykioo-notification-center{border:1px solid #594663;background:#201a2b;border-radius:14px;padding:21px;margin:17px 0 24px;max-width:980px}
+.mykioo-notification-center.compact{margin-bottom:24px}
+.mykioo-notification-header{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:16px}
+.mykioo-notification-header h2{display:flex;align-items:center;gap:9px;margin:0 0 7px;color:#f3e9f6;font-size:20px}
+.mykioo-notification-header p{margin:0;color:#bbacbf;font-size:12px;line-height:1.55}
+.mykioo-mark-all{display:flex;align-items:center;gap:7px;border:1px solid #a58457;border-radius:8px;background:#322839;color:#e9c895;padding:9px 12px;cursor:pointer;font-weight:700;font-size:12px}
+.mykioo-notification-list{display:grid;gap:8px}
+.mykioo-notification-item{width:100%;display:flex;align-items:flex-start;gap:12px;text-align:left;border:1px solid #51435b;border-radius:9px;background:#1a1624;color:#d1bfdf;padding:14px;cursor:pointer}
+.mykioo-notification-item:hover,.mykioo-notification-item:focus-visible{border-color:#ba965f}
+.mykioo-notification-item.unread{background:#33273a;border-color:#896c56}
+.mykioo-notification-item>svg{flex-shrink:0;color:#d7b27b}
+.mykioo-notification-item>span:nth-child(2){display:grid;gap:6px;min-width:0;flex:1}
+.mykioo-notification-item strong{font-size:13px;color:#f6eefa;overflow-wrap:anywhere}
+.mykioo-notification-item small{font-size:12px;color:#c6b6d0;line-height:1.5;overflow-wrap:anywhere;white-space:pre-wrap}
+.mykioo-notification-item small:last-child{font-size:10px;color:#ac9cb5}
+.mykioo-notification-indicator{display:block!important;flex:none!important;width:9px;height:9px;border-radius:50%;background:#e7bf7d;align-self:center}
+.mykioo-notifications-empty{font-size:13px;color:#c5b9c9}
+.mykioo-bell-button{display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;color:inherit;cursor:pointer;padding:8px;position:relative;border-radius:8px}
+.mykioo-bell-button:hover,.mykioo-bell-button:focus-visible{background:#3a2a43}
+.mykioo-bell-button .mykioo-unread-dot{position:absolute;right:-4px;top:-7px}
