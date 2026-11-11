@@ -21,8 +21,17 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
 }
  function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',request_id:''});setError('');setNotice('')}
  function completeRequest(r){
-   const start=todayLocal();const days=r.contract_days||365;
-   setForm({...blank,request_id:r.id,member_id:r.member_id,service_name:r.service_name,contract_days:days,starts_at:start,expires_at:addDays(start,days),status:'active'});
+   const today=todayLocal(),days=r.contract_days||365;
+   if(r.request_type==='renewal'){
+     const previous=subscriptions.find(sub=>sub.id===r.renewal_subscription_id&&sub.member_id===r.member_id);
+     if(!previous){setError(tr('The original subscription could not be found.','Impossible de trouver l’abonnement initial.'));return}
+     const base=previous.expires_at&&dateOnly(previous.expires_at)>today?dateOnly(previous.expires_at):today;
+     setForm({...blank,id:previous.id,request_id:r.id,member_id:r.member_id,service_name:previous.service_name||r.service_name,
+       service_username:previous.service_username||'',supplier_reference:previous.supplier_reference||'',status:'active',
+       contract_days:days,starts_at:base,expires_at:addDays(base,days)});
+   }else{
+     setForm({...blank,request_id:r.id,member_id:r.member_id,service_name:r.service_name,contract_days:days,starts_at:today,expires_at:addDays(today,days),status:'active'});
+   }
    setNotice('');setError('');
    document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'});
  }
@@ -66,11 +75,11 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
       const client=clients.find(m=>m.user_id===r.member_id);
       const status=fr?({pending:'En attente',in_review:'En cours',fulfilled:'Terminé',declined:'Refusé'})[r.status]:({pending:'Pending',in_review:'In review',fulfilled:'Completed',declined:'Declined'})[r.status];
       return <article key={r.id} className="mykioo-sub-request-row">
-       <div className="mykioo-sub-request-content"><strong>{r.service_name}</strong><span>{client?.display_name||client?.email||tr('Member','Membre')} · {({30:tr('1 month','1 mois'),90:tr('3 months','3 mois'),183:tr('6 months','6 mois'),365:tr('1 year','1 an'),730:tr('2 years','2 ans')})[r.contract_days]||tr('Custom duration','Durée personnalisée')}</span>
+       <div className="mykioo-sub-request-content"><strong>{r.request_type==='renewal'?tr('Renewal: ','Renouvellement : '):''}{r.service_name}</strong><span>{client?.display_name||client?.email||tr('Member','Membre')} · {({30:tr('1 month','1 mois'),90:tr('3 months','3 mois'),183:tr('6 months','6 mois'),365:tr('1 year','1 an'),730:tr('2 years','2 ans')})[r.contract_days]||tr('Custom duration','Durée personnalisée')}</span>
        {r.notes&&<p>{r.notes}</p>}<small>{new Date(r.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>
        <span className="mykioo-ticket-status">{status||r.status}</span>
        {['pending','in_review'].includes(r.status)&&<div className="mykioo-sub-request-actions">
-         <button type="button" disabled={saving} onClick={()=>completeRequest(r)}>{tr('Complete / add login','Terminer / ajouter les accès')}</button>
+         <button type="button" disabled={saving} onClick={()=>completeRequest(r)}>{r.request_type==='renewal'?tr('Approve / extend contract','Approuver / prolonger le contrat'):tr('Complete / add login','Terminer / ajouter les accès')}</button>
          {r.status==='pending'&&<button type="button" disabled={saving} onClick={()=>changeRequest(r,'in_review')}>{tr('Mark reviewing','Marquer en cours')}</button>}
          <button type="button" disabled={saving} onClick={()=>changeRequest(r,'declined')}>{tr('Decline','Refuser')}</button>
        </div>}
@@ -79,8 +88,8 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     })}
   </section>
   <section className="admin-invite" id="mykioo-subscription-editor">
-   <strong>{form.request_id?tr('Complete member request','Terminer la demande du membre'):form.id?tr('Edit subscription','Modifier l’abonnement'):tr('Add a member subscription','Ajouter un abonnement membre')}</strong>
-   <p>{form.request_id?tr("Add the service credentials and dates to complete this request. The member will then see the subscription in their account.","Ajoutez les identifiants et les dates pour terminer cette demande. Le membre verra alors l’abonnement dans son compte."):tr("Each service login can have its own subscription, contract and status.","Chaque identifiant de service peut avoir son propre abonnement, sa durée et son statut.")}</p>
+   <strong>{form.request_id&&form.id?tr('Complete renewal','Terminer le renouvellement'):form.request_id?tr('Complete member request','Terminer la demande du membre'):form.id?tr('Edit subscription','Modifier l’abonnement'):tr('Add a member subscription','Ajouter un abonnement membre')}</strong>
+   <p>{form.request_id&&form.id?tr("This extends the existing subscription and keeps the same login and encrypted password. The expiry date is prefilled and may be adjusted.","Cette opération prolonge l’abonnement existant et conserve ses identifiants et son mot de passe chiffré. La date d’expiration est préremplie et modifiable."):form.request_id?tr("Add the service credentials and dates to complete this request. The member will then see the subscription in their account.","Ajoutez les identifiants et les dates pour terminer cette demande. Le membre verra alors l’abonnement dans son compte."):tr("Each service login can have its own subscription, contract and status.","Chaque identifiant de service peut avoir son propre abonnement, sa durée et son statut.")}</p>
    <form className="mykioo-sub-form" onSubmit={save}>
     <label>{tr('Member','Membre')}<select required value={form.member_id} onChange={e=>update('member_id',e.target.value)}>
      <option value="">{tr('Choose a member','Choisir un membre')}</option>
@@ -88,9 +97,9 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     </select></label>
     <label>{tr('Service / package name','Service / nom du forfait')}<input required maxLength={80} value={form.service_name} onChange={e=>update('service_name',e.target.value)} placeholder={tr('e.g. Premium package','ex. Forfait premium')}/></label>
 
-    <label>{tr('Service login username','Identifiant du service')}<input required={Boolean(form.request_id)} maxLength={160} autoComplete="off" value={form.service_username} onChange={e=>update('service_username',e.target.value)} placeholder={tr('Username / login ID','Nom d’utilisateur / identifiant')}/></label>
+    <label>{tr('Service login username','Identifiant du service')}<input required={Boolean(form.request_id&&!form.id)} maxLength={160} autoComplete="off" value={form.service_username} onChange={e=>update('service_username',e.target.value)} placeholder={tr('Username / login ID','Nom d’utilisateur / identifiant')}/></label>
     <label>{form.id?tr('Replace service password (leave blank to keep)','Remplacer le mot de passe du service (laisser vide pour conserver)'):tr('Service password','Mot de passe du service')}
-      <input type="password" required={Boolean(form.request_id)} autoComplete="new-password" maxLength={256} value={form.service_password} onChange={e=>update('service_password',e.target.value)}
+      <input type="password" required={Boolean(form.request_id&&!form.id)} autoComplete="new-password" maxLength={256} value={form.service_password} onChange={e=>update('service_password',e.target.value)}
        placeholder={tr('Encrypted when saved','Chiffré lors de l’enregistrement')}/></label>
     <label>{tr('Provider reference (optional)','Référence du fournisseur (facultatif)')}<input maxLength={160} value={form.supplier_reference} onChange={e=>update('supplier_reference',e.target.value)}/></label>
     <label>{tr('Status','Statut')}<select value={form.status} onChange={e=>update('status',e.target.value)}>
