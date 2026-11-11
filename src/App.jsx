@@ -109,7 +109,7 @@ return <div className="dashboard"><aside className={'sidebar '+(mobile?'sidebar-
 
  {sub.service_username&&<p>{tr('Service login','Identifiant du service')}: <strong>{sub.service_username}</strong></p>}
  <p>{tr('Start','Début')}: {sub.starts_at?new Date(sub.starts_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA'):'—'} · {tr('Expires','Expire')}: {sub.expires_at?new Date(sub.expires_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA'):'—'}</p><PasswordReveal subscription={sub} language={language}/>
- </article>)}<SubscriptionRequests userId={user.id} language={language}/></section>}{active==='Support'&&<section className="mykioo-support">
+ </article>)}<SubscriptionRequests userId={user.id} subscriptions={subscriptions} language={language}/></section>}{active==='Support'&&<section className="mykioo-support">
  <div className="mykioo-support-card">
   <h2>{tr('Contact MYKIOO support','Contacter l’assistance MYKIOO')}</h2>
   <p>{tr('Tell us what you need help with. Your request is private and visible to the MYKIOO team.','Expliquez-nous votre problème. Votre demande est privée et visible par l’équipe MYKIOO.')}</p>
