@@ -26,7 +26,12 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      });
      const result=await response.json().catch(()=>({}));
      if(!response.ok || !result.ok) throw new Error(result.error||'Action failed.');
-     setNotice(result.message||'Updated successfully.');
+     if(payload.action==='set_status'){
+       if(result.notification==='accepted')setNotice(tr('Member updated. Brevo accepted the notification email.','Membre mis à jour. Brevo a accepté le courriel de notification.'));
+       else if(result.notification==='not_configured')setNotice(tr('Member updated. Email not sent: Brevo API key still needs to be configured in Supabase.','Membre mis à jour. Courriel non envoyé : la clé API Brevo doit être configurée dans Supabase.'));
+       else if(result.notification==='failed')setNotice(tr('Member updated, but the notification email failed. Check Brevo settings.','Membre mis à jour, mais l’envoi du courriel a échoué. Vérifiez les paramètres Brevo.'));
+       else setNotice(tr('Member updated.','Membre mis à jour.'));
+     }else setNotice(result.message||tr('Updated successfully.','Mise à jour effectuée.'));
      if(payload.action==='invite')setEmail('');
      await refresh();
    }catch(e){setError(e.message||'Request failed.')}finally{setSaving(false)}
