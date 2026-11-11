@@ -5,8 +5,9 @@ const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-sup
 
 export default function SupportThread({ticket,userId,language='en',owner=false}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
- const [messages,setMessages]=useState([]),[body,setBody]=useState(''),[loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [expanded,setExpanded]=useState(false);const [messages,setMessages]=useState([]),[body,setBody]=useState(''),[loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{
+  if(!expanded)return;
   let active=true,fetching=false;
   async function reload(){
    if(!active||fetching)return;
@@ -30,7 +31,7 @@ export default function SupportThread({ticket,userId,language='en',owner=false})
   window.addEventListener('online',onResume);
   document.addEventListener('visibilitychange',onResume);
   return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',onResume);window.removeEventListener('online',onResume);document.removeEventListener('visibilitychange',onResume);supabase.removeChannel(channel)};
- },[ticket.id,language]);
+ },[ticket.id,language,expanded]);
  async function send(e){
   e.preventDefault();if(sending||ticket.status==='closed')return;
   const content=body.trim();if(!content||content.length>4000)return;
@@ -51,7 +52,8 @@ export default function SupportThread({ticket,userId,language='en',owner=false})
   finally{setSending(false)}
  }
  return <div className="mykioo-thread">
-  <h4>{tr('Conversation','Conversation')}</h4>
+  <button type="button" className="mykioo-thread-toggle" aria-expanded={expanded} onClick={()=>setExpanded(value=>!value)}>{expanded?tr("Hide conversation","Masquer la conversation"):tr("View conversation / Reply","Voir la conversation / Répondre")}</button>
+  {expanded&&<div className="mykioo-thread-content"><h4>{tr('Conversation','Conversation')}</h4>
   {loading?<p>{tr('Loading messages…','Chargement des messages…')}</p>:
    messages.length===0?<p className="mykioo-thread-empty">{tr('No replies yet. Start the conversation below.','Aucune réponse. Commencez la conversation ci-dessous.')}</p>:
    <div className="mykioo-thread-messages">{messages.map(m=><div key={m.id} className={'mykioo-thread-message '+(m.sender_id===userId?'mine':'theirs')}>
@@ -65,6 +67,6 @@ export default function SupportThread({ticket,userId,language='en',owner=false})
     <button type="submit" disabled={sending||!body.trim()}>{sending?tr('Sending…','Envoi…'):tr('Send reply','Envoyer la réponse')}</button>
    </form>}
   {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
-  {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
+  {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}</div>}
  </div>;
 }
