@@ -109,3 +109,11 @@
 .hero-orb img{display:block;width:100%;max-height:210px;height:auto;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 12px 26px rgba(0,0,0,.23))}
 .admin-logo{height:auto;max-height:105px;object-fit:contain;image-rendering:auto}
 @media(max-width:580px){.hero-orb{width:170px}.hero-orb img{max-height:145px}}
+
+
+/* Preferred name / nickname during invited account setup */
+.member-name-form{margin:15px 0 12px}
+.member-name-hint{font-size:12px!important;line-height:1.6!important;color:#c4b5cf!important;margin:0 0 2px!important;text-align:left}
+.member-field-message{font-size:12px!important;line-height:1.5!important;color:#e5c889!important;margin:2px 0!important;text-align:left}
+.member-name-form input{font-size:14px}
+.member-name-form button:disabled{opacity:.7}
