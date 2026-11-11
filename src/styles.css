@@ -398,3 +398,9 @@
 .admin-support-ticket-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .admin-support-ticket-actions label{font-weight:700;font-size:12px}
 .admin-support-ticket-actions select{max-width:180px}
+
+
+/* Support categories (member + owner) */
+.mykioo-category-badge{display:inline-flex;align-items:center;border:1px solid #6d6486;background:#2b273e;color:#e1d6f0;border-radius:99px;padding:5px 9px;font-size:10px;font-weight:700;white-space:nowrap}
+.mykioo-support-card form select{width:100%;box-sizing:border-box;border:1px solid #66536e;border-radius:9px;padding:12px;background:#201a2a;color:#f6edf9;font:inherit}
+.mykioo-support-card form select:focus{outline:2px solid #e1bc82}
