@@ -1,3 +1,4 @@
+import PasswordReveal from './PasswordReveal';
 import {useSupportUnread} from './useSupportUnread';
 import SupportThread from './SupportThread';
 import React,{useEffect,useState} from 'react';
@@ -106,7 +107,7 @@ return <div className="dashboard"><aside className={'sidebar '+(mobile?'sidebar-
  <span className="mykioo-ticket-status">{tr(({pending:'Pending',active:'Active',expired:'Expired',suspended:'Suspended',cancelled:'Cancelled'})[sub.status]||sub.status,({pending:'En attente',active:'Actif',expired:'Expiré',suspended:'Suspendu',cancelled:'Annulé'})[sub.status]||sub.status)}</span>
  {sub.device_label&&<p>{tr('Device','Appareil')}: {sub.device_label}</p>}
  {sub.service_username&&<p>{tr('Service login','Identifiant du service')}: <strong>{sub.service_username}</strong></p>}
- <p>{tr('Start','Début')}: {sub.starts_at?new Date(sub.starts_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA'):'—'} · {tr('Expires','Expire')}: {sub.expires_at?new Date(sub.expires_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA'):'—'}</p>
+ <p>{tr('Start','Début')}: {sub.starts_at?new Date(sub.starts_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA'):'—'} · {tr('Expires','Expire')}: {sub.expires_at?new Date(sub.expires_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA'):'—'}</p><PasswordReveal subscription={sub} language={language}/>
  </article>)}</section>}{active==='Support'&&<section className="mykioo-support">
  <div className="mykioo-support-card">
   <h2>{tr('Contact MYKIOO support','Contacter l’assistance MYKIOO')}</h2>
@@ -216,7 +217,7 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
   <button className="outline-button" onClick={logout}><LogOut size={17}/>{tr('Sign out','Déconnexion')}</button>
  </div></div>;
 }
-export default function App(){const [language,setLanguage]=useState(()=>{try{return localStorage.getItem('mykioo-language')||((navigator.language||'en').toLowerCase().startsWith('fr')?'fr':'en')}catch{return 'en'}});function changeLanguage(value){setLanguage(value);try{localStorage.setItem('mykioo-language',value)}catch{}}const [user,setUser]=useState(null),[member,setMember]=useState(null),[subscriptions,setSubscriptions]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');async function load(sessionUser){if(!sessionUser){setUser(null);setMember(null);setSubscriptions([]);setLoading(false);return}setLoading(true);setUser(sessionUser);const {data,error:err}=await supabase.from('mykioo_members').select('user_id,email,display_name,status,role').eq('user_id',sessionUser.id).maybeSingle();if(err){setError('Unable to confirm membership access. Please try again later.');setMember(null)}else{setError('');setMember(data||{status:'pending'});if(data?.status==='approved'){const r=await supabase.from('mykioo_subscriptions').select('id,member_id,service_name,device_label,service_username,supplier_reference,status,starts_at,expires_at').eq('member_id',sessionUser.id);setSubscriptions(r.data||[])}}setLoading(false)}useEffect(()=>{
+export default function App(){const [language,setLanguage]=useState(()=>{try{return localStorage.getItem('mykioo-language')||((navigator.language||'en').toLowerCase().startsWith('fr')?'fr':'en')}catch{return 'en'}});function changeLanguage(value){setLanguage(value);try{localStorage.setItem('mykioo-language',value)}catch{}}const [user,setUser]=useState(null),[member,setMember]=useState(null),[subscriptions,setSubscriptions]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');async function load(sessionUser){if(!sessionUser){setUser(null);setMember(null);setSubscriptions([]);setLoading(false);return}setLoading(true);setUser(sessionUser);const {data,error:err}=await supabase.from('mykioo_members').select('user_id,email,display_name,status,role').eq('user_id',sessionUser.id).maybeSingle();if(err){setError('Unable to confirm membership access. Please try again later.');setMember(null)}else{setError('');setMember(data||{status:'pending'});if(data?.status==='approved'){const r=await supabase.from('mykioo_subscriptions').select('id,member_id,service_name,device_label,service_username,supplier_reference,has_password,status,starts_at,expires_at').eq('member_id',sessionUser.id);setSubscriptions(r.data||[])}}setLoading(false)}useEffect(()=>{
  if(!supabase||!user?.id)return;
  let live=true;
  let checking=false;
@@ -240,7 +241,7 @@ export default function App(){const [language,setLanguage]=useState(()=>{try{ret
    );
    if(data.status!=='approved'){setSubscriptions([]);return;}
    const r=await supabase.from('mykioo_subscriptions')
-     .select('id,member_id,service_name,device_label,service_username,supplier_reference,status,starts_at,expires_at').eq('member_id',user.id);
+     .select('id,member_id,service_name,device_label,service_username,supplier_reference,has_password,status,starts_at,expires_at').eq('member_id',user.id);
    if(live&&!r.error)setSubscriptions(previous=>{
       const current=JSON.stringify(previous),incoming=JSON.stringify(r.data||[]);
       return current===incoming?previous:r.data||[];
