@@ -117,3 +117,20 @@
 .member-field-message{font-size:12px!important;line-height:1.5!important;color:#e5c889!important;margin:2px 0!important;text-align:left}
 .member-name-form input{font-size:14px}
 .member-name-form button:disabled{opacity:.7}
+
+
+/* Bilingual member profile */
+.mykioo-profile-card{border:1px solid #49394f;border-radius:15px;background:#1b1926;padding:28px;max-width:640px;margin-top:25px}
+.mykioo-profile-head{display:flex;align-items:flex-start;gap:16px;color:#dfc18b;margin-bottom:25px}
+.mykioo-profile-head h2{margin:0 0 9px;font-size:23px;color:#f6f3fa}
+.mykioo-profile-head p{margin:0;line-height:1.65;font-size:13px;color:#bdb0c7}
+.mykioo-profile-card form{display:flex;flex-direction:column;gap:11px}
+.mykioo-profile-card label{color:#e6d0a8;font-size:12px;font-weight:700;margin-top:9px}
+.mykioo-profile-card input,.mykioo-profile-readonly{border:1px solid #574a62;background:#262232;color:#fff;border-radius:9px;padding:13px 14px;font-size:14px;min-width:0;width:100%;box-sizing:border-box}
+.mykioo-profile-readonly{color:#ac9fb9;background:#171521}
+.mykioo-profile-card input:focus{outline:2px solid #e6c88a;outline-offset:1px}
+.mykioo-profile-save{align-self:flex-start;background:linear-gradient(120deg,#edcf93,#b99157);color:#251c28;border:0;border-radius:9px;padding:13px 22px;font-weight:700;cursor:pointer;margin-top:10px}
+.mykioo-profile-save:disabled{opacity:.5;cursor:not-allowed}
+.mykioo-profile-error{font-size:12px;color:#f0afa7;margin:0}
+.mykioo-profile-success{font-size:12px;color:#b7e7bd;margin:0}
+@media(max-width:580px){.mykioo-profile-card{padding:17px}.mykioo-profile-head h2{font-size:20px}}
