@@ -176,3 +176,24 @@
 .admin-support-ticket-actions label{font-size:12px;color:#e4c78f}
 .admin-support-ticket-actions select{border:1px solid #65516d;background:#2b2437;color:#f6e4f6;border-radius:8px;padding:10px}
 @media(max-width:580px){.mykioo-support-card,.admin-support-ticket{padding:17px}.mykioo-ticket-heading,.admin-support-ticket-top{align-items:flex-start;flex-direction:column}}
+
+
+/* Support ticket private threaded replies */
+.mykioo-thread{margin-top:17px;border-top:1px solid #4c3d54;padding-top:14px}
+.mykioo-thread-toggle{border:1px solid #8d7353;background:#2b2335;color:#eacb91;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer}
+.mykioo-thread-toggle:hover{background:#3a2c44}
+.mykioo-thread-content{margin-top:17px}
+.mykioo-thread h4{font-size:15px;color:#f8edfd;margin:0 0 14px}
+.mykioo-thread-empty{font-size:12px;color:#bcaec6}
+.mykioo-thread-messages{display:flex;flex-direction:column;gap:12px;max-height:360px;overflow-y:auto;margin-bottom:16px;padding:3px}
+.mykioo-thread-message{max-width:88%;padding:13px 15px;border:1px solid #54465c;border-radius:12px;background:#251f32;color:#faf5fd;align-self:flex-start;min-width:0}
+.mykioo-thread-message.mine{align-self:flex-end;background:#3a2d3b;border-color:#886b52}
+.mykioo-thread-who{color:#e7c68c;font-weight:700;font-size:11px;margin-bottom:7px}
+.mykioo-thread-message p{white-space:pre-wrap;overflow-wrap:anywhere;color:#f1e8f4;line-height:1.55;font-size:13px;margin:0 0 8px}
+.mykioo-thread-message small{font-size:10px;color:#afa1b8}
+.mykioo-thread-form{display:flex;flex-direction:column;gap:10px}
+.mykioo-thread-form label{color:#e4c68e;font-size:12px;font-weight:700}
+.mykioo-thread-form textarea{width:100%;box-sizing:border-box;border:1px solid #5b4965;background:#201a2b;color:#f6eef9;border-radius:8px;padding:12px;font:inherit;resize:vertical}
+.mykioo-thread-form textarea:focus{outline:2px solid #e5c282}
+.mykioo-thread-form button{align-self:flex-start;background:linear-gradient(120deg,#e9c88b,#b99158);color:#241b29;border:0;border-radius:8px;padding:11px 16px;font-weight:700;cursor:pointer}
+.mykioo-thread-form button:disabled{opacity:.5;cursor:not-allowed}
