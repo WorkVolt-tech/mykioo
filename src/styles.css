@@ -262,3 +262,19 @@
 /* Subscription contract selection matches existing form fields */
 .mykioo-request-area .mykioo-support-card select{background:#272232;color:#f7f2fa;border:1px solid #594766;border-radius:9px;padding:13px 14px;width:100%;box-sizing:border-box;font:inherit}
 .mykioo-request-area .mykioo-support-card select:focus{outline:2px solid #dfc28a}
+
+
+/* Expiration reminders and owner/member warning surfaces */
+.mykioo-expiry-alerts{border:1px solid #9e754b;border-radius:14px;background:linear-gradient(120deg,#29212b,#1b1725);padding:20px;margin:18px 0 25px;display:grid;gap:11px;max-width:900px}
+.mykioo-expiry-alerts-heading{display:flex;align-items:flex-start;gap:12px;color:#e9c18c}
+.mykioo-expiry-alerts-heading h2{font-size:18px;margin:0 0 6px;color:#f7d6a6}
+.mykioo-expiry-alerts-heading p{margin:0;color:#d8c8d5;font-size:12px;line-height:1.55}
+.mykioo-expiry-alert{display:flex;align-items:center;gap:10px;border-radius:9px;background:#161321;border:1px solid #564658;padding:11px 12px;color:#dfbc87}
+.mykioo-expiry-alert.urgent{border-color:#bd795d}
+.mykioo-expiry-alert>span:nth-child(2){flex:1;min-width:0;display:grid;gap:4px}
+.mykioo-expiry-alert strong{color:#f5eefa;font-size:13px;overflow-wrap:anywhere}
+.mykioo-expiry-alert small{font-size:11px;color:#baa8c5}
+.mykioo-expiry-count{white-space:nowrap;font-size:12px;font-weight:700;color:#f5c887}
+.mykioo-expiry-alerts>button{justify-self:start;border-radius:8px;background:#dbb57d;color:#221a2a;padding:11px 16px;font-size:12px;font-weight:700;border:0;cursor:pointer}
+.mykioo-expiry-alerts>small{font-size:12px;color:#c5b4c6}
+@media(max-width:580px){.mykioo-expiry-alerts{padding:15px}.mykioo-expiry-alert{flex-wrap:wrap}.mykioo-expiry-count{margin-left:27px}}
