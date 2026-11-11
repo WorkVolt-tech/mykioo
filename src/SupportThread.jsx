@@ -1,10 +1,14 @@
+import {useReplyTemplates} from './ReplyTemplates';
 import React,{useEffect,useState,useRef} from 'react';
 import {supabase} from './supabase';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-support';
 
-export default function SupportThread({ticket,userId,language='en',owner=false,unread=0,onRead}){
+export default function SupportThread({ticket,userId,language='en',owner=false,recipientLanguage='en',unread=0,onRead}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
+ const {templates}=useReplyTemplates(owner);
+ const [draftLanguage,setDraftLanguage]=useState(recipientLanguage==='fr'?'fr':'en');
+ const [selectedTemplate,setSelectedTemplate]=useState('');
  const latestReadRef=useRef('');const [expanded,setExpanded]=useState(false);const [messages,setMessages]=useState([]),[body,setBody]=useState(''),[loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{
   if(!expanded)return;
@@ -63,7 +67,7 @@ export default function SupportThread({ticket,userId,language='en',owner=false,u
    });
    const result=await response.json().catch(()=>({}));
    if(!response.ok||!result.ok)throw Error(result.error||tr('Unable to send reply.','Impossible d’envoyer la réponse.'));
-   setBody('');
+   setBody('');setSelectedTemplate('');
    setMessages(previous=>previous.some(m=>m.id===result.message.id)?previous:[...previous,result.message]);
    setNotice(tr('Reply sent.','Réponse envoyée.'));
   }catch(err){setError(err.message||tr('Unable to send reply.','Impossible d’envoyer la réponse.'))}
@@ -80,6 +84,24 @@ export default function SupportThread({ticket,userId,language='en',owner=false,u
    </div>)}</div>}
   {ticket.status==='closed'?<p className="mykioo-thread-empty">{tr('This ticket is closed.','Cette demande est fermée.')}</p>:
    <form onSubmit={send} className="mykioo-thread-form">
+    {owner&&<div className="mykioo-template-insert">
+     <label htmlFor={'mykioo-template-language-'+ticket.id}>{tr('Reply language','Langue de la réponse')}</label>
+     <select id={'mykioo-template-language-'+ticket.id} value={draftLanguage} onChange={e=>{setDraftLanguage(e.target.value);setSelectedTemplate('')}}>
+      <option value="en">English</option><option value="fr">Français</option>
+     </select>
+     <label htmlFor={'mykioo-template-select-'+ticket.id}>{tr('Saved reply','Réponse enregistrée')}</label>
+     <select id={'mykioo-template-select-'+ticket.id} value={selectedTemplate} onChange={e=>{
+       const id=e.target.value;setSelectedTemplate(id);
+       const chosen=templates.find(t=>t.id===id);
+       if(chosen){setBody(chosen[draftLanguage==='fr'?'body_fr':'body_en']);setNotice('')}
+     }}>
+      <option value="">{tr('Select a reply to insert (optional)','Choisir une réponse à insérer (facultatif)')}</option>
+      {templates.filter(t=>t.is_active).sort((a,b)=>Number(b.category===ticket.category)-Number(a.category===ticket.category))
+       .map(t=><option key={t.id} value={t.id}>{t.category===ticket.category?'★ ':''}{draftLanguage==='fr'?t.title_fr:t.title_en}</option>)}
+     </select>
+     <small>{tr('Selecting a reply fills the editor; nothing is sent until you press Send reply.','La sélection remplit le brouillon; rien n’est envoyé avant de cliquer sur Envoyer la réponse.')}</small>
+    </div>}
+
     <label htmlFor={'mykioo-reply-'+ticket.id}>{tr('Your reply','Votre réponse')}</label>
     <textarea id={'mykioo-reply-'+ticket.id} rows={3} maxLength={4000} required value={body} onChange={e=>{setBody(e.target.value);setNotice('')}} placeholder={tr('Write a message…','Écrivez un message…')}/>
     <button type="submit" disabled={sending||!body.trim()}>{sending?tr('Sending…','Envoi…'):tr('Send reply','Envoyer la réponse')}</button>
