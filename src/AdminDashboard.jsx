@@ -14,7 +14,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  const [serviceAlerts,setServiceAlerts]=useServiceAlerts();
  const fr=language==='fr';
  const tr=(english,french)=>fr?french:english;
- const [tab,setTab]=useState('overview'),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [selectedTicketIds,setSelectedTicketIds]=useState([]);const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
+ const [tab,setTab]=useState('overview'),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [selectedTicketIds,setSelectedTicketIds]=useState([]);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
  async function refresh({silent=false}={}){
   if(!silent){setLoading(true);setError('')}
   try{
@@ -130,6 +130,16 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
   };
  },[user.id]);
  const {counts:unreadCounts,total:unreadTotal,sync:syncUnread}=useSupportUnread(user.id,rows.support||[]);
+ const filteredTickets=(rows.support||[]).filter(ticket=>{
+  const member=(rows.members||[]).find(m=>m.user_id===ticket.member_id);
+  const term=supportSearch.trim().toLocaleLowerCase();
+  if(term&&![ticket.subject,ticket.message,member?.display_name,member?.email].some(value=>(value||'').toLocaleLowerCase().includes(term)))return false;
+  if(supportStatusFilter!=='all'&&ticket.status!==supportStatusFilter)return false;
+  if(supportIssueFilter==='linked'&&!ticket.main_issue_id)return false;
+  if(supportIssueFilter==='unlinked'&&ticket.main_issue_id)return false;
+  return true;
+ });
+
  const cards=[[tr('Total members','Total des membres'),rows.members?.length||0,Users],[tr('Pending approval','En attente d’approbation'),rows.members?.filter(m=>m.status==='pending').length||0,Clock3],[tr('Active subscriptions','Abonnements actifs'),rows.subscriptions?.filter(s=>s.status==='active').length||0,CalendarDays],[tr('Open support tickets','Demandes d’assistance ouvertes'),rows.support?.filter(t=>t.status==='open').length||0,Headphones]];
  const columns={members:['display_name','email','status','role','created_at'],invitations:['email','status','expires_at','created_at'],subscriptions:['member_id','status','starts_at','expires_at'],orders:['member_id','status','total_amount','created_at'],support:['subject','status','member_id','created_at']};
  const list=rows[tab]||[];
@@ -144,9 +154,33 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  <ServiceAlertEditor alerts={serviceAlerts} subscriptions={rows.subscriptions||[]} language={language} onRefresh={async()=>{const {data,error}=await supabase.from('mykioo_service_alerts').select('*').order('created_at',{ascending:false}).limit(100);if(!error)setServiceAlerts(data||[])}}/>
  <ServiceAlertHistory alerts={serviceAlerts} language={language}/>
  <p className="admin-description">{tr('Review support requests and update their status.','Consultez les demandes d’assistance et modifiez leur statut.')}</p>
+ <div className="mykioo-ticket-filters">
+  <label>{tr('Search tickets or members','Rechercher des demandes ou des membres')}
+   <input type="search" value={supportSearch} onChange={e=>setSupportSearch(e.target.value)} placeholder={tr('Subject, message, name, or email','Sujet, message, nom ou courriel')}/>
+  </label>
+  <label>{tr('Ticket status','Statut de la demande')}
+   <select value={supportStatusFilter} onChange={e=>setSupportStatusFilter(e.target.value)}>
+    <option value="all">{tr('All statuses','Tous les statuts')}</option>
+    <option value="open">{tr('Open','Ouvert')}</option>
+    <option value="in_progress">{tr('In progress','En cours')}</option>
+    <option value="resolved">{tr('Resolved','Résolu')}</option>
+    <option value="closed">{tr('Closed','Fermé')}</option>
+   </select>
+  </label>
+  <label>{tr('Main issue association','Association à un problème principal')}
+   <select value={supportIssueFilter} onChange={e=>setSupportIssueFilter(e.target.value)}>
+    <option value="all">{tr('All tickets','Toutes les demandes')}</option>
+    <option value="linked">{tr('Linked to a main issue','Associées à un problème principal')}</option>
+    <option value="unlinked">{tr('Not linked','Non associées')}</option>
+   </select>
+  </label>
+  <span className="mykioo-filter-count">{filteredTickets.length} / {(rows.support||[]).length} {tr('tickets shown','demandes affichées')}</span>
+  <button type="button" onClick={()=>{setSupportSearch('');setSupportStatusFilter('all');setSupportIssueFilter('all')}}>{tr('Clear filters','Effacer les filtres')}</button>
+ </div>
  {loading?<div className="admin-empty">{tr('Loading requests…','Chargement des demandes…')}</div>:
  (rows.support||[]).length===0?<div className="admin-empty"><Headphones size={28}/><strong>{tr('No support requests yet','Aucune demande d’assistance')}</strong></div>:
- <div className="admin-support-list">{(rows.support||[]).map(ticket=>{
+ filteredTickets.length===0?<div className="admin-empty">{tr('No tickets match these filters.','Aucune demande ne correspond à ces filtres.')}</div>:
+ <div className="admin-support-list">{filteredTickets.map(ticket=>{
    const requester=(rows.members||[]).find(m=>m.user_id===ticket.member_id);
    return <article key={ticket.id} className="admin-support-ticket">
     <div className="admin-support-ticket-top"><label className="mykioo-ticket-select"><input type="checkbox" checked={selectedTicketIds.includes(ticket.id)} onChange={e=>setSelectedTicketIds(old=>e.target.checked?[...old,ticket.id]:old.filter(id=>id!==ticket.id))} aria-label={tr('Select ticket','Sélectionner la demande')+' '+ticket.subject}/></label><div><strong>{ticket.subject}</strong><small>{requester?.display_name||requester?.email||tr('Member','Membre')} · {new Date(ticket.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>{unreadCounts[ticket.id]>0&&<span className="mykioo-unread-dot">{unreadCounts[ticket.id]}</span>}<span className="mykioo-ticket-status">{tr(({open:'Open',in_progress:'In progress',resolved:'Resolved',closed:'Closed'})[ticket.status]||ticket.status,({open:'Ouvert',in_progress:'En cours',resolved:'Résolu',closed:'Fermé'})[ticket.status]||ticket.status)}</span></div>
