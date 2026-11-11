@@ -32,7 +32,7 @@ function Shell({user,member,subscriptions,logout,language='en',onLanguageChange,
  finally{if(!silent)setTicketLoading(false)}
 }
 useEffect(()=>{
- if(active!=='Support'||!supabase)return;
+ if(!supabase)return;
  let mounted=true;
  let fetching=false;
  async function reload(){
@@ -62,7 +62,7 @@ useEffect(()=>{
   document.removeEventListener('visibilitychange',onResume);
   supabase.removeChannel(channel);
  };
-},[active,user.id]);
+},[user.id]);
 async function submitTicket(e){
  e.preventDefault();if(ticketSaving)return;
  setTicketSaving(true);setTicketError('');setTicketNotice('');
