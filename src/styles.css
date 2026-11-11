@@ -72,3 +72,11 @@
 
 .admin-language{background:#292333;color:#f6f0fa;border:1px solid #5a4a60;border-radius:9px;padding:12px;font-size:13px;min-width:112px}
 .admin-language:focus{outline:2px solid #dabb80}
+
+/* Shared MYKIOO site language toggle */
+.topbar-right{display:flex;align-items:center;gap:14px}
+.mykioo-language-switch{display:inline-flex;flex-shrink:0;align-items:center;gap:3px;border:1px solid #67526d;background:#211c2b;border-radius:9px;padding:4px}
+.mykioo-language-switch button{border:0;background:transparent;color:#c9b9d0;font-size:12px;font-weight:800;letter-spacing:.04em;padding:7px 10px;border-radius:6px;cursor:pointer}
+.mykioo-language-switch button.selected{background:#dabc84;color:#241928}
+.mykioo-language-switch button:focus-visible{outline:2px solid #dabc84;outline-offset:2px}
+@media(max-width:580px){.topbar-right{gap:6px}.mykioo-language-switch button{padding:6px 7px}.top-private{font-size:10px}}
