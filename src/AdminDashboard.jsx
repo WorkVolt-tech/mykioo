@@ -173,7 +173,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  const filteredTickets=allVisibleTickets.filter(ticket=>{
   const member=(rows.members||[]).find(m=>m.user_id===ticket.member_id);
   const term=supportSearch.trim().toLocaleLowerCase();
-  if(term&&![ticket.id,ticket.subject,ticket.message,member?.display_name,member?.email].some(value=>(value||'').toLocaleLowerCase().includes(term)))return false;
+  if(term&&![ticket.id,ticket.subject,ticket.message,ticket.device_type,ticket.app_name,ticket.error_details,member?.display_name,member?.email].some(value=>(value||'').toLocaleLowerCase().includes(term)))return false;
   if(supportStatusFilter!=='all'&&ticket.status!==supportStatusFilter)return false;
   if(supportPriorityFilter!=='all'&&ticket.priority!==supportPriorityFilter)return false;
   if(supportCategoryFilter!=='all'&&(ticket.category||'other')!==supportCategoryFilter)return false;
@@ -276,6 +276,12 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    return <article key={ticket.id} className="admin-support-ticket">
     <div className="admin-support-ticket-top"><label className="mykioo-ticket-select"><input type="checkbox" checked={selectedTicketIds.includes(ticket.id)} onChange={e=>setSelectedTicketIds(old=>e.target.checked?[...old,ticket.id]:old.filter(id=>id!==ticket.id))} aria-label={tr('Select ticket','Sélectionner la demande')+' '+ticket.subject}/></label><div><strong>{ticket.subject}</strong><small>{requester?.display_name||requester?.email||tr('Member','Membre')} · {new Date(ticket.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>{unreadCounts[ticket.id]>0&&<span className="mykioo-unread-dot">{unreadCounts[ticket.id]}</span>}<span className="mykioo-category-badge">{tr(({login:'Login',streaming:'Playback',channels:'Channels',billing:'Billing',setup:'Setup',other:'Other'})[ticket.category]||'Other',({login:'Connexion',streaming:'Lecture',channels:'Chaînes',billing:'Facturation',setup:'Installation',other:'Autre'})[ticket.category]||'Autre')}</span><span className={'mykioo-priority-badge priority-'+(ticket.priority||'normal')}>{tr(({low:'Low',normal:'Normal',high:'High',urgent:'Urgent'})[ticket.priority]||'Normal',({low:'Faible',normal:'Normale',high:'Élevée',urgent:'Urgente'})[ticket.priority]||'Normale')}</span><span className="mykioo-ticket-status">{tr(({open:'Open',in_progress:'In progress',resolved:'Resolved',closed:'Closed'})[ticket.status]||ticket.status,({open:'Ouvert',in_progress:'En cours',resolved:'Résolu',closed:'Fermé'})[ticket.status]||ticket.status)}</span></div>
     <p>{ticket.message}</p>
+    {(ticket.device_type||ticket.app_name||ticket.error_details)&&<div className="mykioo-ticket-diagnostic-summary">
+     {ticket.device_type&&<span><strong>{tr('Device','Appareil')}:</strong> {tr(({fire_tv:'Fire TV / Fire Stick',android_tv:'Android TV / Google TV',apple_tv:'Apple TV',smart_tv:'Smart TV',ios:'iPhone / iPad',android:'Android phone / tablet',web:'Web browser',other:'Other'})[ticket.device_type]||ticket.device_type,({fire_tv:'Fire TV / Fire Stick',android_tv:'Android TV / Google TV',apple_tv:'Apple TV',smart_tv:'Téléviseur intelligent',ios:'iPhone / iPad',android:'Téléphone / tablette Android',web:'Navigateur Web',other:'Autre'})[ticket.device_type]||ticket.device_type)}</span>}
+     {ticket.app_name&&<span><strong>{tr('App','Application')}:</strong> {ticket.app_name}</span>}
+     {ticket.error_details&&<span><strong>{tr('Error message / code','Message / code d’erreur')}:</strong> {ticket.error_details}</span>}
+    </div>}
+
     <div className="admin-support-ticket-actions"><label htmlFor={'ticket-status-'+ticket.id}>{tr('Status','Statut')}</label><select id={'ticket-status-'+ticket.id} value={ticket.status} disabled={saving} onChange={e=>updateTicket(ticket,e.target.value)}>
       <option value="open">{tr('Open','Ouvert')}</option>
       <option value="in_progress">{tr('In progress','En cours')}</option>
