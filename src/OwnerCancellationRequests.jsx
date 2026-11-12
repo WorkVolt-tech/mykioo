@@ -54,7 +54,7 @@ export default function OwnerCancellationRequests({requests=[],cancellations=[],
    <div className="mykioo-cancellation-owner-list">{waiting.map(c=>{
     const request=byId.get(c.request_id);
     const finished=request?.status==='fulfilled'||Boolean(request?.completed_at||request?.subscription_id||request?.service_activated_at);
-    return <article key={c.request_id} className="mykioo-cancellation-owner-item">
+    return <article key={c.request_id} id={"mykioo-cancel-approval-"+c.request_id} tabIndex={-1} className="mykioo-cancellation-owner-item">
      <strong>{request?.service_name||tr('Subscription request','Demande d’abonnement')}</strong>
      <small>{memberLabel(c.member_id)} · {new Date(c.created_at).toLocaleString(fr?'fr-CA':'en-CA')}</small>
      <div className="mykioo-cancellation-alert"><AlertTriangle size={16}/>
