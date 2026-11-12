@@ -10,7 +10,7 @@ const dateOnly=value=>value?new Date(value).toISOString().slice(0,10):'';
 export default function SubscriptionManager({members=[],subscriptions=[],requests=[],language='en',onSaved}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
  const [form,setForm]=useState(newForm),[saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
- const clients=members.filter(m=>m.role==='member');
+ const clients=members.filter(m=>m.role==='member'||m.role==='owner');
  function update(field,value){
   setForm(current=>{
     const next={...current,[field]:value};
