@@ -1,5 +1,6 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {supabase} from './supabase';
+import SubscriptionHistory from './SubscriptionHistory';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-subscription-requests';
 const statuses={
@@ -142,23 +143,6 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
    {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
   </div>
-  <div className="mykioo-support-card">
-   <h2>{owner?tr('Requests for selected account','Demandes du compte sélectionné'):tr('Your subscription requests','Vos demandes d’abonnement')}</h2>
-   {loading?<p>{tr('Loading requests…','Chargement des demandes…')}</p>:rows.length===0?
-    <p>{tr('No subscription requests yet.','Aucune demande d’abonnement pour le moment.')}</p>:
-    <div className="mykioo-ticket-list">{rows.map(r=><article className="mykioo-ticket" key={r.id}>
-     <div className="mykioo-ticket-heading">
-      <strong>{r.request_type==='renewal'?tr('Renewal: ','Renouvellement : '):''}{r.service_name}</strong>
-      <span className="mykioo-ticket-status">{statuses[r.status]?.[fr?1:0]||r.status}</span>
-     </div>
-     <p>{tr('Duration','Durée')}: {displayDuration(r.contract_days,tr)}</p>
-     {r.notes&&<p>{r.notes}</p>}
-     <small>{new Date(r.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small>
-     {r.status==='fulfilled'&&<p className="mykioo-request-completed">
-      {r.request_type==='renewal'?tr('Renewed. Your existing subscription was extended.','Renouvelé. Votre abonnement existant a été prolongé.'):
-       tr('Completed. Subscription details are now available.','Demande terminée. Les détails de l’abonnement sont disponibles.')}
-     </p>}
-    </article>)}</div>}
-  </div>
+  <SubscriptionHistory requests={rows} subscriptions={selectedSubs} language={language} owner={owner}/>
  </section>;
 }
