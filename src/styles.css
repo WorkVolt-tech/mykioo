@@ -875,3 +875,5 @@
 .mykioo-cancellation-previous-row small{font-size:11px;color:#bcaac2}
 .mykioo-cancellation-inline-warning{font-size:11px!important;color:#f5d1a6!important;border:1px solid #946e51;background:#362934;padding:8px 10px;border-radius:7px}
 @media(max-width:540px){.mykioo-cancellation-owner{padding:14px}.mykioo-cancellation-owner-actions button{flex:1;justify-content:center}.mykioo-cancellation-owner-item{padding:11px}}
+
+.mykioo-request-policy-note{font-size:11px!important;line-height:1.65!important;color:#efd4b1!important;border:1px solid #9a7954;border-radius:9px;background:#312a31;padding:11px 13px;margin:9px 0 14px!important}
