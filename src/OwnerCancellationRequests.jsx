@@ -12,7 +12,7 @@ export default function OwnerCancellationRequests({requests=[],cancellations=[],
  async function review(c,decision){
   if(workingId)return;
   const request=byId.get(c.request_id);
-  const finished=request?.status==='fulfilled'||Boolean(request?.completed_at||request?.subscription_id);
+  const finished=request?.status==='fulfilled'||Boolean(request?.completed_at||request?.subscription_id||request?.service_activated_at);
   if(decision==='approve'&&finished){
    setError(tr('This order has already been completed. Cancellation cannot be approved or refunded. Refresh your records.','Cette commande est déjà terminée. Son annulation ou remboursement ne peut pas être approuvé. Actualisez les données.'));return;
   }
@@ -53,12 +53,12 @@ export default function OwnerCancellationRequests({requests=[],cancellations=[],
   {waiting.length===0?<p className="mykioo-cancellation-empty">{tr('No cancellation approvals waiting.','Aucune demande d’annulation en attente.')}</p>:
    <div className="mykioo-cancellation-owner-list">{waiting.map(c=>{
     const request=byId.get(c.request_id);
-    const finished=request?.status==='fulfilled'||Boolean(request?.completed_at||request?.subscription_id);
+    const finished=request?.status==='fulfilled'||Boolean(request?.completed_at||request?.subscription_id||request?.service_activated_at);
     return <article key={c.request_id} className="mykioo-cancellation-owner-item">
      <strong>{request?.service_name||tr('Subscription request','Demande d’abonnement')}</strong>
      <small>{memberLabel(c.member_id)} · {new Date(c.created_at).toLocaleString(fr?'fr-CA':'en-CA')}</small>
      <div className="mykioo-cancellation-alert"><AlertTriangle size={16}/>
-      <span>{finished?tr('Order already completed — cancellation must be denied.','Commande déjà finalisée — l’annulation doit être refusée.'):
+      <span>{finished?tr('Order already completed or marked activated — cancellation must be denied.','Commande déjà terminée ou marquée comme activée — l’annulation doit être refusée.'):
        tr('Order is still awaiting completion. Verify that service access has NOT been activated before approving cancellation.','La commande n’est pas encore finalisée. Vérifiez que l’accès au service n’a PAS été activé avant d’approuver l’annulation.')}</span>
      </div>
      {c.reason&&<p>{tr('Member reason','Raison du membre')}: {c.reason}</p>}
