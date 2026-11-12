@@ -28,7 +28,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   const channel=supabase.channel('mykioo-my-subscription-requests-'+userId)
    .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_subscription_requests',filter:'member_id=eq.'+userId},load)
    .subscribe(state=>{if(state==='SUBSCRIBED')load()});
-  const timer=setInterval(()=>{if(document.visibilityState==='visible')load()},12000);
+  const timer=setInterval(()=>{if(document.visibilityState==='visible')load()},60000);
   const resume=()=>{if(document.visibilityState==='visible')load()};
   window.addEventListener('focus',resume);window.addEventListener('online',resume);document.addEventListener('visibilitychange',resume);
   return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',resume);window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',resume);supabase.removeChannel(channel)};
