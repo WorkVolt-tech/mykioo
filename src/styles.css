@@ -553,3 +553,61 @@
 .mykioo-private-reminder-current{margin:0;font-size:12px;color:#f3d6a4;line-height:1.5}
 @media(max-width:740px){.mykioo-private-layout{grid-template-columns:1fr}.mykioo-followup-board{padding:15px}}
 @media(max-width:440px){.mykioo-followup-counts{grid-template-columns:1fr 1fr}.mykioo-followup-counts>div:last-child{grid-column:1/-1}}
+
+
+/* MYKIOO bilingual self-service setup and troubleshooting guides */
+.mykioo-guide-page,.mykioo-guide-editor{display:grid;gap:18px;max-width:1120px;width:100%;box-sizing:border-box}
+.mykioo-guide-intro,.mykioo-guide-editor-heading{display:flex;align-items:flex-start;gap:13px;padding:21px;border:1px solid #80674e;background:linear-gradient(120deg,#2a2235,#1d192a);border-radius:13px}
+.mykioo-guide-intro>svg,.mykioo-guide-editor-heading>svg{flex-shrink:0;color:#ecc38d}
+.mykioo-guide-intro h2,.mykioo-guide-editor-heading h2{font-size:21px;color:#f2d9aa;margin:0 0 8px}
+.mykioo-guide-intro p,.mykioo-guide-editor-heading p{font-size:13px;color:#cfc0d6;line-height:1.55;margin:0}
+.mykioo-guide-filters{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(0,1fr));gap:10px}
+.mykioo-guide-filters>label{display:flex;align-items:center;gap:8px}
+.mykioo-guide-filters>label svg{flex-shrink:0;color:#e0c08c}
+.mykioo-guide-filters input,.mykioo-guide-filters select,.mykioo-guide-owner-top select,.mykioo-guide-editor-form input:not([type="checkbox"]),.mykioo-guide-editor-form select,.mykioo-guide-editor-form textarea{background:#211b2d;border:1px solid #685575;border-radius:9px;color:#fff0f9;font:inherit;padding:11px 12px;box-sizing:border-box;width:100%;min-width:0}
+.mykioo-guide-filters select{font-size:12px}
+.mykioo-guide-filters input:focus,.mykioo-guide-filters select:focus,.mykioo-guide-editor-form input:focus,.mykioo-guide-editor-form textarea:focus{outline:2px solid #d5ad77}
+.mykioo-guide-list,.mykioo-guide-owner-list{display:grid;gap:11px}
+.mykioo-guide-card{border:1px solid #685575;background:#1e1928;border-radius:12px;overflow:hidden}
+.mykioo-guide-summary-button{display:flex;align-items:flex-start;gap:13px;width:100%;background:none;border:0;padding:17px;color:#f3e6f1;text-align:left;cursor:pointer}
+.mykioo-guide-summary-button:hover{background:#31273d}
+.mykioo-guide-summary-button>svg{margin-left:auto;flex-shrink:0;color:#e8c690}
+.mykioo-guide-card-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:38px;height:38px;border:1px solid #947347;border-radius:10px;background:#36273c;color:#ebc990}
+.mykioo-guide-description{display:grid;gap:6px;min-width:0;flex:1}
+.mykioo-guide-description strong{font-size:14px;color:#f9e7f3;overflow-wrap:anywhere}
+.mykioo-guide-description small{font-size:11px;color:#e0bb86}
+.mykioo-guide-description>span{font-size:12px;color:#c6b7d0;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.mykioo-guide-detail{padding:17px 20px;border-top:1px solid #62516d;background:#241c30}
+.mykioo-guide-detail h4{font-size:14px;margin:0 0 14px;color:#e9cd9e}
+.mykioo-guide-detail ol{margin:0;padding-left:24px;display:grid;gap:13px}
+.mykioo-guide-detail li{font-size:13px;color:#f0e3f1;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;padding-left:4px}
+.mykioo-guide-detail li::marker{color:#dbaf79;font-weight:800}
+.mykioo-guide-detail small{font-size:11px;color:#b4a8bf;display:block;margin-top:12px}
+.mykioo-guide-empty{padding:30px 22px;border:1px dashed #6b5671;border-radius:12px;color:#cdbdd5;display:grid;justify-items:center;gap:10px;text-align:center}
+.mykioo-guide-empty strong{color:#f5e5ee;font-size:14px}
+.mykioo-guide-empty p{font-size:12px;margin:0}
+.mykioo-guide-help{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;border:1px solid #775d43;border-radius:12px;background:#2b2331;padding:17px}
+.mykioo-guide-help strong{font-size:14px;color:#f1d4a4}
+.mykioo-guide-help p{font-size:12px;color:#d1c3d9;margin:6px 0 0;line-height:1.6}
+.mykioo-guide-help button,.mykioo-guide-actions button,.mykioo-guide-owner-row button{display:inline-flex;align-items:center;gap:7px;border:1px solid #a2835a;background:#3c2b43;color:#f0d6aa;font-size:12px;font-weight:750;padding:11px 13px;border-radius:8px;cursor:pointer}
+.mykioo-guide-help button:hover,.mykioo-guide-actions button:hover,.mykioo-guide-owner-row button:hover{background:#4a3751}
+.mykioo-guide-editor-form{padding:20px;border:1px solid #5c4d69;border-radius:12px;background:#211a2b;display:grid;gap:14px}
+.mykioo-guide-editor-form h3,.mykioo-guide-owner-top h3{font-size:16px;color:#f4dbb6;margin:0}
+.mykioo-guide-editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.mykioo-guide-editor-grid label{display:grid;gap:7px;color:#e5c594;font-size:12px;font-weight:700}
+.mykioo-guide-editor-form textarea{resize:vertical;line-height:1.6}
+.mykioo-guide-editor-grid .mykioo-guide-publish-checkbox{display:flex;align-items:center;gap:10px}
+.mykioo-guide-publish-checkbox input{width:18px;height:18px;accent-color:#d9b37a}
+.mykioo-guide-actions{display:flex;gap:10px;flex-wrap:wrap}
+.mykioo-guide-actions button:first-child{background:#e1b97f;color:#291d31}
+.mykioo-guide-owner-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.mykioo-guide-owner-top select{width:auto;min-width:145px}
+.mykioo-guide-owner-row{padding:13px;display:flex;align-items:center;flex-wrap:wrap;gap:9px;border:1px solid #5b4b66;background:#1e1928;border-radius:10px}
+.mykioo-guide-owner-row>span{min-width:180px;flex:1;display:grid;gap:6px}
+.mykioo-guide-owner-row strong{font-size:13px;color:#f2e5f3}
+.mykioo-guide-owner-row small{font-size:11px;color:#c2b3ca}
+.mykioo-guide-owner-row .mykioo-guide-published{color:#b4ddb9}
+.mykioo-guide-owner-row .mykioo-guide-draft{color:#e2bf88}
+.mykioo-guide-actions button:disabled,.mykioo-guide-owner-row button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:800px){.mykioo-guide-filters{grid-template-columns:1fr}.mykioo-guide-editor-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.mykioo-guide-intro,.mykioo-guide-editor-heading{padding:15px}.mykioo-guide-editor-form{padding:14px}.mykioo-guide-summary-button{padding:13px}.mykioo-guide-help button{width:100%;justify-content:center}}
