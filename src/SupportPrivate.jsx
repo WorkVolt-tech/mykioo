@@ -38,7 +38,7 @@ export function useSupportFollowups(){
  },[]);
  useEffect(()=>{
   refresh();
-  const timer=setInterval(()=>{if(document.visibilityState==='visible')refresh()},20000);
+  const timer=setInterval(()=>{if(document.visibilityState==='visible')refresh()},120000);
   const onResume=()=>{if(document.visibilityState==='visible')refresh()};
   window.addEventListener('focus',onResume);
   window.addEventListener('online',onResume);
