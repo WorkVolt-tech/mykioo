@@ -1,0 +1,43 @@
+.mykioo-billing{padding:10px 0 25px;color:inherit}.mykioo-billing-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:20px}
+.mykioo-billing-head h2,.mykioo-billing-box h3{display:flex;align-items:center;gap:9px;margin:0 0 7px;color:#f2e7ea;font-size:1.2rem}
+.mykioo-billing-head p,.mykioo-billing-box p{line-height:1.55}.mykioo-billing-head p{font-size:.9rem;color:#c8bfcf;max-width:660px;margin:0}
+.mykioo-billing button{cursor:pointer}.mykioo-billing button:disabled{opacity:.5;cursor:default}
+.mykioo-billing-head>button,.mykioo-billing-outline,.mykioo-billing-payment-details button,.mykioo-billing-crypto-address button{display:inline-flex;align-items:center;gap:6px;padding:9px 12px;border:1px solid rgba(219,188,134,.4);background:rgba(219,188,134,.05);color:#f4e6d0;border-radius:8px}
+.mykioo-billing-box,.mykioo-billing-invoice{border:1px solid rgba(219,188,134,.2);border-radius:14px;padding:18px;margin-bottom:16px;background:rgba(29,23,34,.8)}
+.mykioo-billing-box h3{font-size:1.04rem}
+.mykioo-billing label{display:flex;flex-direction:column;gap:7px;font-size:.85rem;color:#e8dfe9;min-width:0}
+.mykioo-billing input:not([type=checkbox]),.mykioo-billing select,.mykioo-billing textarea{box-sizing:border-box;width:100%;max-width:100%;min-height:41px;border:1px solid rgba(255,255,255,.22);border-radius:8px;background:#261d2e;color:#fff;padding:10px 12px;font:inherit}
+.mykioo-billing input:focus-visible,.mykioo-billing button:focus-visible,.mykioo-billing select:focus-visible{outline:2px solid #dbbc86;outline-offset:2px}
+.mykioo-billing select option{background:#261d2e;color:white}.mykioo-billing textarea{resize:vertical}
+.mykioo-billing-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+.mykioo-billing-box>label{margin:13px 0}.mykioo-billing-primary{background:linear-gradient(110deg,#b39157,#e7cf94);color:#1d1923;border:0;padding:11px 16px;font-weight:700;border-radius:9px}
+.mykioo-billing-muted,.mykioo-billing-invoice small{font-size:.81rem;color:#c5bace;line-height:1.5}
+.mykioo-billing-muted svg,.mykioo-billing-info svg{vertical-align:middle;margin-right:6px}
+.mykioo-billing-empty{border:1px dashed rgba(219,188,134,.25);border-radius:10px;padding:22px;color:#c5bace}
+.mykioo-billing-list{display:flex;flex-direction:column;gap:15px;margin-top:15px}
+.mykioo-billing-invoice{background:rgba(255,255,255,.025);margin:0}
+.mykioo-billing-invoice-heading{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:15px}
+.mykioo-billing-invoice-heading>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.mykioo-billing-invoice-heading strong{font-size:1rem}
+.mykioo-billing-chip{padding:5px 10px;font-size:.78rem;border:1px solid rgba(219,188,134,.4);border-radius:20px;align-self:flex-start}
+.mykioo-billing-chip.paid{color:#b3eabf;border-color:#5ca66f}.mykioo-billing-chip.submitted{color:#f0cf90}
+.mykioo-billing-price-row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.85rem;margin:9px 0}.mykioo-billing-price-row span{color:#cbbfd0}
+.mykioo-billing-method,.mykioo-billing-payment-details,.mykioo-billing-payment-form,.mykioo-billing-owner-form,.mykioo-billing-owner-address{border-top:1px solid rgba(219,188,134,.19);padding-top:15px;margin-top:15px}
+.mykioo-billing-method label,.mykioo-billing-payment-form label,.mykioo-billing-owner-form label{margin:10px 0}
+.mykioo-billing-warning{display:flex;align-items:flex-start;gap:10px;padding:14px;border:1px solid #ad745c;border-radius:10px;background:rgba(123,62,37,.19);margin:14px 0;color:#ffd5c7;font-size:.86rem}
+.mykioo-billing-warning svg{flex:0 0 auto}.mykioo-billing-warning p{margin:7px 0 0;line-height:1.6}.mykioo-billing-warning strong{color:#ffbc9e}
+.mykioo-billing-danger{color:#ffb6a7}.mykioo-billing-ack{display:flex!important;align-items:flex-start;flex-direction:row!important;gap:10px!important;padding:12px;border-radius:10px;background:rgba(219,188,134,.08)}
+.mykioo-billing-ack input{margin-top:3px;width:18px;height:18px;accent-color:#dbbc86}
+.mykioo-billing-crypto-address{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0}
+.mykioo-billing-crypto-address>div:last-child{flex:1;min-width:190px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.mykioo-billing-qr{background:#fff;padding:8px;border-radius:8px;align-self:flex-start}
+.mykioo-billing-address{display:block;overflow-wrap:anywhere;word-break:break-all;font-size:.91rem;padding:8px 0;color:#f2e1c0}
+.mykioo-billing-payment-details p{font-size:.86rem;line-height:1.6}.mykioo-billing-payment-details button{margin:6px}
+.mykioo-billing-owner-address code{display:block;overflow-wrap:anywhere;padding:10px;background:rgba(255,255,255,.06);border-radius:7px;margin:6px 0}
+.mykioo-billing-payment-form,.mykioo-billing-owner-form{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.mykioo-billing-payment-form small{display:block}.mykioo-billing-info{background:rgba(219,188,134,.1);color:#f3ddae;display:flex;align-items:flex-start;gap:6px;border-radius:10px;padding:11px;margin:14px 0;font-size:.88rem}
+.mykioo-billing-info.paid{background:rgba(62,133,79,.15);color:#b9e4c3}
+.mykioo-billing-error,.mykioo-billing-notice{border:1px solid rgba(240,108,93,.5);background:rgba(150,49,43,.15);padding:11px;border-radius:8px;color:#ffd1c8;font-size:.86rem}
+.mykioo-billing-notice{border-color:#57875d;color:#bde0c4;background:rgba(50,122,66,.13)}
+.mykioo-billing-outline{margin:10px 10px 0 0}
+@media(max-width:700px){.mykioo-billing-box,.mykioo-billing-invoice{padding:13px}.mykioo-billing-form-grid{grid-template-columns:1fr}.mykioo-billing-head{flex-direction:column}.mykioo-billing-crypto-address{flex-direction:column}}
