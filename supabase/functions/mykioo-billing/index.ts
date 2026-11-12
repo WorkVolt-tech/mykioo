@@ -102,7 +102,7 @@ Deno.serve(async req=>{
     network:method==="btc"?"Bitcoin Mainnet":method==="shib"?"Ethereum Mainnet (ERC-20)":null,
     amount_due:fiat?Number(method==="interac"?invoice.amount_cad:invoice.amount_usd):null,
     currency:method==="interac"?"CAD":method==="zelle"?"USD":method.toUpperCase(),
-    quote_expires_at:null,rate_cad:null,quote_source:null,payment_reference:null,submitted_note:null,submitted_at:null,
+    quote_expires_at:null,rate_cad:null,quote_source:null,sender_name:null,payment_reference:null,submitted_note:null,submitted_at:null,
     updated_at:new Date().toISOString()};
    const {data,error}=await db.from("mykioo_billing_invoices").update(patch).eq("id",invoice.id)
      .in("state",["awaiting_method","awaiting_instructions","awaiting_payment"]).select("*").single();
@@ -151,11 +151,14 @@ Deno.serve(async req=>{
     if(!invoice.quote_expires_at||Date.now()>new Date(invoice.quote_expires_at).getTime())
      return reply({error:"Crypto quote has expired. Ask for a new quote before paying."},409);
    }
+   const sender_name=safe(input.sender_name,120);
    const payment_reference=safe(input.payment_reference,160),submitted_note=safe(input.submitted_note,500);
-   if(payment_reference.length>160||submitted_note.length>500)return reply({error:"Reference or note is too long"},400);
+   if(sender_name.length<2||sender_name.length>120)return reply({error:"Enter the name on the sending account (2–120 characters)"},400);
+   if(payment_reference.length<3||payment_reference.length>160)return reply({error:"Enter the transfer confirmation or transaction number (3–160 characters)"},400);
+   if(submitted_note.length>500)return reply({error:"Payment note is too long"},400);
    if(cryptoMethods.includes(invoice.method)&&!hash.test(payment_reference))return reply({error:"Enter the complete 64-character blockchain transaction hash"},400);
    if(invoice.method==="shib"&&!payment_reference.startsWith("0x"))return reply({error:"Enter the Ethereum transaction hash beginning with 0x"},400);
-   const {data,error}=await db.from("mykioo_billing_invoices").update({state:"payment_submitted",payment_reference:payment_reference||null,
+   const {data,error}=await db.from("mykioo_billing_invoices").update({state:"payment_submitted",sender_name,payment_reference,
      submitted_note:submitted_note||null,submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()})
       .eq("id",invoice.id).eq("state","awaiting_payment").select("*").single();
    if(error)return reply({error:error.code==="23505"?"This transaction hash has already been submitted":"Could not submit payment reference"},error.code==="23505"?409:500);
@@ -179,7 +182,7 @@ Deno.serve(async req=>{
   }
   if(action==="reject_submission"){
    if(!owner||invoice.state!=="payment_submitted")return reply({error:"Only submitted payments can be returned for correction"},409);
-   const {data,error}=await db.from("mykioo_billing_invoices").update({state:"awaiting_payment",payment_reference:null,submitted_note:null,submitted_at:null,
+   const {data,error}=await db.from("mykioo_billing_invoices").update({state:"awaiting_payment",sender_name:null,payment_reference:null,submitted_note:null,submitted_at:null,
       updated_at:new Date().toISOString()}).eq("id",invoice.id).eq("state","payment_submitted").select("*").single();
    if(error)return reply({error:"Unable to return submission for correction"},500);
    await audit("billing_submission_rejected",invoice,{method:invoice.method});
