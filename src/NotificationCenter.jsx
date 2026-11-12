@@ -20,7 +20,7 @@ export function useNotifications(userId){
   const channel=supabase.channel('mykioo-notifications-'+userId)
    .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_notifications',filter:'user_id=eq.'+userId},sync)
    .subscribe(status=>{if(status==='SUBSCRIBED')sync()});
-  const timer=setInterval(()=>{if(document.visibilityState==='visible')sync()},12000);
+  const timer=setInterval(()=>{if(document.visibilityState==='visible')sync()},60000);
   const onResume=()=>{if(document.visibilityState==='visible')sync()};
   window.addEventListener('focus',onResume);window.addEventListener('online',onResume);document.addEventListener('visibilitychange',onResume);
   return()=>{clearInterval(timer);window.removeEventListener('focus',onResume);window.removeEventListener('online',onResume);document.removeEventListener('visibilitychange',onResume);supabase.removeChannel(channel)};
