@@ -17,6 +17,7 @@ import SubscriptionManager from './SubscriptionManager';
 import {useSupportUnread} from './useSupportUnread';
 import SupportThread from './SupportThread';
 import React,{useEffect,useState} from 'react';
+import {usePageSection} from './usePageSection';
 import {Users,MailPlus,ShieldCheck,CalendarDays,Receipt,Headphones,LogOut,RefreshCw,Clock3,LockKeyhole,AlertCircle,CheckCircle2,Bell,BookOpen,History} from 'lucide-react';
 import {supabase} from './supabase';
 const tabs=[{id:'overview',name:'Overview',icon:ShieldCheck},{id:'members',name:'Members',icon:Users},{id:'invitations',name:'Invitations',icon:MailPlus},{id:'subscriptions',name:'Subscriptions',icon:CalendarDays},{id:'orders',name:'Orders',icon:Receipt},{id:'billing',name:'Billing',icon:Receipt},{id:'guides',name:'Guides',icon:BookOpen},{id:'support',name:'Support',icon:Headphones},{id:'activity',name:'Activity',icon:History},{id:'notifications',name:'Notifications',icon:Bell}];
@@ -26,7 +27,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  const {followups,refresh:refreshFollowups}=useSupportFollowups();
  const fr=language==='fr';
  const tr=(english,french)=>fr?french:english;
- const [tab,setTab]=useState('overview'),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [selectedTicketIds,setSelectedTicketIds]=useState([]);const [focusedTicket,setFocusedTicket]=useState(null);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all'),[supportPriorityFilter,setSupportPriorityFilter]=useState('all'),[supportCategoryFilter,setSupportCategoryFilter]=useState('all'),[supportSort,setSupportSort]=useState('priority');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
+ const [tab,setTab]=usePageSection(tabs.map(item=>item.id),'overview'),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [selectedTicketIds,setSelectedTicketIds]=useState([]);const [focusedTicket,setFocusedTicket]=useState(null);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all'),[supportPriorityFilter,setSupportPriorityFilter]=useState('all'),[supportCategoryFilter,setSupportCategoryFilter]=useState('all'),[supportSort,setSupportSort]=useState('priority');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
  async function refresh({silent=false}={}){
   if(!silent){setLoading(true);setError('')}
   try{
