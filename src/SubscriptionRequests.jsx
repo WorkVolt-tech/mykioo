@@ -34,7 +34,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    try{
     const [requestsResult,cancellationsResult]=await Promise.all([
      supabase.from('mykioo_subscription_requests')
-      .select('id,service_name,contract_days,notes,status,created_at,updated_at,completed_at,previous_expires_at,renewed_expires_at,subscription_id,request_type,renewal_subscription_id')
+      .select('id,service_name,contract_days,notes,status,created_at,updated_at,completed_at,service_activated_at,previous_expires_at,renewed_expires_at,subscription_id,request_type,renewal_subscription_id')
       .eq('member_id',userId).order('created_at',{ascending:false}).limit(50),
      supabase.from('mykioo_subscription_cancellation_requests')
       .select('request_id,status,reason,decision_note,created_at,updated_at,reviewed_at')
@@ -64,7 +64,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  function chooseType(value){setRequestType(value);setRenewalId('');setError('');setNotice('')}
  function chooseAccount(value){setTargetId(value);setRenewalId('');setRequestType('new');setError('');setNotice('')}
  async function requestCancellation(request){
-  if(owner||saving||cancellingId||!['pending','in_review'].includes(request.status)||request.subscription_id||request.completed_at)return;
+  if(owner||saving||cancellingId||!['pending','in_review'].includes(request.status)||request.subscription_id||request.completed_at||request.service_activated_at)return;
   if(cancellationRows.some(c=>c.request_id===request.id))return;
   if(!window.confirm(tr('Ask MYKIOO to cancel this request? Owner approval is required. If the service is completed or activated first, cancellation will be denied and no refund will be given.','Demander à MYKIOO d’annuler cette demande ? L’approbation du propriétaire est obligatoire. Si le service est terminé ou activé avant, l’annulation sera refusée et aucun remboursement ne sera accordé.')))return;
   setCancellingId(request.id);setError('');setNotice('');
