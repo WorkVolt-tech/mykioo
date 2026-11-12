@@ -1,0 +1,48 @@
+/* Collapsed, searchable subscription directory — shared by owner and member views */
+.mykioo-subscription-page{display:grid;gap:22px;min-width:0;width:100%;max-width:100%}
+.mykioo-directory{box-sizing:border-box;display:grid;gap:15px;width:100%;min-width:0;max-width:100%;padding:21px;border:1px solid #59455e;border-radius:15px;background:#1b1826;text-align:left;color:#f3edf5}
+.mykioo-directory-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:15px;min-width:0}
+.mykioo-directory-heading{display:flex;align-items:center;gap:11px;min-width:0;flex:1 1 220px}
+.mykioo-directory-heading>svg{flex-shrink:0;color:#dbb981}
+.mykioo-directory-heading>div{min-width:0}
+.mykioo-directory-heading h2{font-family:Outfit,sans-serif;font-size:20px;line-height:1.25;margin:0 0 5px;color:#f9f3fa}
+.mykioo-directory-heading p{font-size:12px;color:#bfb1c9;margin:0}
+.mykioo-directory-toggle{border:1px solid #b29169;background:#302538;color:#f0d19d;display:inline-flex;gap:8px;align-items:center;justify-content:center;border-radius:9px;padding:10px 13px;font-weight:750;font-size:12px;min-height:42px}
+.mykioo-directory-search{border:1px solid #715777;background:#262030;color:#e4bf89;border-radius:10px;display:flex;align-items:center;gap:10px;padding:0 12px;max-width:100%;width:100%;min-width:0;box-sizing:border-box}
+.mykioo-directory-search svg{flex:none}
+.mykioo-directory-search input{min-height:46px;width:100%;min-width:0;max-width:100%;padding:10px 0;box-sizing:border-box;background:transparent;border:0;outline:0;color:#f6eefa;font-size:13px;font-family:inherit}
+.mykioo-directory-search input::placeholder{color:#b4a8bb;opacity:1}
+.mykioo-directory-search:focus-within{outline:2px solid #d3b080;outline-offset:2px}
+.mykioo-directory-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.mykioo-directory-results{display:grid;gap:9px;min-width:0}
+.mykioo-directory-results-count{color:#c4b6ca;font-size:11px;margin:0 0 3px}
+.mykioo-directory-empty{border:1px dashed #594561;border-radius:10px;background:#211b2b;padding:16px;font-size:13px;color:#cfc0d2}
+.mykioo-directory-item{background:#201a2a;border:1px solid #58455d;border-radius:11px;min-width:0;overflow:hidden}
+.mykioo-directory-item-toggle{display:flex;align-items:center;gap:12px;width:100%;max-width:100%;text-align:left;border:0;background:transparent;color:#f2eaf4;cursor:pointer;padding:15px}
+.mykioo-directory-item-toggle:hover,.mykioo-directory-item-toggle[aria-expanded="true"]{background:#2b2135}
+.mykioo-directory-item-main{flex:1 1 190px;min-width:0;display:grid;gap:5px}
+.mykioo-directory-item-main strong{font-size:14px;overflow-wrap:anywhere}
+.mykioo-directory-item-main small{font-size:12px;color:#c1b1cc;overflow-wrap:anywhere}
+.mykioo-directory-item-meta{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;min-width:0}
+.mykioo-directory-status{display:inline-flex;padding:5px 9px;border-radius:99px;color:#e8d5ac;border:1px solid #9b7c56;font-size:11px;line-height:1.2;font-weight:700;white-space:nowrap}
+.mykioo-directory-status.status-active{color:#c5ecc9;border-color:#6d936e}
+.mykioo-directory-status.status-expired,.mykioo-directory-status.status-cancelled{color:#f4bfc3;border-color:#99656c}
+.mykioo-directory-expiry{display:inline-flex;align-items:center;gap:5px;color:#c3b5c9;font-size:11px;white-space:nowrap}
+.mykioo-directory-chevron{flex-shrink:0;color:#e3be89}
+.mykioo-directory-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 18px;padding:16px;border-top:1px solid #58445b;min-width:0}
+.mykioo-directory-detail{display:grid;gap:4px;min-width:0}
+.mykioo-directory-detail span{font-size:11px;color:#baacc6}
+.mykioo-directory-detail strong{font-size:13px;color:#f7eafa;font-weight:650;overflow-wrap:anywhere}
+.mykioo-directory-details>.mykioo-password-reveal,.mykioo-directory-details>.mykioo-directory-edit{grid-column:1/-1}
+.mykioo-directory-edit{justify-self:start;margin-top:3px;background:#392a41;border:1px solid #b89569;border-radius:9px;color:#f3d39e;padding:10px 15px;font-weight:750;font-size:12px}
+.mykioo-directory button:focus-visible{outline:2px solid #ebcb91;outline-offset:2px}
+@media(max-width:650px){
+ .mykioo-directory{padding:14px;gap:12px}
+ .mykioo-directory-head{align-items:stretch}
+ .mykioo-directory-toggle{width:100%}
+ .mykioo-directory-item-toggle{gap:8px;flex-wrap:wrap;padding:13px}
+ .mykioo-directory-item-main{flex:1 1 calc(100% - 28px)}
+ .mykioo-directory-item-meta{justify-content:flex-start;flex:1 1 100%}
+ .mykioo-directory-chevron{margin-left:auto}
+ .mykioo-directory-details{grid-template-columns:minmax(0,1fr);gap:13px;padding:13px}
+}
