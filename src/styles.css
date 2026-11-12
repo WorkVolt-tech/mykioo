@@ -835,3 +835,43 @@
  .mykioo-history-expiry-snapshot{grid-template-columns:1fr;padding:11px;gap:8px}
  .mykioo-history-expiry-snapshot>span:last-child:nth-child(3){grid-column:1}
 }
+
+
+/* Cancellation requests need owner approval; no automatic cancellation or refund */
+.mykioo-history-cancellation{display:grid;gap:5px;flex-basis:100%;width:100%;box-sizing:border-box;padding:12px;border:1px solid #957e55;border-radius:9px;background:#372d2f}
+.mykioo-history-cancellation.approved{border-color:#538663;background:#24352d}
+.mykioo-history-cancellation.denied{border-color:#96585d;background:#39262e}
+.mykioo-history-cancellation strong{font-size:12px;color:#f4d6a2}
+.mykioo-history-cancellation.approved strong{color:#c2e6c4}
+.mykioo-history-cancellation.denied strong{color:#ecc3c3}
+.mykioo-history-cancellation small{font-size:11px;color:#e4d8de;line-height:1.55;overflow-wrap:anywhere}
+.mykioo-history-cancel-actions{display:grid;gap:8px;flex-basis:100%;justify-items:start;margin-top:6px}
+.mykioo-history-cancel-actions button{cursor:pointer;padding:10px 13px;background:#3a2a3a;border:1px solid #d1a17c;border-radius:8px;color:#f4d0b2;font-size:12px;font-weight:700}
+.mykioo-history-cancel-actions button:disabled{opacity:.55;cursor:not-allowed}
+.mykioo-history-cancel-actions small{font-size:10px;line-height:1.55;color:#beaebb}
+.mykioo-cancellation-owner{display:grid;gap:14px;margin:20px 0;padding:19px;border:1px solid #8d7158;background:#211c28;border-radius:13px}
+.mykioo-cancellation-owner-title{display:flex;gap:12px;align-items:flex-start}
+.mykioo-cancellation-owner-title>svg{color:#e7bb85;flex-shrink:0}
+.mykioo-cancellation-owner h2{font-size:19px;color:#edd1a5;margin:0 0 7px}
+.mykioo-cancellation-owner h3{font-size:14px;color:#f5ddbc;margin:0}
+.mykioo-cancellation-owner-title p{font-size:12px;line-height:1.6;color:#cdbfd4;margin:0}
+.mykioo-cancellation-empty{font-size:12px;color:#c9b9d2;margin:0}
+.mykioo-cancellation-owner-list{display:grid;gap:12px}
+.mykioo-cancellation-owner-item{display:grid;gap:10px;border:1px solid #6c566c;border-radius:10px;background:#1b1722;padding:14px}
+.mykioo-cancellation-owner-item>strong{font-size:14px;color:#f2dfec}
+.mykioo-cancellation-owner-item>small,.mykioo-cancellation-owner-item>p{font-size:11px;line-height:1.5;color:#cabdd1;margin:0}
+.mykioo-cancellation-alert{display:flex;align-items:flex-start;gap:8px;padding:10px;border:1px solid #9d7951;border-radius:8px;background:#352c30;color:#f1d1ae;font-size:12px;line-height:1.5}
+.mykioo-cancellation-alert svg{flex-shrink:0}
+.mykioo-cancellation-owner-item>label{display:grid;gap:7px;color:#f2d2a4;font-size:12px}
+.mykioo-cancellation-owner-item textarea{width:100%;box-sizing:border-box;padding:10px 11px;background:#27202f;border:1px solid #795e7c;border-radius:8px;color:#f3e6f1;font:inherit;resize:vertical}
+.mykioo-cancellation-owner-actions{display:flex;gap:9px;flex-wrap:wrap}
+.mykioo-cancellation-owner-actions button{display:flex;align-items:center;gap:7px;cursor:pointer;padding:11px 13px;border:1px solid #849c7a;border-radius:8px;background:#294031;color:#d6efda;font-size:12px;font-weight:750}
+.mykioo-cancellation-owner-actions button+button{background:#472a35;border-color:#b97575;color:#f1d2d2}
+.mykioo-cancellation-owner-actions button:disabled{opacity:.5;cursor:not-allowed}
+.mykioo-cancellation-previous{display:grid;gap:9px;border-top:1px solid #5b485f;padding-top:14px}
+.mykioo-cancellation-previous-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;border:1px solid #58465f;background:#1d1925;border-radius:8px;padding:9px 11px}
+.mykioo-cancellation-previous-row strong{flex:1;font-size:12px;color:#e7d5ed}
+.mykioo-cancellation-previous-row span{font-size:11px;color:#ebc796}
+.mykioo-cancellation-previous-row small{font-size:11px;color:#bcaac2}
+.mykioo-cancellation-inline-warning{font-size:11px!important;color:#f5d1a6!important;border:1px solid #946e51;background:#362934;padding:8px 10px;border-radius:7px}
+@media(max-width:540px){.mykioo-cancellation-owner{padding:14px}.mykioo-cancellation-owner-actions button{flex:1;justify-content:center}.mykioo-cancellation-owner-item{padding:11px}}
