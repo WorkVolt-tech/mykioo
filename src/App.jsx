@@ -58,7 +58,7 @@ useEffect(()=>{
  const channel=supabase.channel('mykioo-my-tickets-'+user.id)
    .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_support_tickets',filter:'member_id=eq.'+user.id},reload)
    .subscribe(status=>{if(status==='SUBSCRIBED')reload()});
- const timer=window.setInterval(()=>{if(document.visibilityState==='visible')reload()},12000);
+ const timer=window.setInterval(()=>{if(document.visibilityState==='visible')reload()},60000);
  const onResume=()=>{if(document.visibilityState==='visible')reload()};
  window.addEventListener('focus',onResume);
  window.addEventListener('online',onResume);
@@ -294,7 +294,7 @@ export default function App(){const [language,setLanguage]=useState(()=>{try{ret
    .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_members',filter:'user_id=eq.'+user.id},syncMember)
    .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_subscriptions',filter:'member_id=eq.'+user.id},syncMember)
    .subscribe(status=>{if(status==='SUBSCRIBED')syncMember()});
- const timer=window.setInterval(()=>{if(document.visibilityState==='visible')syncMember()},12000);
+ const timer=window.setInterval(()=>{if(document.visibilityState==='visible')syncMember()},60000);
  const onResume=()=>{if(document.visibilityState==='visible')syncMember()};
  window.addEventListener('focus',onResume);
  window.addEventListener('online',onResume);
