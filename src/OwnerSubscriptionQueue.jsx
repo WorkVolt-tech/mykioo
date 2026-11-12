@@ -12,6 +12,19 @@ const dateMs=value=>{const n=Date.parse(value||'');return Number.isFinite(n)?n:0
 export default function OwnerSubscriptionQueue({requests=[],cancellations=[],members=[],language='en'}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [filter,setFilter]=useState('all'),[search,setSearch]=useState(''),[limit,setLimit]=useState(12);
+ const [ageFilter,setAgeFilter]=useState('all'),[sort,setSort]=useState('priority');
+ const nowMs=Date.now();
+ const ageHours=item=>dateMs(item.date)?Math.max(0,(nowMs-dateMs(item.date))/3600000):null;
+ const waitingText=item=>{
+  const hours=ageHours(item);
+  if(hours===null)return tr('Waiting time unavailable','Durée d’attente indisponible');
+  if(hours<1)return tr('Waiting less than 1 hour','En attente depuis moins d’une heure');
+  if(hours<24){const h=Math.floor(hours);return fr?'En attente depuis '+h+' heure'+(h>1?'s':''):'Waiting '+h+' hour'+(h>1?'s':'');}
+  const days=Math.floor(hours/24);
+  const h=Math.floor(hours%24);
+  if(fr)return 'En attente depuis '+days+' jour'+(days>1?'s':'')+(h?' et '+h+' h':'');
+  return 'Waiting '+days+' day'+(days>1?'s':'')+(h?' '+h+'h':'');
+ };
  const memberNames=useMemo(()=>new Map(members.map(m=>[
   m.user_id,m.display_name||m.email||tr('Account','Compte')
  ])),[members,language]);
@@ -41,9 +54,17 @@ export default function OwnerSubscriptionQueue({requests=[],cancellations=[],mem
  const counts=Object.fromEntries(categories.map(cat=>[cat.id,items.filter(x=>x.category===cat.id).length]));
  const results=items.filter(item=>{
   if(filter!=='all'&&item.category!==filter)return false;
+  if(ageFilter!=='all'){
+   const hours=ageHours(item);
+   if(hours===null||hours<Number(ageFilter))return false;
+  }
   const term=search.trim().toLocaleLowerCase();
   return !term||[item.service,memberNames.get(item.memberId),item.requestId].some(value=>
    String(value||'').toLocaleLowerCase().includes(term));
+ }).sort((a,b)=>{
+  if(sort==='oldest')return (dateMs(a.date)||Number.MAX_SAFE_INTEGER)-(dateMs(b.date)||Number.MAX_SAFE_INTEGER)||a.id.localeCompare(b.id);
+  if(sort==='newest')return dateMs(b.date)-dateMs(a.date)||a.id.localeCompare(b.id);
+  return items.indexOf(a)-items.indexOf(b);
  });
  function chooseFilter(category){setFilter(category);setLimit(12)}
  function jumpTo(item){
@@ -84,8 +105,26 @@ export default function OwnerSubscriptionQueue({requests=[],cancellations=[],mem
      placeholder={tr('Search service or member…','Rechercher un service ou un membre…')}
      aria-label={tr('Search processing queue','Rechercher dans la file de traitement')}/>
    </label>
-   <button type="button" className="mykioo-owner-sub-queue-reset" disabled={filter==='all'&&!search}
-    onClick={()=>{setFilter('all');setSearch('');setLimit(12)}}>
+   <label className="mykioo-owner-sub-queue-select">
+    <span>{tr('Waiting time','Temps d’attente')}</span>
+    <select value={ageFilter} onChange={e=>{setAgeFilter(e.target.value);setLimit(12)}}
+     aria-label={tr('Filter by time waiting','Filtrer selon la durée d’attente')}>
+     <option value="all">{tr('Any age','Tous les délais')}</option>
+     <option value="24">{tr('Waiting 24h+','En attente depuis 24 h+')}</option>
+     <option value="72">{tr('Waiting 72h+','En attente depuis 72 h+')}</option>
+    </select>
+   </label>
+   <label className="mykioo-owner-sub-queue-select">
+    <span>{tr('Sort','Trier')}</span>
+    <select value={sort} onChange={e=>{setSort(e.target.value);setLimit(12)}}
+     aria-label={tr('Sort processing queue','Trier la file de traitement')}>
+     <option value="priority">{tr('Priority, then oldest','Priorité, puis ancienneté')}</option>
+     <option value="oldest">{tr('Oldest first','Plus anciennes d’abord')}</option>
+     <option value="newest">{tr('Newest first','Plus récentes d’abord')}</option>
+    </select>
+   </label>
+   <button type="button" className="mykioo-owner-sub-queue-reset" disabled={filter==='all'&&!search&&ageFilter==='all'&&sort==='priority'}
+    onClick={()=>{setFilter('all');setSearch('');setAgeFilter('all');setSort('priority');setLimit(12)}}>
     {tr('Show all','Tout afficher')} ({items.length})
    </button>
   </div>
@@ -94,7 +133,7 @@ export default function OwnerSubscriptionQueue({requests=[],cancellations=[],mem
    <strong>{items.length===0?tr('Nothing awaiting processing','Aucune demande à traiter'):
     tr('No work matches these filters','Aucun dossier ne correspond aux filtres')}</strong>
    <span>{items.length===0?tr('New requests and cancellation approvals will appear here automatically.','Les nouvelles demandes et les annulations à approuver apparaîtront ici automatiquement.'):
-    tr('Try another search or select Show all.','Essayez une autre recherche ou Tout afficher.')}</span>
+    tr('Try another waiting-time filter or search, or select Show all.','Essayez un autre filtre de délai ou une autre recherche, ou choisissez Tout afficher.')}</span>
   </div>:<div className="mykioo-owner-sub-queue-list">
    {results.slice(0,limit).map((item,i)=>{
     const cat=categories.find(x=>x.id===item.category);
@@ -104,6 +143,12 @@ export default function OwnerSubscriptionQueue({requests=[],cancellations=[],mem
       <span className="mykioo-owner-sub-queue-kind"><cat.Icon size={14}/>{categoryText(item.category)}</span>
       <strong>{item.service}</strong>
       <small>{memberNames.get(item.memberId)||tr('Account','Compte')} · {item.date?new Date(item.date).toLocaleDateString(fr?'fr-CA':'en-CA'):'—'}</small>
+      <span className={'mykioo-owner-sub-queue-wait '+(ageHours(item)!==null&&ageHours(item)>=72?'extended':'')}>
+       <Clock3 size={13}/>{waitingText(item)}
+       <small>{item.category==='cancellations'?tr('since cancellation request','depuis la demande d’annulation'):
+        item.category==='activated'?tr('since activation recorded','depuis l’activation enregistrée'):
+        tr('since request submitted','depuis l’envoi de la demande')}</small>
+      </span>
       {item.category==='cancellations'&&<p>{tr('Owner approval required; do not approve if service is already activated.','Approbation du propriétaire requise; ne pas approuver si le service est déjà activé.')}</p>}
       {item.category==='activated'&&<p>{tr('Service activation recorded; finish entering the subscription details.','Activation du service enregistrée; terminez les détails de l’abonnement.')}</p>}
      </div>
@@ -120,7 +165,7 @@ export default function OwnerSubscriptionQueue({requests=[],cancellations=[],mem
    </button>}
   </div>}
   <p className="mykioo-owner-sub-queue-note">
-   <Clock3 size={14}/>{tr('This queue uses existing records and opens the original owner controls; it never automatically completes or cancels an order.','Cette file utilise les dossiers existants et ouvre les contrôles du propriétaire; elle ne termine et n’annule jamais automatiquement une commande.')}
+   <Clock3 size={14}/>{tr('Waiting time is a visual guide, not a cancellation deadline or service guarantee. This queue opens the original controls and never automatically completes or cancels an order.','La durée d’attente sert uniquement de repère visuel, et non de délai d’annulation ou de garantie de service. Cette file ouvre les contrôles existants sans jamais terminer ni annuler automatiquement une commande.')}
   </p>
  </section>;
 }
