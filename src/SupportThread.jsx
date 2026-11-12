@@ -1,3 +1,4 @@
+import {SupportScreenshots} from './SupportScreenshots';
 import {useReplyTemplates} from './ReplyTemplates';
 import React,{useEffect,useState,useRef} from 'react';
 import {supabase} from './supabase';
@@ -82,6 +83,7 @@ export default function SupportThread({ticket,userId,language='en',owner=false,r
     <div className="mykioo-thread-who">{m.sender_id===userId?tr('You','Vous'):owner?tr('Member','Membre'):'MYKIOO'}</div>
     <p>{m.body}</p><small>{new Date(m.created_at).toLocaleString(fr?'fr-CA':'en-CA')}</small>
    </div>)}</div>}
+  <SupportScreenshots ticket={ticket} language={language} owner={owner} userId={userId}/>
   {ticket.status==='closed'?<p className="mykioo-thread-empty">{tr('This ticket is closed.','Cette demande est fermée.')}</p>:
    <form onSubmit={send} className="mykioo-thread-form">
     {owner&&<div className="mykioo-template-insert">
