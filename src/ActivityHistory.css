@@ -1,0 +1,38 @@
+.mykioo-activity{margin:10px 0 26px;padding:22px;border:1px solid rgba(223,187,125,.22);background:rgba(27,20,36,.65);border-radius:16px}
+.mykioo-activity-intro,.mykioo-activity-results-header{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;flex-wrap:wrap}
+.mykioo-activity-intro h2{display:flex;gap:10px;align-items:center;font-size:1.25rem;margin:0 0 9px}
+.mykioo-activity-intro p{margin:0;max-width:650px;color:#cfc3d5;font-size:.9rem;line-height:1.55}
+.mykioo-activity button{cursor:pointer}.mykioo-activity button:disabled{opacity:.55;cursor:default}
+.mykioo-activity-refresh,.mykioo-activity-bottom button{border:1px solid rgba(223,187,125,.45);background:rgba(223,187,125,.07);border-radius:9px;color:inherit;padding:10px 13px;display:inline-flex;align-items:center;gap:7px}
+.mykioo-activity-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:13px;margin:21px 0}
+.mykioo-activity-field{display:flex;flex-direction:column;min-width:0;gap:7px;color:#e9dfea;font-size:.85rem}
+.mykioo-activity-field>span{font-weight:600}
+.mykioo-activity-search{grid-column:span 2}
+.mykioo-activity-field input,.mykioo-activity-field select{color:inherit;background:#231a2d;border:1px solid rgba(233,211,246,.22);border-radius:9px;padding:10px 11px;width:100%;box-sizing:border-box;font:inherit;min-height:43px}
+.mykioo-activity-field select option{color:#fff;background:#231a2d}
+.mykioo-activity-search-inner{display:flex;align-items:center;gap:8px;padding-left:11px;border:1px solid rgba(233,211,246,.22);background:#231a2d;border-radius:9px}
+.mykioo-activity-search-inner input{border:0;background:transparent;padding-left:0;outline:0;min-width:0}
+.mykioo-activity-results-header{border-top:1px solid rgba(223,187,125,.18);padding-top:16px;margin-bottom:13px}
+.mykioo-activity-results-header>div:first-child{display:flex;flex-direction:column;gap:4px}
+.mykioo-activity-results-header small,.mykioo-activity-event-meta,.mykioo-activity-bottom small{color:#cbbdd1;font-size:.8rem}
+.mykioo-activity-results-actions{display:flex;align-items:center;gap:7px;color:#cbbdd1;font-size:.81rem;flex-wrap:wrap}
+.mykioo-activity-results-actions button{border:0;background:transparent;color:#dfbb7d;text-decoration:underline;padding:4px 6px}
+.mykioo-activity-events{display:flex;flex-direction:column;gap:10px}
+.mykioo-activity-event{display:flex;gap:13px;border:1px solid rgba(255,255,255,.11);border-radius:12px;padding:15px;background:rgba(255,255,255,.022)}
+.mykioo-activity-event-icon{display:grid;place-items:center;flex:0 0 39px;height:39px;border-radius:11px;background:rgba(223,187,125,.12);color:#dfbb7d}
+.mykioo-activity-event-body{flex:1;min-width:0}
+.mykioo-activity-event-title{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.mykioo-activity-event-title strong{font-size:.96rem}
+.mykioo-activity-event-title time{font-size:.8rem;color:#cbbdd1;white-space:nowrap}
+.mykioo-activity-event-meta{display:flex;flex-wrap:wrap;gap:5px 16px;margin:8px 0}
+.mykioo-activity-event-meta b{color:#e9dfea}
+.mykioo-activity-detail-toggle{background:transparent;border:0;color:#dfbb7d;display:inline-flex;align-items:center;gap:5px;padding:4px 0;font-size:.84rem}
+.mykioo-activity-detail{display:grid;gap:8px;border-top:1px solid rgba(255,255,255,.12);padding:13px 0 2px;margin-top:9px}
+.mykioo-activity-detail>div{display:grid;grid-template-columns:minmax(110px,170px) 1fr;gap:10px;font-size:.82rem;overflow-wrap:anywhere}
+.mykioo-activity-detail span{color:#cbbdd1}
+.mykioo-activity-detail strong,.mykioo-activity-detail code{font-weight:500;color:inherit}
+.mykioo-activity-detail p{margin:0;color:#cbbdd1;font-size:.82rem}
+.mykioo-activity-error{padding:12px;border:1px solid rgba(255,120,120,.4);border-radius:8px;color:#ffbab8;margin-bottom:12px}
+.mykioo-activity-empty{padding:24px;text-align:center;color:#cbbdd1;display:flex;align-items:center;justify-content:center;gap:8px}
+.mykioo-activity-bottom{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:18px}
+@media(max-width:700px){.mykioo-activity{padding:14px}.mykioo-activity-search{grid-column:span 1}.mykioo-activity-event{padding:11px}.mykioo-activity-event-icon{flex-basis:34px;height:34px}.mykioo-activity-detail>div{grid-template-columns:1fr;gap:3px}}
