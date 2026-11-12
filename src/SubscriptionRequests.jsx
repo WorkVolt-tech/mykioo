@@ -34,7 +34,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    try{
     const [requestsResult,cancellationsResult]=await Promise.all([
      supabase.from('mykioo_subscription_requests')
-      .select('id,service_name,contract_days,notes,status,created_at,updated_at,completed_at,service_activated_at,previous_expires_at,renewed_expires_at,subscription_id,request_type,renewal_subscription_id')
+      .select('id,service_name,contract_days,notes,status,created_at,updated_at,completed_at,first_reviewed_at,last_declined_at,service_activated_at,previous_expires_at,renewed_expires_at,subscription_id,request_type,renewal_subscription_id')
       .eq('member_id',userId).order('created_at',{ascending:false}).limit(50),
      supabase.from('mykioo_subscription_cancellation_requests')
       .select('request_id,status,reason,decision_note,created_at,updated_at,reviewed_at')
