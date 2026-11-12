@@ -128,6 +128,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    <p>{owner?
      tr('Create a new or renewal request for your own account or an approved member. Complete requests using the subscription manager below.','Créez une demande nouvelle ou de renouvellement pour votre compte ou un membre approuvé. Terminez les demandes avec le gestionnaire ci-dessous.'):
      tr('Select whether you need a new subscription or want to renew your existing service. MYKIOO will review the request before activation.','Choisissez si vous voulez un nouvel abonnement ou renouveler votre service existant. MYKIOO examinera la demande avant l’activation.')}</p>
+   <p className="mykioo-request-policy-note">{tr('Cancellation requests need owner approval and must be approved before we complete or activate the service. Once the service is activated, no cancellation or refund is offered, subject to applicable law.','Les demandes d’annulation doivent être approuvées par le propriétaire avant la finalisation ou l’activation du service. Une fois le service activé, aucune annulation ni aucun remboursement ne sont offerts, sous réserve des lois applicables.')}</p>
    <form onSubmit={submit}>
     {owner&&<>
      <label htmlFor="mykioo-request-account">{tr('Request for account','Demande pour le compte')}</label>
