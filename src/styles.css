@@ -809,3 +809,29 @@
 .mykioo-history-footnote{font-size:10px;color:#b2a7bc;line-height:1.6;margin:0}
 @media(max-width:780px){.mykioo-history-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:540px){.mykioo-subscription-history{padding:13px}.mykioo-history-toolbar{grid-template-columns:1fr}.mykioo-history-item{padding:11px;gap:9px}.mykioo-history-stats>div{padding:10px}}
+
+
+/* Permanent before/after expiry snapshot on completed MYKIOO renewals */
+.mykioo-history-expiry-snapshot{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+ flex-basis:100%;width:100%;padding:12px 14px;margin-top:4px;
+ border:1px solid #6b886b;border-radius:9px;background:#223127;
+}
+.mykioo-history-expiry-snapshot>span{
+ display:block;font-size:12px;line-height:1.6;color:#e0ecd7;
+ overflow-wrap:anywhere;
+}
+.mykioo-history-expiry-snapshot>span b{
+ display:block;color:#b9deb4;font-size:11px;font-weight:750;margin-bottom:2px;
+}
+.mykioo-history-expiry-snapshot>span:last-child:nth-child(3){
+ grid-column:1/-1;padding-top:7px;border-top:1px solid #557359;color:#e6f1dc;
+}
+.mykioo-history-legacy-note{
+ flex-basis:100%;font-size:11px!important;font-style:italic;line-height:1.6;
+ color:#bcb0c5!important;
+}
+@media(max-width:540px){
+ .mykioo-history-expiry-snapshot{grid-template-columns:1fr;padding:11px;gap:8px}
+ .mykioo-history-expiry-snapshot>span:last-child:nth-child(3){grid-column:1}
+}
