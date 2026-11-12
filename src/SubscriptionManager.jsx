@@ -7,10 +7,11 @@ const addDays=(date,days)=>{if(!date||!days)return '';const d=new Date(date+'T12
 const newForm=()=>({...blank,starts_at:todayLocal(),expires_at:addDays(todayLocal(),365)});
 const dateOnly=value=>value?new Date(value).toISOString().slice(0,10):'';
 
-export default function SubscriptionManager({members=[],subscriptions=[],requests=[],language='en',onSaved}){
+export default function SubscriptionManager({members=[],subscriptions=[],requests=[],cancellations=[],language='en',onSaved}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
  const [form,setForm]=useState(newForm),[saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const clients=members.filter(m=>m.role==='member'||m.role==='owner');
+ const pendingCancellationIds=new Set(cancellations.filter(c=>c.status==='pending').map(c=>c.request_id));
  function update(field,value){
   setForm(current=>{
     const next={...current,[field]:value};
@@ -32,7 +33,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
    }else{
      setForm({...blank,request_id:r.id,member_id:r.member_id,service_name:r.service_name,contract_days:days,starts_at:today,expires_at:addDays(today,days),status:'active'});
    }
-   setNotice('');setError('');
+   setNotice(pendingCancellationIds.has(r.id)?tr('Cancellation approval is pending. Completing this order will automatically deny cancellation. No refunds after activation.','Une demande d’annulation attend votre approbation. La finalisation de cette commande refusera automatiquement l’annulation. Aucun remboursement après activation.'):'' );setError('');
    document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'});
  }
  async function changeRequest(r,status){
@@ -52,6 +53,8 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
  }
  async function save(e){
   e.preventDefault();if(saving)return;
+  if(form.request_id&&pendingCancellationIds.has(form.request_id)&&
+     !window.confirm(tr('A member has requested cancellation approval. Completing this subscription will deny the cancellation and activate or extend service without a refund. Continue?','Un membre a demandé une approbation d’annulation. Finaliser cet abonnement refusera l’annulation et activera ou prolongera le service sans remboursement. Continuer ?')))return;
   setSaving(true);setError('');setNotice('');
   try{
    const {data:{session},error:authError}=await supabase.auth.getSession();
@@ -73,10 +76,10 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
    {requests.length===0?<p>{tr('No requests yet.','Aucune demande pour le moment.')}</p>:
     requests.map(r=>{
       const client=clients.find(m=>m.user_id===r.member_id);
-      const status=fr?({pending:'En attente',in_review:'En cours',fulfilled:'Terminé',declined:'Refusé'})[r.status]:({pending:'Pending',in_review:'In review',fulfilled:'Completed',declined:'Declined'})[r.status];
+      const status=fr?({pending:'En attente',in_review:'En cours',fulfilled:'Terminé',declined:'Refusé',cancelled:'Annulé avant activation'})[r.status]:({pending:'Pending',in_review:'In review',fulfilled:'Completed',declined:'Declined',cancelled:'Cancelled before activation'})[r.status];
       return <article key={r.id} className="mykioo-sub-request-row">
        <div className="mykioo-sub-request-content"><strong>{r.request_type==='renewal'?tr('Renewal: ','Renouvellement : '):''}{r.service_name}</strong><span>{client?.display_name||client?.email||tr('Member','Membre')} · {({30:tr('1 month','1 mois'),90:tr('3 months','3 mois'),183:tr('6 months','6 mois'),365:tr('1 year','1 an'),730:tr('2 years','2 ans')})[r.contract_days]||tr('Custom duration','Durée personnalisée')}</span>
-       {r.notes&&<p>{r.notes}</p>}<small>{new Date(r.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>
+       {r.notes&&<p>{r.notes}</p>}{pendingCancellationIds.has(r.id)&&<p className="mykioo-cancellation-inline-warning">{tr('Cancellation approval requested — completing will automatically deny it.','Demande d’annulation en attente — la finalisation la refusera automatiquement.')}</p>}<small>{new Date(r.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>
        <span className="mykioo-ticket-status">{status||r.status}</span>
        {['pending','in_review'].includes(r.status)&&<div className="mykioo-sub-request-actions">
          <button type="button" disabled={saving} onClick={()=>completeRequest(r)}>{r.request_type==='renewal'?tr('Approve / extend contract','Approuver / prolonger le contrat'):tr('Complete / add login','Terminer / ajouter les accès')}</button>
