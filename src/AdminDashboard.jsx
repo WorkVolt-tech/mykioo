@@ -154,7 +154,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
   let channel=supabase.channel('mykioo-admin-live-'+user.id);
   tables.forEach(table=>{channel=channel.on('postgres_changes',{event:'*',schema:'public',table},sync)});
   channel.subscribe(status=>{if(status==='SUBSCRIBED')sync()});
-  const timer=window.setInterval(()=>{if(document.visibilityState==='visible')sync()},12000);
+  const timer=window.setInterval(()=>{if(document.visibilityState==='visible')sync()},60000);
   const onResume=()=>{if(document.visibilityState==='visible')sync()};
   window.addEventListener('focus',onResume);
   window.addEventListener('online',onResume);
