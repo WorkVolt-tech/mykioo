@@ -15,7 +15,7 @@ export function useReplyTemplates(enabled=true){
   if(!enabled)return;refresh();
   const channel=supabase.channel('mykioo-reply-templates-'+Math.random().toString(36).slice(2))
    .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_support_reply_templates'},refresh).subscribe(status=>{if(status==='SUBSCRIBED')refresh()});
-  const timer=setInterval(()=>{if(document.visibilityState==='visible')refresh()},12000);
+  const timer=setInterval(()=>{if(document.visibilityState==='visible')refresh()},120000);
   const resume=()=>{if(document.visibilityState==='visible')refresh()};
   window.addEventListener('focus',resume);window.addEventListener('online',resume);document.addEventListener('visibilitychange',resume);
   return()=>{clearInterval(timer);window.removeEventListener('focus',resume);window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',resume);supabase.removeChannel(channel)};
