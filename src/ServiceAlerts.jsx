@@ -25,7 +25,7 @@ export function useServiceAlerts({enabled=true}={}){
   const channel=supabase.channel('mykioo-alerts-'+Math.random().toString(36).slice(2))
    .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_service_alerts'},refresh)
    .subscribe(status=>{if(status==='SUBSCRIBED')refresh()});
-  const timer=setInterval(()=>{if(document.visibilityState==='visible')refresh()},12000);
+  const timer=setInterval(()=>{if(document.visibilityState==='visible')refresh()},60000);
   const resume=()=>{if(document.visibilityState==='visible')refresh()};
   window.addEventListener('focus',resume);window.addEventListener('online',resume);document.addEventListener('visibilitychange',resume);
   return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',resume);window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',resume);supabase.removeChannel(channel)};
