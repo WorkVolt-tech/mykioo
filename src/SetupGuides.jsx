@@ -40,7 +40,7 @@ export function useSetupGuides(enabled=true){
   const channel=supabase.channel('mykioo-setup-guides-'+Math.random().toString(36).slice(2))
    .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_setup_guides'},refresh)
    .subscribe(status=>{if(status==='SUBSCRIBED')refresh()});
-  const timer=setInterval(()=>{if(document.visibilityState==='visible')refresh()},16000);
+  const timer=setInterval(()=>{if(document.visibilityState==='visible')refresh()},120000);
   const onResume=()=>{if(document.visibilityState==='visible')refresh()};
   window.addEventListener('focus',onResume);window.addEventListener('online',onResume);document.addEventListener('visibilitychange',onResume);
   return()=>{clearInterval(timer);window.removeEventListener('focus',onResume);window.removeEventListener('online',onResume);document.removeEventListener('visibilitychange',onResume);supabase.removeChannel(channel)}
