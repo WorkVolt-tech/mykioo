@@ -49,7 +49,7 @@ useEffect(()=>{
    fetching=true;
    try{
      const {data,error}=await supabase.from('mykioo_support_tickets')
-      .select('id,subject,message,status,category,main_issue_id,created_at,updated_at')
+      .select('id,subject,message,status,category,device_type,app_name,error_details,main_issue_id,created_at,updated_at')
       .eq('member_id',user.id).order('created_at',{ascending:false}).limit(50);
      if(!error&&mounted)setTickets(data||[]);
    }finally{fetching=false}
@@ -190,7 +190,7 @@ return <div className="dashboard"><aside className={'sidebar '+(mobile?'sidebar-
  {t.device_type&&<span><strong>{tr('Device','Appareil')}:</strong> {tr(({fire_tv:'Fire TV / Fire Stick',android_tv:'Android TV / Google TV',apple_tv:'Apple TV',smart_tv:'Smart TV',ios:'iPhone / iPad',android:'Android phone / tablet',web:'Web browser',other:'Other'})[t.device_type]||t.device_type,({fire_tv:'Fire TV / Fire Stick',android_tv:'Android TV / Google TV',apple_tv:'Apple TV',smart_tv:'Téléviseur intelligent',ios:'iPhone / iPad',android:'Téléphone / tablette Android',web:'Navigateur Web',other:'Autre'})[t.device_type]||t.device_type)}</span>}
  {t.app_name&&<span><strong>{tr('App','Application')}:</strong> {t.app_name}</span>}
  {t.error_details&&<span><strong>{tr('Error','Erreur')}:</strong> {t.error_details}</span>}
- </div>}<small>{new Date(t.created_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA')}</small><RelatedIssue issueId={t.main_issue_id} language={language}/><SupportThread ticket={t} userId={user.id} language={language} unread={unreadCounts[t.id]||0} onRead={syncUnread}/></article>)}</div>}
+ </div>}<small>{new Date(t.created_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA')}</small><RelatedIssue issueId={t.main_issue_id} language={language}/><SupportThread ticket={t} userId={user.id} language={language} unread={unreadCounts[t.id]||0} onRead={syncUnread} onStatusChanged={()=>loadTickets({silent:true})}/></article>)}</div>}
  </div>
  </section>}{active==='My profile'&&<section className="mykioo-profile-card">
  <div className="mykioo-profile-head"><UserRound size={24}/><div><h2>{tr('Your preferred name','Votre nom préféré')}</h2><p>{tr('It can be a nickname, stage name, or any name you want us to call you. It does not need to be your real name.','Il peut s’agir d’un surnom, d’un nom d’artiste ou de tout autre nom. Vous n’avez pas besoin d’utiliser votre vrai nom.')}</p></div></div>
