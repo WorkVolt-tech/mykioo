@@ -896,3 +896,25 @@
 .mykioo-history-activation-note strong{font-size:12px;color:#c3ebc7}
 .mykioo-history-activation-note span{font-size:12px;color:#e1f0de}
 .mykioo-history-activation-note small{font-size:11px;color:#c3d9c6;line-height:1.6}
+
+
+/* Recorded subscription request milestones, shared by member and owner */
+.mykioo-sub-progress{width:100%;flex-basis:100%;border:1px solid #6b5975;border-radius:9px;background:#201a2a;min-width:0}
+.mykioo-sub-progress summary{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:11px 12px;color:#ead0a7;font-size:12px;font-weight:700;cursor:pointer;list-style:none}
+.mykioo-sub-progress summary::-webkit-details-marker{display:none}
+.mykioo-sub-progress summary>svg{flex-shrink:0;color:#e1c090}
+.mykioo-sub-progress summary>span{flex:1}
+.mykioo-sub-progress summary>small{color:#c4b7cf;font-size:10px;font-weight:600}
+.mykioo-sub-progress[open] summary{border-bottom:1px solid #564663}
+.mykioo-sub-progress-content{padding:13px 15px;display:grid;gap:0}
+.mykioo-sub-progress-step{display:flex;gap:11px;position:relative;min-height:53px}
+.mykioo-sub-progress-step:not(:last-of-type):before{content:'';position:absolute;top:25px;bottom:1px;left:12px;width:2px;background:#62526f}
+.mykioo-sub-progress-step-icon{display:grid;place-items:center;flex:0 0 26px;width:26px;height:26px;border:1px solid #8b7794;border-radius:50%;background:#3a2d47;color:#e7d0ec;z-index:1}
+.mykioo-sub-progress-step.success .mykioo-sub-progress-step-icon{background:#294331;color:#bce1c0;border-color:#668d6d}
+.mykioo-sub-progress-step.warning .mykioo-sub-progress-step-icon{background:#48352d;color:#f0cbae;border-color:#a9875c}
+.mykioo-sub-progress-step>div:last-child{display:grid;align-content:start;gap:3px;min-width:0;padding-bottom:13px}
+.mykioo-sub-progress-step strong{font-size:11px;color:#f1e4f0;line-height:1.5}
+.mykioo-sub-progress-step time{font-size:10px;color:#bcadca;line-height:1.5}
+.mykioo-sub-progress-current,.mykioo-sub-progress-legacy{font-size:11px;line-height:1.6;color:#d5bfa2;margin:7px 0;padding:9px 10px;border-radius:7px;background:#302734;overflow-wrap:anywhere}
+.mykioo-sub-progress-legacy{color:#b3a7bc;background:transparent;padding:3px 0}
+.mykioo-sub-progress summary:focus-visible{outline:2px solid #e9c387;outline-offset:2px}
