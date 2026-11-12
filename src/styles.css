@@ -611,3 +611,36 @@
 .mykioo-guide-actions button:disabled,.mykioo-guide-owner-row button:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:800px){.mykioo-guide-filters{grid-template-columns:1fr}.mykioo-guide-editor-grid{grid-template-columns:1fr}}
 @media(max-width:520px){.mykioo-guide-intro,.mykioo-guide-editor-heading{padding:15px}.mykioo-guide-editor-form{padding:14px}.mykioo-guide-summary-button{padding:13px}.mykioo-guide-help button{width:100%;justify-content:center}}
+
+
+/* Private support screenshots: customer submissions and ticket conversations */
+.mykioo-support-card form input[type="file"]{
+ width:100%;box-sizing:border-box;padding:12px;border:1px dashed #826e87;
+ border-radius:8px;background:#251f30;color:#f6e6f7;font-size:12px;
+}
+.mykioo-attachment-hint{display:block;margin:2px 0 9px;color:#baacbf;font-size:11px;line-height:1.6}
+.mykioo-ticket-selected-files{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px;background:#272032;border-radius:9px}
+.mykioo-ticket-selected-files span{font-size:11px;color:#f0d5bc;max-width:100%;overflow-wrap:anywhere}
+.mykioo-ticket-selected-files button{border:1px solid #846b6b;border-radius:7px;background:#422f3a;color:#f4dee4;font-size:11px;padding:8px;cursor:pointer}
+.mykioo-screenshot-panel{margin:14px 0;padding:15px;border:1px solid #655275;border-radius:11px;background:#211a2c;display:grid;gap:12px}
+.mykioo-screenshot-header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.mykioo-screenshot-header h4{display:flex;align-items:center;gap:9px;font-size:14px;color:#f2d1a2;margin:0}
+.mykioo-screenshot-header h4 span{font-size:11px;color:#cfbacd}
+.mykioo-screenshot-header button{border:1px solid #776078;border-radius:7px;display:flex;align-items:center;gap:6px;background:#33283d;color:#ecd7ed;cursor:pointer;padding:8px 10px;font-size:11px}
+.mykioo-screenshot-panel>p{margin:0;color:#b9acc6;font-size:11px;line-height:1.6}
+.mykioo-screenshot-empty{font-size:12px;color:#bcb0ca;font-style:italic}
+.mykioo-screenshot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px}
+.mykioo-screenshot-item{min-width:0;display:grid;gap:7px;padding:9px;border-radius:10px;border:1px solid #584763;background:#17131f}
+.mykioo-screenshot-item>a{display:block;position:relative;aspect-ratio:4/3;overflow:hidden;border-radius:7px;background:#312939}
+.mykioo-screenshot-item img{display:block;width:100%;height:100%;object-fit:contain}
+.mykioo-screenshot-item>a>svg{position:absolute;right:7px;top:7px;padding:4px;box-sizing:content-box;border-radius:5px;background:#251c35;color:#e8c48e}
+.mykioo-screenshot-unavailable{display:grid;place-items:center;height:120px;border-radius:7px;background:#352b3e;color:#ded0e4;font-size:11px;text-align:center;padding:8px}
+.mykioo-screenshot-item>small{font-size:10px;color:#bfb0cc;overflow-wrap:anywhere}
+.mykioo-screenshot-item>small:first-of-type{color:#f3e4f1;font-weight:700}
+.mykioo-screenshot-item>button{justify-self:start;display:flex;align-items:center;gap:6px;border:1px solid #996b62;border-radius:6px;background:#482b34;color:#ffe0d4;padding:7px 9px;font-size:11px;cursor:pointer}
+.mykioo-screenshot-picker{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mykioo-screenshot-picker input[type="file"]{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.mykioo-screenshot-picker>button{display:flex;align-items:center;gap:7px;border:1px solid #b29468;border-radius:8px;background:#49354a;color:#f9dda9;padding:10px 12px;font-size:12px;cursor:pointer;font-weight:750}
+.mykioo-screenshot-picker>button:disabled,.mykioo-screenshot-item>button:disabled{opacity:.6;cursor:not-allowed}
+.mykioo-screenshot-picker>small{color:#b8a9c3;font-size:11px}
+@media(max-width:520px){.mykioo-screenshot-panel{padding:11px}.mykioo-screenshot-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
