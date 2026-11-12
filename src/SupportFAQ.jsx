@@ -99,7 +99,7 @@ export function MemberSupportFAQ({language='en',category='other',subject='',onOp
    const match=scoreText([f.question_en,f.question_fr].join(' '),words)*4+
      scoreText([f.answer_en,f.answer_fr].join(' '),words);
    return {faq:f,rank:categoryBoost+match,match};
-  }).filter(({faq,match})=>words.length?match>0:faq.category===category||faq.category==='other')
+  }).filter(({faq,match})=>words.length?match>0:showAll||faq.category===category||faq.category==='other')
     .sort((a,b)=>b.rank-a.rank||a.faq.sort_order-b.faq.sort_order);
   return ranked.slice(0,showAll?20:5).map(x=>x.faq);
  },[faqs,category,query,showAll]);
