@@ -728,3 +728,17 @@
 }
 .mykioo-ticket-diagnostic-summary span{overflow-wrap:anywhere;white-space:pre-wrap}
 .mykioo-ticket-diagnostic-summary strong{color:#e9c58f;font-weight:800}
+
+
+/* Member acknowledgment of resolved support tickets */
+.mykioo-member-resolution{
+ display:grid;gap:10px;margin:12px 0;padding:15px;
+ border:1px solid #94744e;border-radius:10px;background:#312637;
+}
+.mykioo-member-resolution>strong{font-size:14px;color:#f1d29f}
+.mykioo-member-resolution>p{margin:0;font-size:12px;line-height:1.65;color:#e2d6e8}
+.mykioo-member-resolution-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.mykioo-member-resolution-actions button{padding:11px 13px;border:1px solid #b48c5c;border-radius:8px;cursor:pointer;background:#e2bf8a;color:#271e2d;font-size:12px;font-weight:750}
+.mykioo-member-resolution-actions button+button{background:#403047;color:#f3dfcb}
+.mykioo-member-resolution-actions button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:520px){.mykioo-member-resolution-actions button{flex:1;min-width:180px}}
