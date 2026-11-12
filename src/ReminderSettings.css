@@ -1,0 +1,24 @@
+.mykioo-reminder-settings{margin:18px 0 24px;padding:22px;border:1px solid rgba(223,187,125,.22);border-radius:16px;background:rgba(29,22,36,.68);color:inherit}
+.mykioo-reminder-head h2{display:flex;align-items:center;gap:10px;margin:0 0 8px;font-size:1.2rem}
+.mykioo-reminder-head p,.mykioo-reminder-option small,.mykioo-reminder-note,.mykioo-reminder-history-head small,.mykioo-reminder-log small{color:#c9bbd0;line-height:1.5}
+.mykioo-reminder-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,265px),1fr));gap:12px;margin:19px 0}
+.mykioo-reminder-option{display:flex;align-items:start;gap:13px;padding:14px;border:1px solid rgba(223,187,125,.2);border-radius:11px;background:rgba(255,255,255,.025);cursor:pointer}
+.mykioo-reminder-option input{accent-color:#dfbb7d;width:19px;height:19px;margin:1px 0 0;flex-shrink:0}
+.mykioo-reminder-option span{display:flex;flex-direction:column;gap:5px}
+.mykioo-reminder-option strong{font-size:.95rem}
+.mykioo-reminder-option small{font-size:.82rem}
+.mykioo-reminder-note{display:flex;align-items:center;gap:8px;font-size:.85rem;margin:12px 0 18px}
+.mykioo-reminder-history-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-top:1px solid rgba(223,187,125,.19);padding-top:18px}
+.mykioo-reminder-history-head h3{font-size:1.02rem;margin:0 0 4px}
+.mykioo-reminder-refresh{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(223,187,125,.4);border-radius:8px;background:transparent;color:inherit;padding:9px 12px;cursor:pointer}
+.mykioo-reminder-refresh:disabled{opacity:.55;cursor:default}
+.mykioo-reminder-history{display:grid;gap:9px;margin-top:14px}
+.mykioo-reminder-log{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:13px 15px;border:1px solid rgba(255,255,255,.11);border-radius:10px;background:rgba(255,255,255,.025)}
+.mykioo-reminder-log-main,.mykioo-reminder-log-status{display:flex;flex-direction:column;gap:3px}
+.mykioo-reminder-log-status{align-items:flex-end;text-align:right}
+.mykioo-reminder-status{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:.86rem}
+.mykioo-reminder-status.sent{color:#b5ebcb}.mykioo-reminder-status.failed{color:#ffb8b8}
+.mykioo-reminder-status.sending{color:#e7d19c}
+.mykioo-reminder-notice{color:#b5ebcb}.mykioo-reminder-error{color:#ffb8b8}
+.mykioo-reminder-empty{margin-top:12px;color:#c9bbd0}
+@media(max-width:600px){.mykioo-reminder-settings{padding:15px}.mykioo-reminder-log-status{align-items:flex-start;text-align:left}}
