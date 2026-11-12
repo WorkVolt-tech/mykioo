@@ -38,7 +38,7 @@ function useFAQs(enabled=true){
   const channel=supabase.channel('mykioo-faq-'+Math.random().toString(36).slice(2))
    .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_support_faqs'},refresh)
    .subscribe(status=>{if(status==='SUBSCRIBED')refresh()});
-  const interval=setInterval(()=>{if(document.visibilityState==='visible')refresh()},16000);
+  const interval=setInterval(()=>{if(document.visibilityState==='visible')refresh()},120000);
   const resume=()=>{if(document.visibilityState==='visible')refresh()};
   window.addEventListener('focus',resume);window.addEventListener('online',resume);document.addEventListener('visibilitychange',resume);
   return()=>{clearInterval(interval);window.removeEventListener('focus',resume);
