@@ -18,13 +18,13 @@ const displayDuration=(days,tr)=>({
  730:tr('2 years (730 days)','2 ans (730 jours)')
 })[days]||tr('Custom duration','Durée personnalisée');
 
-export default function SubscriptionRequests({userId,subscriptions=[],language='en',owner=false,members=[],requests=[],onSaved}){
+export default function SubscriptionRequests({userId,subscriptions=[],language='en',owner=false,members=[],requests=[],cancellations=[],onSaved}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [targetId,setTargetId]=useState(userId||'');
  const [requestType,setRequestType]=useState('new');
  const [service,setService]=useState(''),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
- const [ownRows,setOwnRows]=useState([]),[loading,setLoading]=useState(!owner),
-  [saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [ownRows,setOwnRows]=useState([]),[ownCancellations,setOwnCancellations]=useState([]),[loading,setLoading]=useState(!owner),
+  [saving,setSaving]=useState(false),[cancellingId,setCancellingId]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{if(userId&&(!targetId||!owner))setTargetId(userId)},[userId,owner]);
  useEffect(()=>{
   if(owner||!supabase||!userId)return;
@@ -32,15 +32,23 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   async function load(){
    if(!active||running)return;running=true;
    try{
-    const {data,error:readError}=await supabase.from('mykioo_subscription_requests')
+    const [requestsResult,cancellationsResult]=await Promise.all([
+     supabase.from('mykioo_subscription_requests')
       .select('id,service_name,contract_days,notes,status,created_at,updated_at,completed_at,previous_expires_at,renewed_expires_at,subscription_id,request_type,renewal_subscription_id')
-      .eq('member_id',userId).order('created_at',{ascending:false}).limit(50);
-    if(!readError&&active){setOwnRows(data||[]);setError('')}
+      .eq('member_id',userId).order('created_at',{ascending:false}).limit(50),
+     supabase.from('mykioo_subscription_cancellation_requests')
+      .select('request_id,status,reason,decision_note,created_at,updated_at,reviewed_at')
+      .eq('member_id',userId).order('created_at',{ascending:false}).limit(50)
+    ]);
+    if(!requestsResult.error&&!cancellationsResult.error&&active){
+     setOwnRows(requestsResult.data||[]);setOwnCancellations(cancellationsResult.data||[]);setError('');
+    }
    }finally{running=false;if(active)setLoading(false)}
   }
   load();
   const channel=supabase.channel('mykioo-my-subscription-requests-'+userId)
    .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_subscription_requests',filter:'member_id=eq.'+userId},load)
+   .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_subscription_cancellation_requests',filter:'member_id=eq.'+userId},load)
    .subscribe(status=>{if(status==='SUBSCRIBED')load()});
   const timer=setInterval(()=>{if(document.visibilityState==='visible')load()},60000);
   const resume=()=>{if(document.visibilityState==='visible')load()};
@@ -49,11 +57,31 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  },[userId,owner]);
  const users=useMemo(()=>members.filter(m=>m.status==='approved'&&(m.role==='member'||(m.role==='owner'&&m.user_id===userId))),[members,userId]);
  const rows=owner?requests.filter(r=>r.member_id===targetId):ownRows;
+ const cancellationRows=owner?cancellations.filter(c=>c.member_id===targetId):ownCancellations;
  const selectedSubs=subscriptions.filter(s=>s.member_id===(owner?targetId:userId));
  const eligible=selectedSubs.filter(s=>['active','expired'].includes(s.status));
  const pendingRenewals=new Set(rows.filter(r=>r.request_type==='renewal'&&['pending','in_review'].includes(r.status)).map(r=>r.renewal_subscription_id));
  function chooseType(value){setRequestType(value);setRenewalId('');setError('');setNotice('')}
  function chooseAccount(value){setTargetId(value);setRenewalId('');setRequestType('new');setError('');setNotice('')}
+ async function requestCancellation(request){
+  if(owner||saving||cancellingId||!['pending','in_review'].includes(request.status)||request.subscription_id||request.completed_at)return;
+  if(cancellationRows.some(c=>c.request_id===request.id))return;
+  if(!window.confirm(tr('Ask MYKIOO to cancel this request? Owner approval is required. If the service is completed or activated first, cancellation will be denied and no refund will be given.','Demander à MYKIOO d’annuler cette demande ? L’approbation du propriétaire est obligatoire. Si le service est terminé ou activé avant, l’annulation sera refusée et aucun remboursement ne sera accordé.')))return;
+  setCancellingId(request.id);setError('');setNotice('');
+  try{
+   const {data:{session},error:authError}=await supabase.auth.getSession();
+   if(authError||!session)throw Error(tr('Please sign in again.','Veuillez vous reconnecter.'));
+   const response=await fetch(endpoint,{method:'POST',headers:{
+    'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
+    'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+   },body:JSON.stringify({action:'request_cancellation',request_id:request.id})});
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok||!result.ok)throw Error(result.error||tr('Unable to request cancellation.','Impossible de demander une annulation.'));
+   setOwnCancellations(previous=>[{request_id:request.id,status:'pending',reason:'',created_at:new Date().toISOString()},...previous.filter(c=>c.request_id!==request.id)]);
+   setNotice(tr('Cancellation approval requested. Your order remains active until the owner approves it.','Demande d’annulation envoyée. Votre commande reste valide jusqu’à l’approbation du propriétaire.'));
+  }catch(err){setError(err.message||tr('Unable to request cancellation.','Impossible de demander une annulation.'))}
+  finally{setCancellingId('')}
+ }
  async function submit(e){
   e.preventDefault();if(saving)return;
   const renewal=requestType==='renewal';
@@ -143,6 +171,6 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
    {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
   </div>
-  <SubscriptionHistory requests={rows} subscriptions={selectedSubs} language={language} owner={owner}/>
+  <SubscriptionHistory requests={rows} cancellations={cancellationRows} subscriptions={selectedSubs} language={language} owner={owner} onRequestCancellation={owner?undefined:requestCancellation} cancellingId={cancellingId}/>
  </section>;
 }
