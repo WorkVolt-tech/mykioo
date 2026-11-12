@@ -36,6 +36,32 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
    setNotice(pendingCancellationIds.has(r.id)?tr('Cancellation approval is pending. Completing this order will automatically deny cancellation. No refunds after activation.','Une demande d’annulation attend votre approbation. La finalisation de cette commande refusera automatiquement l’annulation. Aucun remboursement après activation.'):'' );setError('');
    document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'});
  }
+ async function markActivated(r){
+  if(saving||r.service_activated_at||!['pending','in_review'].includes(r.status))return;
+  if(!window.confirm(tr(
+   'Confirm this service was ALREADY activated outside MYKIOO? This records an irreversible activation event and denies any pending cancellation request. It does not finish entering the subscription details. Continue?',
+   'Confirmez-vous que ce service a DÉJÀ été activé en dehors de MYKIOO ? Cette action enregistre l’activation de façon irréversible et refuse toute demande d’annulation en attente. Elle ne termine pas la saisie des détails de l’abonnement. Continuer ?'
+  )))return;
+  setSaving(true);setError('');setNotice('');
+  try{
+   const {data:{session},error:authError}=await supabase.auth.getSession();
+   if(authError||!session)throw Error(tr('Please sign in again.','Veuillez vous reconnecter.'));
+   const response=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-subscription-requests',{
+    method:'POST',headers:{'Content-Type':'application/json',
+     'Authorization':'Bearer '+session.access_token,
+     'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},
+    body:JSON.stringify({action:'mark_activated',request_id:r.id})
+   });
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok||!result.ok)throw Error(result.error||tr('Unable to record activation.','Impossible d’enregistrer l’activation.'));
+   setNotice(tr(
+    'External activation recorded. Cancellation is now unavailable. Finish the subscription details using Complete / add login.',
+    'Activation externe enregistrée. L’annulation est maintenant impossible. Terminez les détails de l’abonnement avec Terminer / ajouter les accès.'
+   ));
+   await onSaved?.();
+  }catch(err){setError(err.message||tr('Unable to record activation.','Impossible d’enregistrer l’activation.'))}
+  finally{setSaving(false)}
+ }
  async function changeRequest(r,status){
   if(saving)return;setSaving(true);setError('');setNotice('');
   try{
@@ -79,12 +105,13 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
       const status=fr?({pending:'En attente',in_review:'En cours',fulfilled:'Terminé',declined:'Refusé',cancelled:'Annulé avant activation'})[r.status]:({pending:'Pending',in_review:'In review',fulfilled:'Completed',declined:'Declined',cancelled:'Cancelled before activation'})[r.status];
       return <article key={r.id} className="mykioo-sub-request-row">
        <div className="mykioo-sub-request-content"><strong>{r.request_type==='renewal'?tr('Renewal: ','Renouvellement : '):''}{r.service_name}</strong><span>{client?.display_name||client?.email||tr('Member','Membre')} · {({30:tr('1 month','1 mois'),90:tr('3 months','3 mois'),183:tr('6 months','6 mois'),365:tr('1 year','1 an'),730:tr('2 years','2 ans')})[r.contract_days]||tr('Custom duration','Durée personnalisée')}</span>
-       {r.notes&&<p>{r.notes}</p>}{pendingCancellationIds.has(r.id)&&<p className="mykioo-cancellation-inline-warning">{tr('Cancellation approval requested — completing will automatically deny it.','Demande d’annulation en attente — la finalisation la refusera automatiquement.')}</p>}<small>{new Date(r.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>
+       {r.notes&&<p>{r.notes}</p>}{r.service_activated_at&&<p className="mykioo-external-activation-flag">{tr('Service activated externally','Service activé à l’extérieur')} · {new Date(r.service_activated_at).toLocaleString(fr?'fr-CA':'en-CA')} · {tr('Complete the MYKIOO record next.','Terminez ensuite le dossier MYKIOO.')}</p>}{pendingCancellationIds.has(r.id)&&<p className="mykioo-cancellation-inline-warning">{tr('Cancellation approval requested — completing will automatically deny it.','Demande d’annulation en attente — la finalisation la refusera automatiquement.')}</p>}<small>{new Date(r.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>
        <span className="mykioo-ticket-status">{status||r.status}</span>
        {['pending','in_review'].includes(r.status)&&<div className="mykioo-sub-request-actions">
          <button type="button" disabled={saving} onClick={()=>completeRequest(r)}>{r.request_type==='renewal'?tr('Approve / extend contract','Approuver / prolonger le contrat'):tr('Complete / add login','Terminer / ajouter les accès')}</button>
+         {!r.service_activated_at&&<button type="button" disabled={saving} className="mykioo-record-external-activation" onClick={()=>markActivated(r)}>{tr('Mark already activated','Marquer comme déjà activé')}</button>}
          {r.status==='pending'&&<button type="button" disabled={saving} onClick={()=>changeRequest(r,'in_review')}>{tr('Mark reviewing','Marquer en cours')}</button>}
-         <button type="button" disabled={saving} onClick={()=>changeRequest(r,'declined')}>{tr('Decline','Refuser')}</button>
+         {!r.service_activated_at&&<button type="button" disabled={saving} onClick={()=>changeRequest(r,'declined')}>{tr('Decline','Refuser')}</button>}
        </div>}
        {r.status==='declined'&&<button type="button" disabled={saving} onClick={()=>changeRequest(r,'in_review')}>{tr('Reopen','Rouvrir')}</button>}
       </article>;
