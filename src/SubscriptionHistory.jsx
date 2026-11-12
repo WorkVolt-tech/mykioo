@@ -120,6 +120,11 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
        {item.kind==='request'?<>
         <span><b>{tr('Duration requested','Durée demandée')}:</b> {duration(r.contract_days)}</span>
         {r.status==='fulfilled'&&(r.completed_at||r.updated_at)&&<span><b>{tr('Completed','Terminée')}:</b> {dateText(r.completed_at||r.updated_at)}</span>}
+        {r.service_activated_at&&<div className="mykioo-history-activation-note">
+         <strong>{tr('Service activated outside MYKIOO','Service activé en dehors de MYKIOO')}</strong>
+         <span>{tr('Activation recorded','Activation enregistrée')}: {dateText(r.service_activated_at)}</span>
+         <small>{tr('Cancellation is no longer available after recorded activation. Subscription processing can still be completed.','L’annulation n’est plus disponible après l’enregistrement de l’activation. Le traitement de l’abonnement peut toujours être terminé.')}</small>
+        </div>}
         {r.notes&&<span className="mykioo-history-notes"><b>{tr('Request notes','Notes de la demande')}:</b> {r.notes}</span>}
         {cancellation&&<div className={'mykioo-history-cancellation '+cancellation.status}>
          <strong>{cancellation.status==='pending'?tr('Cancellation requested — awaiting owner approval','Annulation demandée — approbation du propriétaire en attente'):
@@ -130,7 +135,7 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
            tr('The request was not cancelled. No refunds after service activation.','La demande n’a pas été annulée. Aucun remboursement après l’activation du service.')}</small>
          {cancellation.decision_note&&<small>{cancellation.decision_note}</small>}
         </div>}
-        {!owner&&onRequestCancellation&&!cancellation&&['pending','in_review'].includes(r.status)&&!r.subscription_id&&!r.completed_at&&
+        {!owner&&onRequestCancellation&&!cancellation&&['pending','in_review'].includes(r.status)&&!r.subscription_id&&!r.completed_at&&!r.service_activated_at&&
          <div className="mykioo-history-cancel-actions">
           <button type="button" disabled={Boolean(cancellingId)} onClick={()=>onRequestCancellation(r)}>
             {cancellingId===r.id?tr('Sending cancellation request…','Envoi de la demande d’annulation…'):tr('Request cancellation','Demander l’annulation')}
