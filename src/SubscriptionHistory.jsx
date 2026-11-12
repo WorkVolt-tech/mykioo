@@ -5,7 +5,8 @@ const requestStatuses={
  pending:['Pending review','En attente de traitement'],
  in_review:['Being reviewed','En cours de traitement'],
  fulfilled:['Completed','Terminée'],
- declined:['Declined','Refusée']
+ declined:['Declined','Refusée'],
+ cancelled:['Cancelled before completion','Annulée avant finalisation']
 };
 const serviceStatuses={
  pending:['Pending','En attente'],
@@ -22,12 +23,13 @@ const dayLabels={
  730:['2 years','2 ans']
 };
 const asTime=(value)=>{const parsed=Date.parse(value||'');return Number.isFinite(parsed)?parsed:0};
-export default function SubscriptionHistory({requests=[],subscriptions=[],language='en',owner=false}){
+export default function SubscriptionHistory({requests=[],cancellations=[],subscriptions=[],language='en',owner=false,onRequestCancellation,cancellingId=''}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [filter,setFilter]=useState('all'),[term,setTerm]=useState(''),[limit,setLimit]=useState(12);
  const dateText=(value)=>value&&asTime(value)?new Date(value).toLocaleDateString(fr?'fr-CA':'en-CA',{year:'numeric',month:'short',day:'numeric'}):'—';
  const duration=(days)=>dayLabels[days]?.[fr?1:0]||((days||'—')+' '+tr('days','jours'));
  const relatedSubscriptions=useMemo(()=>new Map(subscriptions.map(s=>[s.id,s])),[subscriptions]);
+ const cancellationByRequest=useMemo(()=>new Map(cancellations.map(c=>[c.request_id,c])),[cancellations]);
  const history=useMemo(()=>{
   const requestRecords=requests.map(r=>{
    const renewal=r.request_type==='renewal';
@@ -96,6 +98,7 @@ export default function SubscriptionHistory({requests=[],subscriptions=[],langua
   <div className="mykioo-history-list">
    {list.slice(0,limit).map(item=>{
     const r=item.record;
+    const cancellation=item.kind==='request'?cancellationByRequest.get(r.id):null;
     const status=item.kind==='service'?serviceStatuses[item.status]:requestStatuses[item.status];
     const renew=item.group==='renewals';
     return <article key={item.key} className="mykioo-history-item">
@@ -118,6 +121,22 @@ export default function SubscriptionHistory({requests=[],subscriptions=[],langua
         <span><b>{tr('Duration requested','Durée demandée')}:</b> {duration(r.contract_days)}</span>
         {r.status==='fulfilled'&&(r.completed_at||r.updated_at)&&<span><b>{tr('Completed','Terminée')}:</b> {dateText(r.completed_at||r.updated_at)}</span>}
         {r.notes&&<span className="mykioo-history-notes"><b>{tr('Request notes','Notes de la demande')}:</b> {r.notes}</span>}
+        {cancellation&&<div className={'mykioo-history-cancellation '+cancellation.status}>
+         <strong>{cancellation.status==='pending'?tr('Cancellation requested — awaiting owner approval','Annulation demandée — approbation du propriétaire en attente'):
+           cancellation.status==='approved'?tr('Cancellation approved by owner','Annulation approuvée par le propriétaire'):
+           tr('Cancellation denied','Annulation refusée')}</strong>
+         <small>{cancellation.status==='pending'?tr('Your subscription request remains valid until the owner approves cancellation.','Votre demande d’abonnement reste valide jusqu’à l’approbation de l’annulation.'):
+           cancellation.status==='approved'?tr('The order was cancelled before completion.','La commande a été annulée avant sa finalisation.'):
+           tr('The request was not cancelled. No refunds after service activation.','La demande n’a pas été annulée. Aucun remboursement après l’activation du service.')}</small>
+         {cancellation.decision_note&&<small>{cancellation.decision_note}</small>}
+        </div>}
+        {!owner&&onRequestCancellation&&!cancellation&&['pending','in_review'].includes(r.status)&&!r.subscription_id&&!r.completed_at&&
+         <div className="mykioo-history-cancel-actions">
+          <button type="button" disabled={Boolean(cancellingId)} onClick={()=>onRequestCancellation(r)}>
+            {cancellingId===r.id?tr('Sending cancellation request…','Envoi de la demande d’annulation…'):tr('Request cancellation','Demander l’annulation')}
+          </button>
+          <small>{tr('Owner approval required. No cancellation or refund after activation.','Approbation du propriétaire requise. Aucune annulation ni remboursement après activation.')}</small>
+         </div>}
         {item.linked&&<span><b>{tr('Linked service','Service associé')}:</b> {item.linked.service_name||tr('Subscription','Abonnement')}</span>}
         {renew&&r.status==='fulfilled'&&r.renewed_expires_at&&<div className="mykioo-history-expiry-snapshot">
          <span><b>{tr('Previous expiration','Expiration précédente')}:</b> {r.previous_expires_at?dateText(r.previous_expires_at):tr('Not previously recorded','Non enregistrée auparavant')}</span>
