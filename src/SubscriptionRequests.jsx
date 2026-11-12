@@ -33,7 +33,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    if(!active||running)return;running=true;
    try{
     const {data,error:readError}=await supabase.from('mykioo_subscription_requests')
-      .select('id,service_name,contract_days,notes,status,created_at,updated_at,subscription_id,request_type,renewal_subscription_id')
+      .select('id,service_name,contract_days,notes,status,created_at,updated_at,completed_at,previous_expires_at,renewed_expires_at,subscription_id,request_type,renewal_subscription_id')
       .eq('member_id',userId).order('created_at',{ascending:false}).limit(50);
     if(!readError&&active){setOwnRows(data||[]);setError('')}
    }finally{running=false;if(active)setLoading(false)}
