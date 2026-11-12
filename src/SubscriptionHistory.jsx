@@ -116,10 +116,16 @@ export default function SubscriptionHistory({requests=[],subscriptions=[],langua
       <div className="mykioo-history-details">
        {item.kind==='request'?<>
         <span><b>{tr('Duration requested','Durée demandée')}:</b> {duration(r.contract_days)}</span>
-        {r.status==='fulfilled'&&r.updated_at&&<span><b>{tr('Completed','Terminée')}:</b> {dateText(r.updated_at)}</span>}
+        {r.status==='fulfilled'&&(r.completed_at||r.updated_at)&&<span><b>{tr('Completed','Terminée')}:</b> {dateText(r.completed_at||r.updated_at)}</span>}
         {r.notes&&<span className="mykioo-history-notes"><b>{tr('Request notes','Notes de la demande')}:</b> {r.notes}</span>}
         {item.linked&&<span><b>{tr('Linked service','Service associé')}:</b> {item.linked.service_name||tr('Subscription','Abonnement')}</span>}
-        {renew&&item.linked?.expires_at&&<span><b>{tr('Current expiry date','Date d’expiration actuelle')}:</b> {dateText(item.linked.expires_at)}</span>}
+        {renew&&r.status==='fulfilled'&&r.renewed_expires_at&&<div className="mykioo-history-expiry-snapshot">
+         <span><b>{tr('Previous expiration','Expiration précédente')}:</b> {r.previous_expires_at?dateText(r.previous_expires_at):tr('Not previously recorded','Non enregistrée auparavant')}</span>
+         <span><b>{tr('Expiration after renewal','Expiration après le renouvellement')}:</b> {dateText(r.renewed_expires_at)}</span>
+         {r.previous_expires_at&&<span><b>{tr('Expiration moved by','Date d’expiration repoussée de')}:</b> +{Math.round((asTime(r.renewed_expires_at)-asTime(r.previous_expires_at))/86400000)} {tr('days','jours')}</span>}
+        </div>}
+        {renew&&r.status==='fulfilled'&&!r.renewed_expires_at&&<span className="mykioo-history-legacy-note">{tr('Historical before/after dates were not recorded for this older renewal.','Les dates avant/après n’avaient pas été enregistrées pour cet ancien renouvellement.')}</span>}
+        {renew&&item.linked?.expires_at&&<span><b>{tr('Current expiration','Expiration actuelle')}:</b> {dateText(item.linked.expires_at)}</span>}
        </>:<>
         {r.contract_days&&<span><b>{tr('Plan duration','Durée du forfait')}:</b> {duration(r.contract_days)}</span>}
         <span><b>{tr('Start','Début')}:</b> {dateText(r.starts_at)}</span>
@@ -133,6 +139,6 @@ export default function SubscriptionHistory({requests=[],subscriptions=[],langua
     {tr('Show 12 more records','Afficher 12 données supplémentaires')} ({list.length-limit} {tr('remaining','restantes')})
    </button>}
   </div>}
-  <p className="mykioo-history-footnote">{tr('History reflects saved requests and service records. Renewal entries show the requested duration; older expiry dates are not stored as separate snapshots.','L’historique reflète les demandes et dossiers enregistrés. Les renouvellements affichent la durée demandée; les anciennes dates d’expiration ne sont pas conservées dans des copies distinctes.')}</p>
+  <p className="mykioo-history-footnote">{tr('From now on, completed renewals preserve the before/after expiration dates. Older renewals without saved dates are marked as historical records.','Désormais, les renouvellements terminés conservent les dates d’expiration avant et après. Les anciens renouvellements sans dates enregistrées sont indiqués comme données historiques.')}</p>
  </section>;
 }
