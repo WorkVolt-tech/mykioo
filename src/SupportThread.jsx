@@ -48,7 +48,7 @@ export default function SupportThread({ticket,userId,language='en',owner=false,r
   const channel=supabase.channel('mykioo-thread-'+ticket.id)
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'mykioo_support_messages',filter:'ticket_id=eq.'+ticket.id},reload)
    .subscribe(status=>{if(status==='SUBSCRIBED')reload()});
-  const timer=window.setInterval(()=>{if(document.visibilityState==='visible')reload()},12000);
+  const timer=window.setInterval(()=>{if(document.visibilityState==='visible')reload()},60000);
   const onResume=()=>{if(document.visibilityState==='visible')reload()};
   window.addEventListener('focus',onResume);
   window.addEventListener('online',onResume);
