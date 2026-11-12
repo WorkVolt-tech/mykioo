@@ -30,7 +30,7 @@ export function useSupportUnread(userId,tickets){
     .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_support_messages'},()=>sync())
     .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_support_reads',filter:'user_id=eq.'+userId},()=>sync());
   channel.subscribe(status=>{if(status==='SUBSCRIBED')sync()});
-  const interval=setInterval(()=>{if(document.visibilityState==='visible')sync()},12000);
+  const interval=setInterval(()=>{if(document.visibilityState==='visible')sync()},60000);
   const resume=()=>{if(document.visibilityState==='visible')sync()};
   window.addEventListener('focus',resume);document.addEventListener('visibilitychange',resume);
   sync();
