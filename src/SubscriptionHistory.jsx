@@ -1,4 +1,5 @@
 import React,{useEffect,useMemo,useState} from 'react';
+import SubscriptionProgress from './SubscriptionProgress';
 import {History,CalendarClock,CheckCircle2,Clock3,RotateCcw,Search,Layers3} from 'lucide-react';
 
 const requestStatuses={
@@ -126,6 +127,7 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
          <small>{tr('Cancellation is no longer available after recorded activation. Subscription processing can still be completed.','L’annulation n’est plus disponible après l’enregistrement de l’activation. Le traitement de l’abonnement peut toujours être terminé.')}</small>
         </div>}
         {r.notes&&<span className="mykioo-history-notes"><b>{tr('Request notes','Notes de la demande')}:</b> {r.notes}</span>}
+        <SubscriptionProgress request={r} cancellation={cancellation} language={language}/>
         {cancellation&&<div className={'mykioo-history-cancellation '+cancellation.status}>
          <strong>{cancellation.status==='pending'?tr('Cancellation requested — awaiting owner approval','Annulation demandée — approbation du propriétaire en attente'):
            cancellation.status==='approved'?tr('Cancellation approved by owner','Annulation approuvée par le propriétaire'):
