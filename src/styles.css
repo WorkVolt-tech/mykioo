@@ -757,3 +757,55 @@
 .mykioo-request-hint{margin:0 0 10px;color:#d5c3dc;font-size:12px;line-height:1.6}
 .mykioo-owner-request-area{margin:18px 0 30px}
 .mykioo-owner-request-area>.mykioo-support-card{max-width:none}
+
+
+/* MYKIOO chronological subscription and renewal history */
+.mykioo-subscription-history{
+ display:grid;gap:16px;margin:18px 0 24px;padding:19px;
+ border:1px solid #655273;border-radius:13px;background:linear-gradient(145deg,#211b2c,#191622);
+ min-width:0;
+}
+.mykioo-history-heading{display:flex;align-items:flex-start;gap:12px}
+.mykioo-history-heading>svg{color:#e4bf8b;flex-shrink:0;margin-top:2px}
+.mykioo-history-heading h2{font-size:19px;color:#f2d5a7;margin:0 0 6px}
+.mykioo-history-heading p{font-size:12px;color:#c5b7d0;line-height:1.65;margin:0}
+.mykioo-history-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.mykioo-history-stats>div{display:grid;gap:8px;min-width:0;padding:12px;border:1px solid #594969;border-radius:10px;background:#201a2b}
+.mykioo-history-stats svg{color:#e2be8e}
+.mykioo-history-stats strong{font-size:23px;color:#f6e8d6;font-variant-numeric:tabular-nums}
+.mykioo-history-stats span{font-size:11px;color:#cbbfd0;line-height:1.45}
+.mykioo-history-toolbar{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(175px,.85fr);gap:10px;align-items:end}
+.mykioo-history-search{display:flex;align-items:center;gap:8px;border:1px solid #715c7c;background:#1a1524;padding:0 11px;border-radius:9px}
+.mykioo-history-search svg{color:#ddba8d;flex-shrink:0}
+.mykioo-history-search input{font:inherit;font-size:12px;color:#f6eaf5;background:transparent;border:0;padding:12px 0;outline:0;width:100%;min-width:0}
+.mykioo-history-search:focus-within{outline:2px solid #deb67d}
+.mykioo-history-filter{display:grid;gap:5px}
+.mykioo-history-filter span{font-size:10px;font-weight:700;color:#cbbbd1}
+.mykioo-history-filter select{background:#221c2d;border:1px solid #715c7c;border-radius:9px;color:#f3e5ef;font:inherit;font-size:12px;padding:10px 12px;width:100%;box-sizing:border-box}
+.mykioo-history-list{display:grid;gap:10px}
+.mykioo-history-item{display:flex;align-items:flex-start;gap:12px;background:#1b1725;border:1px solid #554763;border-radius:11px;padding:14px}
+.mykioo-history-symbol{display:grid;place-items:center;flex-shrink:0;width:37px;height:37px;border-radius:10px;background:#392e47;border:1px solid #7e6479;color:#edd2a4}
+.mykioo-history-symbol.renewal{background:#24383e;border-color:#5d8589;color:#afdae4}
+.mykioo-history-symbol.service{background:#2a362d;border-color:#66836c;color:#cae4be}
+.mykioo-history-info{flex:1;min-width:0;display:grid;gap:7px}
+.mykioo-history-title-line{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.mykioo-history-title-line>strong{font-size:13px;color:#f1e0ee}
+.mykioo-history-status{font-size:10px;font-weight:800;line-height:1.4;white-space:nowrap;padding:5px 8px;border:1px solid #796282;border-radius:999px;background:#34283c;color:#e8d9ed}
+.mykioo-history-status.active,.mykioo-history-status.fulfilled{border-color:#608b69;color:#cbefcd;background:#23362a}
+.mykioo-history-status.pending,.mykioo-history-status.in_review{border-color:#967f55;color:#eed09c;background:#3b312a}
+.mykioo-history-status.expired,.mykioo-history-status.declined,.mykioo-history-status.cancelled{border-color:#8a5c62;color:#eabbbe;background:#37242f}
+.mykioo-history-status.suspended{border-color:#a37b5f;color:#edc2a5;background:#403029}
+.mykioo-history-service-name{font-size:12px;font-weight:700;color:#e6c793;overflow-wrap:anywhere}
+.mykioo-history-info>small{font-size:10px;color:#b9adbe}
+.mykioo-history-details{display:flex;flex-wrap:wrap;gap:7px 15px}
+.mykioo-history-details span{color:#d7cadb;font-size:11px;line-height:1.55;overflow-wrap:anywhere}
+.mykioo-history-details b{font-weight:700;color:#f2e2dc}
+.mykioo-history-details .mykioo-history-notes{flex-basis:100%;white-space:pre-wrap}
+.mykioo-history-more{justify-self:center;background:#352941;color:#f3d2a2;border:1px solid #ac855b;border-radius:9px;padding:11px 15px;font-size:12px;font-weight:750;cursor:pointer}
+.mykioo-history-more:hover{background:#45334e}
+.mykioo-history-empty{display:grid;justify-items:center;text-align:center;gap:9px;padding:23px 12px;color:#c8b8cf;border:1px dashed #62516e;border-radius:10px}
+.mykioo-history-empty strong{font-size:13px;color:#f2e1ec}
+.mykioo-history-empty p{font-size:12px;line-height:1.5;margin:0}
+.mykioo-history-footnote{font-size:10px;color:#b2a7bc;line-height:1.6;margin:0}
+@media(max-width:780px){.mykioo-history-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.mykioo-subscription-history{padding:13px}.mykioo-history-toolbar{grid-template-columns:1fr}.mykioo-history-item{padding:11px;gap:9px}.mykioo-history-stats>div{padding:10px}}
