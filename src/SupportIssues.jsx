@@ -27,7 +27,7 @@ export function useSharedIssues(enabled=true){
   const channel=supabase.channel('mykioo-shared-issues-'+Math.random().toString(36).slice(2))
    .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_support_issues'},refresh)
    .subscribe(status=>{if(status==='SUBSCRIBED')refresh()});
-  const timer=setInterval(()=>{if(document.visibilityState==='visible')refresh()},12000);
+  const timer=setInterval(()=>{if(document.visibilityState==='visible')refresh()},60000);
   const resume=()=>{if(document.visibilityState==='visible')refresh()};
   window.addEventListener('focus',resume);window.addEventListener('online',resume);document.addEventListener('visibilitychange',resume);
   return()=>{clearInterval(timer);window.removeEventListener('focus',resume);window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',resume);supabase.removeChannel(channel)};
@@ -51,7 +51,7 @@ export function RelatedIssue({issueId,language='en'}){
   const channel=supabase.channel('mykioo-member-issue-'+issueId)
    .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_support_issues',filter:'id=eq.'+issueId},sync)
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'mykioo_support_issue_updates',filter:'issue_id=eq.'+issueId},sync).subscribe();
-  const timer=setInterval(()=>{if(document.visibilityState==='visible')sync()},12000);
+  const timer=setInterval(()=>{if(document.visibilityState==='visible')sync()},60000);
   return()=>{mounted=false;clearInterval(timer);supabase.removeChannel(channel)};
  },[issueId]);
  if(!issueId||!issue)return null;
