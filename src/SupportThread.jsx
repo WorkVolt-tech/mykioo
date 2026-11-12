@@ -5,12 +5,13 @@ import {supabase} from './supabase';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-support';
 
-export default function SupportThread({ticket,userId,language='en',owner=false,recipientLanguage='en',unread=0,onRead}){
+export default function SupportThread({ticket,userId,language='en',owner=false,recipientLanguage='en',unread=0,onRead,onStatusChanged}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
  const {templates}=useReplyTemplates(owner);
  const [draftLanguage,setDraftLanguage]=useState(recipientLanguage==='fr'?'fr':'en');
  const [selectedTemplate,setSelectedTemplate]=useState('');
  const latestReadRef=useRef('');const [expanded,setExpanded]=useState(false);const [messages,setMessages]=useState([]),[body,setBody]=useState(''),[loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [resolutionBusy,setResolutionBusy]=useState(false),[resolutionError,setResolutionError]=useState(''),[resolutionNotice,setResolutionNotice]=useState('');
  useEffect(()=>{
   if(!expanded)return;
   let active=true,fetching=false;
@@ -74,7 +75,35 @@ export default function SupportThread({ticket,userId,language='en',owner=false,r
   }catch(err){setError(err.message||tr('Unable to send reply.','Impossible d’envoyer la réponse.'))}
   finally{setSending(false)}
  }
+ async function resolveChoice(choice){
+  if(owner||ticket.status!=='resolved'||resolutionBusy||!['confirm','reopen'].includes(choice))return;
+  setResolutionBusy(true);setResolutionError('');setResolutionNotice('');
+  try{
+   const {data:{session},error:authError}=await supabase.auth.getSession();
+   if(authError||!session)throw Error(tr('Sign in again to continue.','Veuillez vous reconnecter.'));
+   const response=await fetch(endpoint,{method:'POST',headers:{
+    'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
+    'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+   },body:JSON.stringify({action:'member_resolution',ticket_id:ticket.id,choice})});
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok||!result.ok)throw Error(result.error||tr('Unable to update the ticket.','Impossible de mettre à jour la demande.'));
+   setResolutionNotice(choice==='confirm'?tr('Thank you! This ticket is now closed.','Merci ! Cette demande est maintenant fermée.'):
+    tr('Your ticket has been reopened. MYKIOO support has been notified.','Votre demande a été rouverte. L’assistance MYKIOO a été avisée.'));
+   await onStatusChanged?.();
+  }catch(err){setResolutionError(err?.message||tr('Unable to update the ticket.','Impossible de mettre à jour la demande.'))}
+  finally{setResolutionBusy(false)}
+ }
  return <div className="mykioo-thread">
+  {!owner&&ticket.status==='resolved'&&<div className="mykioo-member-resolution">
+   <strong>{tr('Has your issue been resolved?','Votre problème a-t-il été résolu ?')}</strong>
+   <p>{tr('MYKIOO has marked this request resolved. Confirm the fix or reopen it if you still need help.','MYKIOO a marqué cette demande comme résolue. Confirmez la résolution ou rouvrez-la si vous avez encore besoin d’aide.')}</p>
+   <div className="mykioo-member-resolution-actions">
+    <button type="button" disabled={resolutionBusy} onClick={()=>resolveChoice('confirm')}>{resolutionBusy?tr('Updating…','Mise à jour…'):tr('Yes, fixed — close ticket','Oui, c’est réglé — fermer')}</button>
+    <button type="button" disabled={resolutionBusy} onClick={()=>resolveChoice('reopen')}>{tr('Still need help — reopen','J’ai encore besoin d’aide — rouvrir')}</button>
+   </div>
+  </div>}
+  {resolutionError&&<p role="alert" className="mykioo-profile-error">{resolutionError}</p>}
+  {resolutionNotice&&<p role="status" className="mykioo-profile-success">{resolutionNotice}</p>}
   <button type="button" className="mykioo-thread-toggle" aria-expanded={expanded} onClick={()=>setExpanded(value=>!value)}>{expanded?tr("Hide conversation","Masquer la conversation"):tr("View conversation / Reply","Voir la conversation / Répondre")}{!expanded&&unread>0&&<span className="mykioo-unread-dot">{unread>99?"99+":unread}</span>}</button>
   {expanded&&<div className="mykioo-thread-content"><h4>{tr('Conversation','Conversation')}</h4>
   {loading?<p>{tr('Loading messages…','Chargement des messages…')}</p>:
