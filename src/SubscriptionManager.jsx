@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
+import SubscriptionDirectory from './SubscriptionDirectory';
 
 const blank={id:'',member_id:'',service_name:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:'',contract_days:365,service_password:'',request_id:''};
 const todayLocal=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
@@ -20,7 +21,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     return next;
   });setNotice('');setError('');
 }
- function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',request_id:''});setError('');setNotice('')}
+ function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',request_id:''});setError('');setNotice('');window.requestAnimationFrame(()=>document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'}))}
  function completeRequest(r){
    const today=todayLocal(),days=r.contract_days||365;
    if(r.request_type==='renewal'){
@@ -117,6 +118,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
       </article>;
     })}
   </section>
+  <SubscriptionDirectory subscriptions={subscriptions} members={clients} language={language} owner onEdit={edit}/>
   <section className="admin-invite" id="mykioo-subscription-editor">
    <strong>{form.request_id&&form.id?tr('Complete renewal','Terminer le renouvellement'):form.request_id?tr('Complete member request','Terminer la demande du membre'):form.id?tr('Edit subscription','Modifier l’abonnement'):tr('Add a member subscription','Ajouter un abonnement membre')}</strong>
    <p>{form.request_id&&form.id?tr("This extends the existing subscription and keeps the same login and encrypted password. The expiry date is prefilled and may be adjusted.","Cette opération prolonge l’abonnement existant et conserve ses identifiants et son mot de passe chiffré. La date d’expiration est préremplie et modifiable."):form.request_id?tr("Add the service credentials and dates to complete this request. The member will then see the subscription in their account.","Ajoutez les identifiants et les dates pour terminer cette demande. Le membre verra alors l’abonnement dans son compte."):tr("Each service login can have its own subscription, contract and status.","Chaque identifiant de service peut avoir son propre abonnement, sa durée et son statut.")}</p>
@@ -154,18 +156,6 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     </div>
    </form>
   </section>
-  <section className="mykioo-sub-list">
-   <h2>{tr('Member subscriptions','Abonnements des membres')}</h2>
-   {subscriptions.length===0?<p>{tr('No subscriptions yet.','Aucun abonnement pour le moment.')}</p>:
-    subscriptions.map(sub=>{
-      const member=clients.find(m=>m.user_id===sub.member_id);
-      return <article className="mykioo-sub-item" key={sub.id}>
-       <div><strong>{sub.service_name||tr('Unnamed service','Service sans nom')}</strong><span>{member?.display_name||member?.email||sub.member_id}</span>
-       <small>{[sub.service_username,sub.expires_at&&dateOnly(sub.expires_at)].filter(Boolean).join(' · ')}</small></div>
-       <span className="mykioo-ticket-status">{sub.status}</span>{sub.has_password&&<span className="mykioo-credentials-chip">{tr('Password saved','Mot de passe enregistré')}</span>}
-       <button className="admin-mini" onClick={()=>edit(sub)}>{tr('Edit','Modifier')}</button>
-      </article>
-    })}
-  </section>
+
  </div>;
 }
