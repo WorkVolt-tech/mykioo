@@ -35,7 +35,7 @@ export default function SupportDashboard({language='en',compact=false,onOpenSupp
    .on('postgres_changes',{event:'*',schema:'public',table:'mykioo_support_tickets'},load)
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'mykioo_support_messages'},load)
    .subscribe(status=>{if(status==='SUBSCRIBED')load()});
-  const timer=setInterval(()=>{if(document.visibilityState==='visible')load()},20000);
+  const timer=setInterval(()=>{if(document.visibilityState==='visible')load()},60000);
   const resume=()=>{if(document.visibilityState==='visible')load()};
   window.addEventListener('focus',resume);
   window.addEventListener('online',resume);
