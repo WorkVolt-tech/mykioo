@@ -1,3 +1,4 @@
+import {MemberSupportFAQ} from './SupportFAQ';
 import {MemberSetupGuides} from './SetupGuides';
 import {uploadSupportScreenshot,validateSupportScreenshots,SCREENSHOT_INITIAL_MAX} from './SupportScreenshots';
 import {RelatedIssue} from './SupportIssues';
@@ -129,6 +130,7 @@ return <div className="dashboard"><aside className={'sidebar '+(mobile?'sidebar-
  </article>)}<SubscriptionRequests userId={user.id} subscriptions={subscriptions} language={language}/></section>}{active==='Notifications'&&<NotificationCenter items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>setActive(section)}/>}{active==='Support'&&<section className="mykioo-support">
  <ServiceAlertBanner alerts={serviceAlerts} language={language}/>
  <ServiceAlertHistory alerts={serviceAlerts} language={language}/>
+ <MemberSupportFAQ language={language} category={ticketCategory} subject={ticketSubject} onOpenGuides={()=>setActive('Setup guides')}/>
  <div className="mykioo-support-card">
   <h2>{tr('Contact MYKIOO support','Contacter l’assistance MYKIOO')}</h2>
   <p>{tr('Tell us what you need help with. Your request is private and visible to the MYKIOO team.','Expliquez-nous votre problème. Votre demande est privée et visible par l’équipe MYKIOO.')}</p>
