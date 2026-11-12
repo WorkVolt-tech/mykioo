@@ -976,3 +976,60 @@
 .mykioo-owner-sub-queue-wait.extended{color:#ecc79a}
 .mykioo-owner-sub-queue-wait.extended svg{color:#e7b57d}
 @media(max-width:650px){.mykioo-owner-sub-queue-select{flex:1 1 145px;min-width:130px}.mykioo-owner-sub-queue-select select{max-width:none}.mykioo-owner-sub-queue-reset{align-self:end}}
+
+
+/* Shared responsive card sizing: keep content in the available width on every page.
+   The subscription wrapper is a flex column; centered flex children previously
+   shrank cards and forms down to their intrinsic text width. */
+.empty-panel{align-items:stretch;min-width:0}
+.empty-panel>svg,.empty-panel>h2,.empty-panel>p{align-self:center}
+.empty-panel>.mykioo-member-sub,.empty-panel>.mykioo-request-area{width:100%;max-width:100%;min-width:0}
+.empty-panel>.mykioo-member-sub{box-sizing:border-box}
+
+/* Do not allow intrinsic content (long IDs, forms, and nested cards) to
+   force the member/owner workspaces wider than the phone viewport. */
+@media(max-width:650px){
+ .dashboard,.workspace,.dash-content,.admin-layout,.admin-main,.empty-panel,
+ .mykioo-support,.mykioo-support-card,.mykioo-request-area,
+ .mykioo-subscription-history,.mykioo-sub-requests,.mykioo-sub-list,
+ .mykioo-member-sub,.mykioo-profile-card,.admin-invite,
+ .mykioo-billing,.mykioo-billing-box,.mykioo-billing-invoice{
+  min-width:0;max-width:100%;
+ }
+ .dashboard,.workspace,.dash-content,.admin-layout,.admin-main{
+  width:100%;box-sizing:border-box;
+ }
+ .dash-content{padding:26px 14px}
+ .admin-main{padding:20px 14px}
+ .empty-panel{padding:27px 13px}
+ .mykioo-support,.mykioo-request-area{width:100%}
+ .mykioo-support-card,.mykioo-sub-requests,.mykioo-member-sub,
+ .mykioo-subscription-history,.mykioo-billing-box,.mykioo-billing-invoice{
+  box-sizing:border-box;width:100%;
+ }
+ .mykioo-support-card{padding:17px}
+ .mykioo-support-card form,.mykioo-request-area form,
+ .mykioo-subscription-history form{min-width:0;max-width:100%}
+ .mykioo-support-card input,.mykioo-support-card select,
+ .mykioo-support-card textarea,.mykioo-request-area input,
+ .mykioo-request-area select,.mykioo-request-area textarea{
+  box-sizing:border-box;min-width:0;max-width:100%;width:100%;
+ }
+ .mykioo-sub-request-content{min-width:0}
+ .mykioo-sub-item{flex-wrap:wrap;min-width:0}
+ .admin-bar,.mykioo-support-header,.mykioo-ticket-heading{
+  flex-wrap:wrap;min-width:0;
+ }
+ .admin-table-wrap{max-width:100%;overflow-x:auto}
+ .mykioo-member-sub,.mykioo-support-card,.mykioo-billing-invoice,
+ .mykioo-subscription-history,.mykioo-sub-requests{overflow-wrap:anywhere}
+ .mykioo-reveal-button,.mykioo-reveal-buttons button,
+ .mykioo-support-card button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+}
+@media(max-width:480px){
+ .shortcut-grid{grid-template-columns:minmax(0,1fr)}
+ .shortcut{min-height:120px}
+ .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .stat-grid>.stat:last-child:nth-child(odd){grid-column:1/-1}
+ .stat{min-width:0}
+}
