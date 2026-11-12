@@ -135,7 +135,7 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
   {invoice.sender_name&&<p className="mykioo-billing-muted"><strong>{tr('Payment sent from','Paiement envoyé par')}:</strong> {invoice.sender_name}</p>}
   {invoice.payment_reference&&<p className="mykioo-billing-muted"><strong>{tr('Transaction / confirmation number','Numéro de transaction / confirmation')}:</strong> <code>{invoice.payment_reference}</code></p>}
   {invoice.submitted_note&&<p className="mykioo-billing-muted"><strong>{tr('Customer note','Note du client')}:</strong> {invoice.submitted_note}</p>}
-  {invoice.submitted_at&&<p className="mykioo-billing-muted">{tr('Customer confirmation submitted','Confirmation du client envoyée')}: {when(invoice.submitted_at,fr)}</p>
+  {invoice.submitted_at&&<p className="mykioo-billing-muted">{tr('Customer confirmation submitted','Confirmation du client envoyée')}: {when(invoice.submitted_at,fr)}</p>}
   {owner&&['payment_submitted','awaiting_payment'].includes(invoice.state)&&<form className="mykioo-billing-owner-form" onSubmit={e=>{e.preventDefault();onAction({action:'confirm_paid',invoice_id:invoice.id,verified,verification_note:verifyNote.trim(),payment_reference:verifyReference.trim()})}}>
     <strong>{tr('Confirm received payment','Confirmer le paiement reçu')}</strong>
     {isCrypto(invoice.method)&&!invoice.payment_reference&&<label>{tr('Verified transaction hash','Hachage de la transaction vérifiée')}
