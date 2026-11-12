@@ -742,3 +742,18 @@
 .mykioo-member-resolution-actions button+button{background:#403047;color:#f3dfcb}
 .mykioo-member-resolution-actions button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:520px){.mykioo-member-resolution-actions button{flex:1;min-width:180px}}
+
+
+/* Dismissible MYKIOO member mobile navigation */
+.mykioo-mobile-nav-backdrop{display:none}
+.mykioo-mobile-nav-close{display:none}
+@media(max-width:650px){
+ .mykioo-mobile-nav-backdrop{display:block;position:fixed;inset:0;z-index:4;border:0;border-radius:0;background:rgba(7,8,18,.68);backdrop-filter:blur(2px);cursor:pointer}
+ .sidebar.sidebar-open{left:0;z-index:6;box-shadow:18px 0 38px rgba(0,0,0,.55);overflow-y:auto}
+ .mykioo-mobile-nav-close{display:grid;position:absolute;right:12px;top:12px;width:40px;height:40px;place-items:center;border:1px solid #6b5678;border-radius:9px;background:#2b2338;color:#f2d4a4;cursor:pointer;z-index:1}
+ .sidebar .brand{padding-right:46px}
+ .mykioo-mobile-nav-close:focus-visible,.mykioo-mobile-nav-backdrop:focus-visible{outline:3px solid #deb67c;outline-offset:2px}
+}
+.mykioo-request-hint{margin:0 0 10px;color:#d5c3dc;font-size:12px;line-height:1.6}
+.mykioo-owner-request-area{margin:18px 0 30px}
+.mykioo-owner-request-area>.mykioo-support-card{max-width:none}
