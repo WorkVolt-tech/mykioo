@@ -58,11 +58,11 @@ function MethodPicker({invoice,language,onAction,busy}){
 }
 function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
- const [accepted,setAccepted]=useState(false),[revealed,setRevealed]=useState(false),[reference,setReference]=useState(''),[note,setNote]=useState('');
+ const [accepted,setAccepted]=useState(false),[revealed,setRevealed]=useState(false),[senderName,setSenderName]=useState(''),[reference,setReference]=useState(''),[note,setNote]=useState('');
  const [overrideAddress,setOverrideAddress]=useState(''),[manual,setManual]=useState(''),[verifyNote,setVerifyNote]=useState(''),[verifyReference,setVerifyReference]=useState('');
  const [verified,setVerified]=useState(false);
  const [localNotice,setLocalNotice]=useState('');
- useEffect(()=>{setAccepted(false);setRevealed(false);setReference('');setNote('');setLocalNotice('')},[invoice.id,invoice.method,invoice.destination]);
+ useEffect(()=>{setAccepted(false);setRevealed(false);setSenderName('');setReference('');setNote('');setLocalNotice('')},[invoice.id,invoice.method,invoice.destination]);
  const isReady=!!invoice.destination&&!!invoice.amount_due;
  const quoteExpired=isCrypto(invoice.method)&&invoice.quote_expires_at&&Date.now()>new Date(invoice.quote_expires_at).getTime();
  const status=statusNames[invoice.state]?.[fr?1:0]||invoice.state;
@@ -103,12 +103,15 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
       <small>{tr('QR code contains the address only. In your wallet you must independently select the exact token, network and amount.','Le code QR contient seulement l’adresse. Dans votre portefeuille, sélectionnez le jeton, le réseau et le montant exacts.')}</small></div>
      </div>}
   </div>}
-  {!owner&&invoice.state==='awaiting_payment'&&isReady&&!quoteExpired&&<form className="mykioo-billing-payment-form" onSubmit={e=>{e.preventDefault();onAction({action:'submit_payment',invoice_id:invoice.id,payment_reference:reference.trim(),submitted_note:note.trim(),ack_network:isCrypto(invoice.method)?accepted&&revealed:true})}}>
-   <strong>{tr('I sent the payment','J’ai envoyé le paiement')}</strong>
-   <label>{isCrypto(invoice.method)?tr('Blockchain transaction hash (required)','Hachage de la transaction (obligatoire)'):tr('Transfer confirmation/reference (optional)','Référence du virement (facultative)')}
-    <input value={reference} onChange={e=>setReference(e.target.value)} maxLength={160} required={isCrypto(invoice.method)} placeholder={isCrypto(invoice.method)?invoice.method==='btc'?'64 hexadecimal characters':'0x followed by 64 hexadecimal characters':tr('Payment confirmation number','Numéro de confirmation du paiement')}/></label>
+  {!owner&&invoice.state==='awaiting_payment'&&isReady&&!quoteExpired&&<form className="mykioo-billing-payment-form" onSubmit={e=>{e.preventDefault();onAction({action:'submit_payment',invoice_id:invoice.id,sender_name:senderName.trim(),payment_reference:reference.trim(),submitted_note:note.trim(),ack_network:isCrypto(invoice.method)?accepted&&revealed:true})}}>
+   <strong>{tr("I've sent the payment — confirm the details",'J’ai envoyé le paiement — confirmer les renseignements')}</strong>
+   <label>{isCrypto(invoice.method)?tr('Sender name (wallet or exchange account)','Nom de l’expéditeur (portefeuille ou compte de plateforme)'):tr('Name on the sending bank account','Nom du titulaire du compte bancaire expéditeur')}
+    <input value={senderName} onChange={e=>setSenderName(e.target.value)} type="text" autoComplete="name" minLength={2} maxLength={120} required placeholder={tr('Name payment was sent from','Nom utilisé pour envoyer le paiement')}/></label>
+   {isCrypto(invoice.method)&&<small>{tr('The sender name is not guaranteed to appear on-chain; the owner verifies the transaction separately.','Le nom de l’expéditeur n’apparaît pas nécessairement sur la chaîne de blocs; le propriétaire vérifie la transaction séparément.')}</small>}
+   <label>{isCrypto(invoice.method)?tr('Blockchain transaction hash (required)','Hachage de la transaction (obligatoire)'):tr('Transfer confirmation / transaction number (required)','Numéro de confirmation / transaction du virement (obligatoire)')}
+    <input value={reference} onChange={e=>setReference(e.target.value)} minLength={3} maxLength={160} required placeholder={isCrypto(invoice.method)?invoice.method==='btc'?'64 hexadecimal characters':'0x followed by 64 hexadecimal characters':tr('Payment confirmation number','Numéro de confirmation du paiement')}/></label>
    <label>{tr('Note (optional)','Note (facultative)')}<textarea value={note} onChange={e=>setNote(e.target.value)} maxLength={500} rows={2}/></label>
-   <button type="submit" className="mykioo-billing-primary" disabled={busy||(isCrypto(invoice.method)&&(!accepted||!revealed))}>{tr('Submit for owner verification','Soumettre pour vérification')}</button>
+   <button type="submit" className="mykioo-billing-primary" disabled={busy||senderName.trim().length<2||reference.trim().length<3||(isCrypto(invoice.method)&&(!accepted||!revealed))}>{tr("Confirm I've sent payment",'Confirmer l’envoi du paiement')}</button>
    <small>{tr('This does not confirm payment. Only the owner can verify received funds.','Cette action ne confirme pas le paiement. Seul le propriétaire peut vérifier la réception des fonds.')}</small>
   </form>}
   {!owner&&invoice.state==='payment_submitted'&&<div className="mykioo-billing-info"><Clock3 size={18}/>{tr('Your payment has been reported. The owner will confirm the actual deposit before fulfillment.','Votre paiement a été signalé. Le propriétaire vérifiera la réception réelle avant de fournir le service.')}</div>}
@@ -129,7 +132,10 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
   </form>}
   {owner&&invoice.destination&&<div className="mykioo-billing-owner-address"><strong>{tr('Destination on invoice','Destination sur la facture')}</strong><code>{invoice.destination}</code></div>}
   {owner&&invoice.state==='payment_submitted'&&<p className="mykioo-billing-info"><Clock3 size={18}/>{tr('Customer reports payment sent. Check your bank or Coinbase yourself.','Le client indique avoir payé. Vérifiez vous-même votre banque ou Coinbase.')}</p>}
-  {owner&&invoice.payment_reference&&<p className="mykioo-billing-muted">{tr('Submitted reference','Référence soumise')}: <code>{invoice.payment_reference}</code></p>}
+  {invoice.sender_name&&<p className="mykioo-billing-muted"><strong>{tr('Payment sent from','Paiement envoyé par')}:</strong> {invoice.sender_name}</p>}
+  {invoice.payment_reference&&<p className="mykioo-billing-muted"><strong>{tr('Transaction / confirmation number','Numéro de transaction / confirmation')}:</strong> <code>{invoice.payment_reference}</code></p>}
+  {invoice.submitted_note&&<p className="mykioo-billing-muted"><strong>{tr('Customer note','Note du client')}:</strong> {invoice.submitted_note}</p>}
+  {invoice.submitted_at&&<p className="mykioo-billing-muted">{tr('Customer confirmation submitted','Confirmation du client envoyée')}: {when(invoice.submitted_at,fr)}</p>
   {owner&&['payment_submitted','awaiting_payment'].includes(invoice.state)&&<form className="mykioo-billing-owner-form" onSubmit={e=>{e.preventDefault();onAction({action:'confirm_paid',invoice_id:invoice.id,verified,verification_note:verifyNote.trim(),payment_reference:verifyReference.trim()})}}>
     <strong>{tr('Confirm received payment','Confirmer le paiement reçu')}</strong>
     {isCrypto(invoice.method)&&!invoice.payment_reference&&<label>{tr('Verified transaction hash','Hachage de la transaction vérifiée')}
