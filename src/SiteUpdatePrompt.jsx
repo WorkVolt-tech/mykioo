@@ -7,7 +7,7 @@ const dismissedKey='mykioo-dismissed-deployment';
 
 export default function SiteUpdatePrompt(){
  const [available,setAvailable]=useState('');
- const [language,setLanguage]=useState(()=>document.documentElement.lang==='fr'?'fr':'en');
+ const [language,setLanguage]=useState(()=>{try{return localStorage.getItem('mykioo-language')==='fr'?'fr':'en'}catch{return 'en'}});
 
  useEffect(()=>{
   if(import.meta.env.DEV)return;
