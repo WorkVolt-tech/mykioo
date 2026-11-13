@@ -11,6 +11,7 @@ const dateOnly=value=>value?new Date(value).toISOString().slice(0,10):'';
 export default function SubscriptionManager({members=[],subscriptions=[],requests=[],cancellations=[],language='en',onSaved,view='all',onViewChange}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
  const [form,setForm]=useState(newForm),[saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [customerEmail,setCustomerEmail]=useState(''),[createdInvite,setCreatedInvite]=useState(null);
  const [requestFilter,setRequestFilter]=useState('open');
  const [paidRequests,setPaidRequests]=useState(new Set());
  useEffect(()=>{
@@ -33,7 +34,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
   }));
  }
  function startNewSubscription(){
-  setForm(newForm());setError('');setNotice('');openEditor();
+  setForm(newForm());setCustomerEmail('');setCreatedInvite(null);setError('');setNotice('');openEditor();
  }
  function update(field,value){
   setForm(current=>{
@@ -43,8 +44,9 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     return next;
   });setNotice('');setError('');
 }
- function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',device_count:row.device_count||1,request_id:''});setError('');setNotice('');openEditor()}
+ function edit(row){setCustomerEmail(clients.find(m=>m.user_id===row.member_id)?.email||'');setCreatedInvite(null);setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',device_count:row.device_count||1,request_id:''});setError('');setNotice('');openEditor()}
  function completeRequest(r){
+   setCustomerEmail(clients.find(m=>m.user_id===r.member_id)?.email||'');setCreatedInvite(null);
    if(r.preferred_payment_method&&!paidRequests.has(r.id)){
      setError(tr('Verify payment in Billing before completing this request.','Vérifiez le paiement dans Facturation avant de terminer cette demande.'));
      return;
@@ -107,20 +109,55 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
  async function save(e){
   e.preventDefault();if(saving)return;
   if(form.request_id&&pendingCancellationIds.has(form.request_id)&&
-     !window.confirm(tr('A member has requested cancellation approval. Completing this subscription will deny the cancellation and activate or extend service without a refund. Continue?','Un membre a demandé une approbation d’annulation. Finaliser cet abonnement refusera l’annulation et activera ou prolongera le service sans remboursement. Continuer ?')))return;
+    !window.confirm(tr('A member has requested cancellation approval. Completing this subscription will deny the cancellation and activate or extend service without a refund. Continue?','Un membre a demandé une approbation d’annulation. Finaliser cet abonnement refusera l’annulation et activera ou prolongera le service sans remboursement. Continuer ?')))return;
   setSaving(true);setError('');setNotice('');
+  let invitationSent=false;
   try{
    const {data:{session},error:authError}=await supabase.auth.getSession();
    if(authError||!session)throw Error(tr('Please sign in again.','Veuillez vous reconnecter.'));
-   const payload={action:'save',...form,contract_days:form.contract_days||null,starts_at:form.starts_at||null,expires_at:form.expires_at||null};
+   const email=customerEmail.trim().toLowerCase();
+   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)
+    throw Error(tr('Enter the customer email address.','Saisissez l’adresse courriel du client.'));
+   const matchingMember=clients.find(m=>m.email?.trim().toLowerCase()===email);
+   let resolvedMemberId=matchingMember?.user_id||null;
+   if(form.id||form.request_id){
+    if(!resolvedMemberId||resolvedMemberId!==form.member_id)
+     throw Error(tr('This subscription belongs to a different member. Use the existing account email.','Cet abonnement appartient à un autre membre. Utilisez le courriel du compte existant.'));
+   }else if(!resolvedMemberId){
+    if(createdInvite?.email===email){
+     resolvedMemberId=createdInvite.member_id;
+    }else{
+     const invitationResponse=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-admin',{
+      method:'POST',headers:{'Content-Type':'application/json',
+       'Authorization':'Bearer '+session.access_token,
+       'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},
+      body:JSON.stringify({action:'invite',email,language})
+     });
+     const invitation=await invitationResponse.json().catch(()=>({}));
+     if(!invitationResponse.ok||!invitation.ok||!invitation.member_id)
+      throw Error(invitation.error||tr('Could not issue the customer invitation.','Impossible d’envoyer l’invitation au client.'));
+     resolvedMemberId=invitation.member_id;
+     invitationSent=true;
+     setCreatedInvite({email,member_id:resolvedMemberId});
+     setForm(previous=>({...previous,member_id:resolvedMemberId}));
+    }
+   }
+   const payload={action:'save',...form,member_id:resolvedMemberId,contract_days:form.contract_days||null,
+    starts_at:form.starts_at||null,expires_at:form.expires_at||null};
    const response=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-subscriptions',{
     method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
     'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify(payload)});
    const result=await response.json().catch(()=>({}));
    if(!response.ok||!result.ok)throw Error(result.error||tr('Unable to save subscription.','Impossible d’enregistrer l’abonnement.'));
-   setForm(newForm());setNotice(tr('Subscription saved.','Abonnement enregistré.'));onSaved?.();
-  }catch(err){setError(err.message||tr('Unable to save subscription.','Impossible d’enregistrer l’abonnement.'))}
-  finally{setSaving(false)}
+   setForm(newForm());setCustomerEmail('');setCreatedInvite(null);
+   setNotice(invitationSent?
+    tr('Subscription saved. MYKIOO issued the new customer a site invitation. The account must be approved before access is granted.','Abonnement enregistré. MYKIOO a envoyé une invitation au nouveau client. Le compte doit être approuvé avant l’accès.'):
+    tr('Subscription saved for this customer.','Abonnement enregistré pour ce client.'));
+   onSaved?.();
+  }catch(err){
+   setError((createdInvite?tr('A site invitation may already have been issued. ','Une invitation a peut-être déjà été envoyée. '):'')+
+    (err.message||tr('Unable to save subscription.','Impossible d’enregistrer l’abonnement.')));
+  }finally{setSaving(false)}
  }
  return <div className="mykioo-sub-manager mykioo-sub-manager-separated">
   {(error||notice)&&<div className="mykioo-manager-feedback" aria-live="polite">
@@ -176,10 +213,18 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
    </div>
    <p>{form.request_id&&form.id?tr("This extends the existing subscription and keeps the same login and encrypted password. The expiry date is prefilled and may be adjusted.","Cette opération prolonge l’abonnement existant et conserve ses identifiants et son mot de passe chiffré. La date d’expiration est préremplie et modifiable."):form.request_id?tr("Add the service credentials and dates to complete this request. The member will then see the subscription in their account.","Ajoutez les identifiants et les dates pour terminer cette demande. Le membre verra alors l’abonnement dans son compte."):tr("Each service login can have its own subscription, contract and status.","Chaque identifiant de service peut avoir son propre abonnement, sa durée et son statut.")}</p>
    <form className="mykioo-sub-form" onSubmit={save}>
-    <label>{tr('Member','Membre')}<select required value={form.member_id} onChange={e=>update('member_id',e.target.value)}>
-     <option value="">{tr('Choose a member','Choisir un membre')}</option>
-     {clients.map(m=><option key={m.user_id} value={m.user_id}>{m.display_name||m.email} ({m.email})</option>)}
-    </select></label>
+    <div className="mykioo-owner-customer-email">
+     <label htmlFor="mykioo-owner-subscription-email">{tr('Customer email address','Adresse courriel du client')} *</label>
+     <input id="mykioo-owner-subscription-email" type="email" autoComplete="email" list="mykioo-owner-member-email-options"
+      value={customerEmail} onChange={e=>{setCustomerEmail(e.target.value);setCreatedInvite(null)}} required maxLength={254}
+      readOnly={Boolean(form.id||form.request_id)} placeholder="customer@example.com"/>
+     <datalist id="mykioo-owner-member-email-options">
+      {clients.map(m=><option key={m.user_id} value={m.email}>{m.display_name||m.email}</option>)}
+     </datalist>
+     <small>{form.id||form.request_id?
+      tr('This service belongs to the specified customer. To change ownership, contact support.','Ce service appartient au client indiqué. Pour changer de titulaire, contactez l’assistance.'):
+      tr('Existing email: save to that account. New email: create an invitation automatically and attach this subscription to the new account.','Courriel existant : enregistrer dans ce compte. Nouveau courriel : créer automatiquement une invitation et associer cet abonnement au nouveau compte.')}</small>
+    </div>
     <label>{tr('Service / package name','Service / nom du forfait')}<input required maxLength={80} value={form.service_name} onChange={e=>update('service_name',e.target.value)} placeholder={tr('e.g. Premium package','ex. Forfait premium')}/></label>
 
     <label>{tr('Service login username','Identifiant du service')}<input required={Boolean(form.request_id&&!form.id)} maxLength={160} autoComplete="off" value={form.service_username} onChange={e=>update('service_username',e.target.value)} placeholder={tr('Username / login ID','Nom d’utilisateur / identifiant')}/></label>
@@ -204,8 +249,8 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     <label>{tr('Start date','Date de début')}<input type="date" value={form.starts_at} onChange={e=>update('starts_at',e.target.value)}/></label>
     <label>{tr('Expiry date — automatically calculated; editable','Date d’expiration — calculée automatiquement, modifiable')}<input type="date" value={form.expires_at} onChange={e=>update('expires_at',e.target.value)}/></label>
     <p className="mykioo-sub-note">{tr('Passwords are encrypted on the server. Members must verify their email before viewing them. Encryption must first be configured in Supabase.','Les mots de passe sont chiffrés sur le serveur. Les membres doivent vérifier leur adresse courriel avant de les afficher. Le chiffrement doit d’abord être configuré dans Supabase.')}</p>
-    <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!clients.length} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):tr('Save subscription','Enregistrer l’abonnement')}</button>
-     {(form.id||form.request_id)&&<button className="admin-action" type="button" onClick={()=>{setForm(newForm());setError('')}}>{tr("Cancel editing","Annuler")}</button>}
+    <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!customerEmail.trim()} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):tr('Save subscription','Enregistrer l’abonnement')}</button>
+     {(form.id||form.request_id)&&<button className="admin-action" type="button" onClick={()=>{setForm(newForm());setCustomerEmail('');setCreatedInvite(null);setError('')}}>{tr("Cancel editing","Annuler")}</button>}
     </div>
    </form>
   </section>}
