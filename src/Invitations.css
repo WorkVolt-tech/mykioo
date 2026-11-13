@@ -1,0 +1,48 @@
+/* Invitations shared between the member portal and owner approval workspace. */
+.mykioo-member-invitations,.mykioo-owner-invitation-center{box-sizing:border-box;width:100%;max-width:960px;min-width:0;display:grid;align-content:start;gap:19px}
+.mykioo-invitation-intro{display:flex;align-items:flex-start;gap:15px;padding:22px;background:#1f1b2b;border:1px solid #59445b;border-radius:14px;color:#efd29d}
+.mykioo-invitation-intro>svg{flex:none;margin-top:4px}
+.mykioo-invitation-intro h2{font-size:21px;margin:0 0 8px;color:#f7ebf6;line-height:1.3}
+.mykioo-invitation-intro p{font-size:13px;line-height:1.65;color:#d2c4d5;margin:0}
+.mykioo-invitation-form{display:grid;gap:11px;padding:20px;background:#211d2d;border:1px solid #55445d;border-radius:13px}
+.mykioo-invitation-form label{font-size:13px;color:#edd4aa;font-weight:750}
+.mykioo-invitation-input-row{display:flex;align-items:stretch;gap:10px}
+.mykioo-invitation-input-row input{min-width:0;flex:1;padding:13px 14px;background:#171522;color:#f7eff9;border:1px solid #6b546f;border-radius:9px;font:inherit}
+.mykioo-invitation-input-row button,.mykioo-owner-invitation-actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 15px;border-radius:9px;border:1px solid #b6915d;background:#d1ad79;color:#201525;font-weight:800;cursor:pointer;font-size:13px}
+.mykioo-invitation-input-row button:disabled,.mykioo-owner-invitation-actions button:disabled{opacity:.58;cursor:not-allowed}
+.mykioo-invitation-form small{color:#bfb3c9;font-size:12px;line-height:1.5}
+.mykioo-invitation-error,.mykioo-invitation-notice{padding:13px;border-radius:9px;font-size:13px;line-height:1.6}
+.mykioo-invitation-error{background:#3b202a;border:1px solid #986171;color:#ffd5dc}
+.mykioo-invitation-notice{background:#20362b;border:1px solid #688b70;color:#daf1df}
+.mykioo-invitations-list-title{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.mykioo-invitations-list-title h3{font-size:19px;color:#f6e9f4;margin:0}
+.mykioo-invitations-list-title button{display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #685675;background:#30293b;color:#efd7ab;padding:9px;cursor:pointer}
+.mykioo-invitations-list,.mykioo-owner-invitation-list{display:grid;gap:10px}
+.mykioo-invitation-item{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border:1px solid #483a53;border-radius:11px;padding:14px 16px;background:#221d2d}
+.mykioo-invitation-item>div{display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}
+.mykioo-invitation-item strong,.mykioo-owner-invitation-info>strong{color:#f3e8f0;font-size:14px;overflow-wrap:anywhere}
+.mykioo-invitation-item small{color:#bcb0c7;font-size:12px}
+.mykioo-invitation-status{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;border:1px solid #695675;background:#30263b;color:#e5d5ee;border-radius:30px;padding:6px 9px;font-size:11px;font-weight:700;line-height:1.25}
+.mykioo-invitation-status.pending{background:#392d27;color:#f1d5aa;border-color:#7a634e}
+.mykioo-invitation-status.approved{background:#23382d;color:#cce9d0;border-color:#57765d}
+.mykioo-invitation-status.rejected{background:#402830;color:#f0c6cd;border-color:#885762}
+.mykioo-invitations-empty{padding:21px;border-radius:12px;border:1px dashed #64546e;color:#cbbdd4;font-size:13px}
+.mykioo-invite-tools{display:flex;align-items:center;gap:11px}
+.mykioo-invite-tools label{display:grid;gap:5px;color:#e9cea1;font-size:11px;font-weight:700}
+.mykioo-invite-tools select{padding:9px 11px;border:1px solid #6b5773;border-radius:9px;background:#292232;color:#f6edf7;font:inherit;font-size:12px}
+.mykioo-owner-invitation-item{display:flex;align-items:center;flex-wrap:wrap;gap:13px 18px;justify-content:space-between;border:1px solid #54435e;background:#211e2d;border-radius:12px;padding:16px 18px}
+.mykioo-owner-invitation-info{flex:1 1 230px;min-width:0;display:grid;gap:9px}
+.mykioo-owner-invitation-info>div{display:grid;gap:6px;color:#c7bbcf;font-size:12px;line-height:1.5}
+.mykioo-owner-invitation-info>div b{color:#ebd2a9;font-weight:700;overflow-wrap:anywhere}
+.mykioo-owner-invitation-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;flex:0 0 auto}
+.mykioo-owner-invitation-actions button{padding:10px 13px}
+.mykioo-owner-invitation-actions button.reject{background:#352730;color:#f4cbd2;border:1px solid #8d5964}
+.mykioo-owner-past-invitations{border:1px solid #51435d;border-radius:11px;padding:12px 14px}
+.mykioo-owner-past-invitations summary{color:#edd0a0;cursor:pointer;font-size:13px;font-weight:700}
+.mykioo-owner-past-invitations>.mykioo-invitations-list{padding-top:14px}
+.mykioo-sub-manager .mykioo-owner-customer-email{display:grid;gap:8px;margin-bottom:17px}
+.mykioo-owner-customer-email label{font-size:13px;font-weight:700;color:#eed4aa}
+.mykioo-owner-customer-email input{width:100%;min-width:0;max-width:100%;box-sizing:border-box;padding:12px 13px;background:#1a1826;border:1px solid #66536e;border-radius:9px;color:#f7eff9;font:inherit}
+.mykioo-owner-customer-email small{font-size:12px;line-height:1.5;color:#c6bace}
+.mykioo-owner-customer-email .mykioo-invitation-warning{color:#e9c898}
+@media(max-width:600px){.mykioo-invitation-input-row{flex-direction:column}.mykioo-invitation-input-row button{width:100%}.mykioo-invitation-intro{padding:16px}.mykioo-owner-invitation-item{padding:14px}.mykioo-owner-invitation-actions{width:100%}.mykioo-owner-invitation-actions button{flex:1}.mykioo-invite-tools{width:100%;justify-content:space-between}}
