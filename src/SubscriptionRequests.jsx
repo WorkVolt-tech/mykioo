@@ -213,15 +213,40 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
      <select id="mykioo-request-payment-method" required value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)}>
       {Object.entries(PAYMENT_LABELS).map(([value,label])=><option key={value} value={value}>{label}</option>)}
      </select>
-     {paymentMethod==='zelle'&&<p className="mykioo-request-payment-note">{tr('This package price is in CAD. MYKIOO will confirm the USD amount on your invoice before you send payment.','Ce prix est en CAD. MYKIOO confirmera le montant en USD sur votre facture avant le paiement.')}</p>}
-     {paymentMethod==='btc'&&<p className="mykioo-request-payment-note">{tr('Bitcoin Mainnet only. Never send Bitcoin Cash (BCH). The amount and receiving address will be provided after review.','Bitcoin Mainnet uniquement. N’envoyez jamais de Bitcoin Cash (BCH). Le montant et l’adresse seront communiqués après vérification.')}</p>}
-     {paymentMethod==='shib'&&<p className="mykioo-request-payment-note">{tr('SHIB on Ethereum Mainnet (ERC-20) only — not Shibarium, Base, Polygon or BNB Chain. Wait for your exact invoice instructions.','SHIB uniquement sur Ethereum Mainnet (ERC-20) — pas Shibarium, Base, Polygon ou BNB Chain. Attendez les instructions exactes de votre facture.')}</p>}
-     <p className="mykioo-request-payment-note">{tr('Payment instructions follow owner review. You can change the method on an unpaid invoice. Activation is manual after payment verification.','Les instructions suivent l’examen du propriétaire. Vous pouvez changer le mode sur une facture impayée. L’activation est manuelle après vérification du paiement.')}</p>
+     {isBankPayment&&<div className="mykioo-inline-bank-payment">
+      <h3>{tr('Send payment before submitting','Effectuez le paiement avant d’envoyer la demande')}</h3>
+      {checkoutLoading?<p className="mykioo-request-payment-note">{tr('Checking payment instructions…','Vérification des instructions de paiement…')}</p>:
+       !bankReady?<p className="mykioo-request-payment-note" role="status">
+        {tr('This bank payment option is not yet configured for this package. Do not send funds until payment details appear.','Ce mode de paiement n’est pas encore configuré pour ce forfait. N’envoyez aucun paiement tant que les détails ne sont pas affichés.')}
+        {paymentMethod==='zelle'&&<span> {tr('The USD amount also needs to be set by MYKIOO.','Le montant en USD doit également être défini par MYKIOO.')}</span>}
+       </p>:<>
+        <p className="mykioo-bank-pay-amount">{tr('Transfer exactly','Transférez exactement')} <strong>{checkout.currency==='CAD'?'CA$':'US$'}{Number(checkout.amount_due).toFixed(2)}</strong></p>
+        <p className="mykioo-bank-pay-address"><span>{tr('Send to','Envoyez à')}: <strong>{checkout.destination}</strong></span>
+          <button type="button" onClick={()=>navigator.clipboard?.writeText(String(checkout.destination)).catch(()=>{})}>{tr('Copy','Copier')}</button></p>
+        <p className="mykioo-request-payment-note">{tr('Complete the transfer in your banking app, then enter the information below and submit this form. Your payment is not considered verified until MYKIOO checks the deposit.','Effectuez le virement dans votre application bancaire, puis remplissez les champs ci-dessous et soumettez la demande. Le paiement ne sera confirmé qu’après vérification du dépôt par MYKIOO.')}</p>
+        <label htmlFor="mykioo-bank-sender">{tr('Name on the sending account','Nom du titulaire du compte expéditeur')} *</label>
+        <input id="mykioo-bank-sender" required minLength={2} maxLength={120} autoComplete="name" value={senderName} onChange={e=>setSenderName(e.target.value)}
+         placeholder={tr('Full sender name','Nom complet de l’expéditeur')}/>
+        <label htmlFor="mykioo-bank-reference">{tr('Bank transfer confirmation / transaction number','Numéro de confirmation / transaction bancaire')} *</label>
+        <input id="mykioo-bank-reference" required minLength={3} maxLength={160} value={paymentReference} onChange={e=>setPaymentReference(e.target.value)}
+         placeholder={tr('Confirmation number from your bank','Numéro de confirmation de votre banque')}/>
+        <label className="mykioo-bank-pay-ack">
+          <input type="checkbox" checked={transferConfirmed} onChange={e=>setTransferConfirmed(e.target.checked)} required/>
+          <span>{tr('I confirm I have actually sent this payment to the listed account.','Je confirme avoir réellement envoyé ce paiement au compte indiqué.')}</span>
+        </label>
+       </>}
+     </div>}
+     {(paymentMethod==='btc'||paymentMethod==='shib')&&<div className="mykioo-crypto-request-note">
+       <strong>{tr('Cryptocurrency invoice provided by MYKIOO','Facture crypto fournie par MYKIOO')}</strong>
+       <p>{tr('Submit your subscription request now without sending payment. The owner will prepare your invoice with the exact crypto amount and receiving address. You will then pay and confirm the transaction hash in Payments.','Soumettez votre demande sans envoyer de paiement. Le propriétaire préparera la facture avec le montant crypto exact et l’adresse de réception. Vous paierez ensuite et confirmerez le hachage de la transaction dans Paiements.')}</p>
+       <p>{paymentMethod==='btc'?tr('BTC on Bitcoin Mainnet only — never send Bitcoin Cash (BCH).','BTC uniquement sur Bitcoin Mainnet — jamais Bitcoin Cash (BCH).'):
+          tr('SHIB on Ethereum Mainnet (ERC-20) only — not Shibarium, Base, Polygon or BNB Chain.','SHIB uniquement sur Ethereum Mainnet (ERC-20) — pas Shibarium, Base, Polygon ou BNB Chain.')}</p>
+     </div>}
      <label htmlFor="mykioo-request-notes">{tr('Additional details (optional)','Détails supplémentaires (facultatif)')}</label>
     <textarea id="mykioo-request-notes" maxLength={1000} rows={3} value={notes} onChange={e=>setNotes(e.target.value)}
      placeholder={tr('Anything else we should know?','Autres renseignements utiles ?')}/>
-    <button type="submit" disabled={saving||(requestType==='renewal'&&(!renewalId||pendingRenewals.has(renewalId)))||(owner&&!targetId)}>
-     {saving?tr('Sending…','Envoi…'):requestType==='renewal'?tr('Submit renewal request','Envoyer la demande de renouvellement'):tr('Submit new request','Envoyer la nouvelle demande')}
+    <button type="submit" disabled={saving||(isBankPayment&&(!bankReady||!transferConfirmed||senderName.trim().length<2||paymentReference.trim().length<3))||(requestType==='renewal'&&(!renewalId||pendingRenewals.has(renewalId)))||(owner&&!targetId)}>
+     {saving?tr('Sending…','Envoi…'):isBankPayment?tr('Submit request with payment confirmation','Envoyer la demande avec confirmation du paiement'):requestType==='renewal'?tr('Request renewal — crypto invoice follows','Demander le renouvellement — facture crypto à suivre'):tr('Request subscription — crypto invoice follows','Demander l’abonnement — facture crypto à suivre')}
     </button>
    </form>
    {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
