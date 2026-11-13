@@ -60,7 +60,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',resume);window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',resume);supabase.removeChannel(channel)};
  },[userId,owner]);
  useEffect(()=>{
-  if(!supabase)return;
+  if(!supabase||view==='history')return;
   let live=true;const controller=new AbortController();
   setCheckout(null);setCheckoutLoading(true);
   async function loadCheckout(){
@@ -80,7 +80,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   }
   loadCheckout();
   return()=>{live=false;controller.abort()};
- },[contractDays,deviceCount,paymentMethod]);
+ },[contractDays,deviceCount,paymentMethod,view]);
  const isBankPayment=paymentMethod==='interac'||paymentMethod==='zelle';
  const bankReady=isBankPayment&&checkout?.available===true&&!!checkout?.destination&&Number(checkout?.amount_due)>0;
  const users=useMemo(()=>members.filter(m=>m.status==='approved'&&(m.role==='member'||(m.role==='owner'&&m.user_id===userId))),[members,userId]);
