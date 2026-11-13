@@ -1062,3 +1062,29 @@
 .mykioo-crypto-request-note strong{color:#f0d0a2}
 .mykioo-crypto-request-note p{margin:0!important;line-height:1.55;font-size:12px!important}
 @media(max-width:650px){.mykioo-inline-bank-payment,.mykioo-crypto-request-note{padding:13px}.mykioo-bank-pay-amount strong{font-size:20px}}
+
+
+/* Clear member experience: subscription checkout and subscription history now use separate pages. */
+.mykioo-subscription-checkout{max-width:790px;margin:0 auto;display:flex;flex-direction:column;gap:14px;min-width:0}
+.mykioo-subscription-checkout .mykioo-request-area{margin-top:0;display:block;min-width:0}
+.mykioo-subscription-checkout .mykioo-support-card{max-width:100%;min-width:0}
+.mykioo-subscription-records{display:flex;flex-direction:column;gap:20px;min-width:0}
+.mykioo-subscription-records .mykioo-request-history-page{min-width:0;max-width:100%}
+.mykioo-nav-secondary-link{display:inline-flex;align-items:center;justify-content:center;gap:9px;align-self:flex-start;margin:2px 0 16px;padding:11px 16px;border:1px solid #897152;border-radius:10px;background:rgba(219,188,134,.09);color:#ecd39f;font-weight:700;font-size:13px;cursor:pointer}
+.mykioo-nav-secondary-link:hover,.mykioo-nav-secondary-link:focus-visible{background:rgba(219,188,134,.18);outline-offset:3px}
+.mykioo-checkout-step{display:flex;align-items:center;gap:10px;min-width:0;margin:9px 0 2px;font-size:15px;color:#f5e4c3}
+.mykioo-checkout-step span{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;width:27px;height:27px;background:#d6b581;color:#24192c;font-weight:800;font-size:12px}
+.mykioo-checkout-step strong{font-size:15px;line-height:1.4}
+.mykioo-duration-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%;min-width:0}
+.mykioo-support-card form .mykioo-duration-option{display:flex;flex-direction:column;align-items:flex-start;gap:6px;justify-self:stretch;text-align:left;min-width:0;width:100%;margin:0;padding:15px 16px;border:1px solid #66536e;border-radius:10px;background:#272232;color:#f5edf6;cursor:pointer;box-shadow:none}
+.mykioo-support-card form .mykioo-duration-option strong{font-size:16px;color:#f6e9cc}
+.mykioo-support-card form .mykioo-duration-option span{color:#c7b8c9;font-size:12px}
+.mykioo-support-card form .mykioo-duration-option.selected{border:2px solid #dfbc83;background:rgba(219,188,134,.14);padding:14px 15px}
+.mykioo-support-card form .mykioo-duration-option:focus-visible{outline:2px solid #f4d8ac;outline-offset:3px}
+.mykioo-checkout-optional,.mykioo-checkout-policy{width:100%;min-width:0;box-sizing:border-box;border:1px solid rgba(217,190,147,.25);border-radius:9px;padding:11px 13px;background:rgba(255,255,255,.025)}
+.mykioo-checkout-optional summary,.mykioo-checkout-policy summary{cursor:pointer;color:#e5d0ad;font-size:12px;font-weight:700;line-height:1.5}
+.mykioo-checkout-optional[open],.mykioo-checkout-policy[open]{display:grid;gap:11px}
+.mykioo-checkout-optional textarea{margin-top:4px}
+.mykioo-checkout-policy{margin-top:13px}
+.mykioo-checkout-policy .mykioo-request-policy-note{font-size:11px!important;margin:0!important}
+@media(max-width:580px){.mykioo-duration-options{gap:8px}.mykioo-support-card form .mykioo-duration-option{padding:12px}.mykioo-support-card form .mykioo-duration-option.selected{padding:11px}.mykioo-nav-secondary-link{max-width:100%;width:100%;box-sizing:border-box;white-space:normal}}
