@@ -17,17 +17,64 @@ import SubscriptionManager from './SubscriptionManager';
 import {useSupportUnread} from './useSupportUnread';
 import SupportThread from './SupportThread';
 import React,{useEffect,useState} from 'react';
+import './AdminExperience.css';
 import {usePageSection} from './usePageSection';
-import {Users,MailPlus,ShieldCheck,CalendarDays,Receipt,Headphones,LogOut,RefreshCw,Clock3,LockKeyhole,AlertCircle,CheckCircle2,Bell,BookOpen,History} from 'lucide-react';
+import {Users,MailPlus,ShieldCheck,CalendarDays,Receipt,Headphones,LogOut,RefreshCw,Clock3,LockKeyhole,AlertCircle,CheckCircle2,Bell,BookOpen,History,Menu,X,ClipboardList,BarChart3,SlidersHorizontal,Megaphone,Settings2,Inbox} from 'lucide-react';
 import {supabase} from './supabase';
 const tabs=[{id:'overview',name:'Overview',icon:ShieldCheck},{id:'members',name:'Members',icon:Users},{id:'invitations',name:'Invitations',icon:MailPlus},{id:'subscriptions',name:'Subscriptions',icon:CalendarDays},{id:'orders',name:'Orders',icon:Receipt},{id:'billing',name:'Billing',icon:Receipt},{id:'guides',name:'Guides',icon:BookOpen},{id:'support',name:'Support',icon:Headphones},{id:'activity',name:'Activity',icon:History},{id:'notifications',name:'Notifications',icon:Bell}];
+const ownerNavGroups=[
+ {name:['WORKSPACE','ESPACE DE TRAVAIL'],ids:['overview','notifications']},
+ {name:['CUSTOMERS','CLIENTS'],ids:['members','invitations']},
+ {name:['SUBSCRIPTIONS & PAYMENTS','ABONNEMENTS ET PAIEMENTS'],ids:['subscriptions','orders','billing']},
+ {name:['SUPPORT & CONTENT','ASSISTANCE ET CONTENU'],ids:['support','guides']},
+ {name:['RECORDS','HISTORIQUE'],ids:['activity']}
+];
+const ownerLabels={
+ overview:['Overview','Vue d’ensemble'],members:['Members','Membres'],invitations:['Invitations','Invitations'],
+ subscriptions:['Subscriptions','Abonnements'],orders:['Orders','Commandes'],billing:['Billing','Facturation'],
+ guides:['Help content','Contenu d’aide'],support:['Support','Assistance'],activity:['Activity history','Historique des activités'],
+ notifications:['Notifications','Notifications']
+};
+const ownerDescriptions={
+ overview:['Your priorities, recent activity and key numbers in one place.','Vos priorités, activités récentes et chiffres clés en un seul endroit.'],
+ members:['Review and manage access for your members.','Consultez et gérez les accès de vos membres.'],
+ invitations:['Invite new members and track invitations.','Invitez de nouveaux membres et suivez les invitations.'],
+ subscriptions:['Process requests, manage services and handle renewals.','Traitez les demandes, gérez les services et les renouvellements.'],
+ orders:['Review order records and their status.','Consultez les commandes et leurs statuts.'],
+ billing:['Set up receiving details, verify transfers and manage crypto invoices.','Configurez les paiements, vérifiez les virements et gérez les factures crypto.'],
+ guides:['Maintain help articles and device setup instructions.','Gérez les articles d’aide et les instructions d’installation.'],
+ support:['A focused inbox for tickets, follow-ups and support operations.','Une boîte de réception claire pour les demandes, les suivis et les opérations.'],
+ activity:['Review the administration activity log.','Consultez le journal des activités administratives.'],
+ notifications:['Review messages and important updates.','Consultez les messages et mises à jour importantes.']
+};
+const supportViews=[
+ {id:'tickets',en:'Ticket inbox',fr:'Demandes',Icon:Inbox},
+ {id:'followups',en:'Follow-ups',fr:'Suivis',Icon:Clock3},
+ {id:'insights',en:'Statistics',fr:'Statistiques',Icon:BarChart3},
+ {id:'tools',en:'Templates & issues',fr:'Modèles et problèmes',Icon:SlidersHorizontal},
+ {id:'announcements',en:'Announcements',fr:'Annonces',Icon:Megaphone}
+];
+const subscriptionViews=[
+ {id:'queue',en:'Request queue',fr:'Demandes à traiter',Icon:ClipboardList},
+ {id:'services',en:'Manage services',fr:'Gérer les services',Icon:CalendarDays},
+ {id:'create',en:'New request',fr:'Nouvelle demande',Icon:MailPlus},
+ {id:'cancellations',en:'Cancellations',fr:'Annulations',Icon:AlertCircle},
+ {id:'reminders',en:'Reminders',fr:'Rappels',Icon:Clock3}
+];
+const guideViews=[
+ {id:'faq',en:'Help articles',fr:'Articles d’aide',Icon:BookOpen},
+ {id:'devices',en:'Setup guides',fr:'Guides d’installation',Icon:Settings2}
+];
 export default function AdminDashboard({user,logout,logo,fallbackLogo,language='en',onLanguageChange}) {
  const {notifications,unread:notificationUnread,markRead:markNotificationRead}=useNotifications(user.id);
  const [serviceAlerts,setServiceAlerts]=useServiceAlerts();
  const {followups,refresh:refreshFollowups}=useSupportFollowups();
  const fr=language==='fr';
  const tr=(english,french)=>fr?french:english;
- const [tab,setTab]=usePageSection(tabs.map(item=>item.id),'overview'),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [selectedTicketIds,setSelectedTicketIds]=useState([]);const [focusedTicket,setFocusedTicket]=useState(null);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all'),[supportPriorityFilter,setSupportPriorityFilter]=useState('all'),[supportCategoryFilter,setSupportCategoryFilter]=useState('all'),[supportSort,setSupportSort]=useState('priority');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
+ const [tab,setTab]=usePageSection(tabs.map(item=>item.id),'overview'),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [selectedTicketIds,setSelectedTicketIds]=useState([]);
+ const [mobileNav,setMobileNav]=useState(false),[supportView,setSupportView]=useState('tickets'),
+  [subscriptionView,setSubscriptionView]=useState('queue'),[guideView,setGuideView]=useState('faq'),
+  [expandedTickets,setExpandedTickets]=useState([]);const [focusedTicket,setFocusedTicket]=useState(null);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all'),[supportPriorityFilter,setSupportPriorityFilter]=useState('all'),[supportCategoryFilter,setSupportCategoryFilter]=useState('all'),[supportSort,setSupportSort]=useState('priority');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
  async function refresh({silent=false}={}){
   if(!silent){setLoading(true);setError('')}
   try{
@@ -195,7 +242,8 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  });
 
  async function viewSupportTicket(ticket){
-  setTab('support');
+  setTab('support');setSupportView('tickets');
+  setExpandedTickets(old=>old.includes(ticket.id)?old:[...old,ticket.id]);
   setSupportSearch(ticket.id);
   setSupportStatusFilter('all');
   setSupportIssueFilter('all');
@@ -205,14 +253,74 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     const {data,error}=await supabase.from('mykioo_support_tickets').select('*').eq('id',ticket.id).maybeSingle();
     if(!error&&data)setFocusedTicket(data);
   }
-  window.requestAnimationFrame(()=>document.getElementById('mykioo-support-ticket-results')?.scrollIntoView({behavior:'smooth',block:'start'}));
+  window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>document.getElementById('mykioo-support-ticket-results')?.scrollIntoView({behavior:'smooth',block:'start'})));
  }
  const cards=[[tr('Total members','Total des membres'),rows.members?.length||0,Users],[tr('Pending approval','En attente d’approbation'),rows.members?.filter(m=>m.status==='pending').length||0,Clock3],[tr('Active subscriptions','Abonnements actifs'),rows.subscriptions?.filter(s=>s.status==='active').length||0,CalendarDays],[tr('Open support tickets','Demandes d’assistance ouvertes'),rows.support?.filter(t=>t.status==='open').length||0,Headphones]];
  const columns={members:['display_name','email','status','role','created_at'],invitations:['email','status','expires_at','created_at'],subscriptions:['member_id','status','starts_at','expires_at'],orders:['member_id','status','total_amount','created_at'],support:['subject','status','member_id','created_at']};
  const list=rows[tab]||[];
+ const pendingSubscriptionCount=(rows.subscription_requests||[]).filter(r=>['pending','in_review'].includes(r.status)).length;
+ const pendingCancellationCount=(rows.cancellation_requests||[]).filter(r=>r.status==='pending').length;
+ const openSupportCount=(rows.support||[]).filter(ticket=>['open','in_progress'].includes(ticket.status)).length;
+ function navigate(next){setTab(next);setMobileNav(false);if(next==='support')setSupportView('tickets')}
+ function jumpToSubscription(item){
+  setSubscriptionView(item.category==='cancellations'?'cancellations':'services');
+  window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+   const target=document.getElementById(item.targetId);
+   target?.scrollIntoView({behavior:'smooth',block:'center'});target?.focus({preventScroll:true});
+  }));
+ }
+ useEffect(()=>{
+  if(!mobileNav)return;
+  const escape=e=>{if(e.key==='Escape')setMobileNav(false)};
+  document.addEventListener('keydown',escape);
+  return()=>document.removeEventListener('keydown',escape);
+ },[mobileNav]);
  return <div className="admin-layout">
- <aside className="admin-side"><img className="admin-logo" src={logo} onError={e=>{if(fallbackLogo&&e.currentTarget.src!==fallbackLogo)e.currentTarget.src=fallbackLogo}} alt="MYKIOO"/><div className="admin-side-label">{tr("OWNER CONTROL CENTER","CENTRE DE GESTION")}</div><nav>{tabs.map(({id,name,icon:Icon})=><button key={id} className={'admin-nav '+(tab===id?'active':'')} onClick={()=>setTab(id)}><Icon size={18}/>{name==='Support'&&unreadTotal>0&&<span className="mykioo-unread-dot">{unreadTotal>99?'99+':unreadTotal}</span>}{name==='Notifications'&&notificationUnread>0&&<span className="mykioo-unread-dot">{notificationUnread>99?'99+':notificationUnread}</span>}{tr(name,({Overview:"Vue d’ensemble",Members:"Membres",Invitations:"Invitations",Subscriptions:"Abonnements",Orders:"Commandes",Billing:"Facturation",Guides:"Guides",Support:"Assistance",Activity:"Activité",Notifications:"Notifications"})[name])}</button>)}</nav><div className="admin-bottom"><div className="admin-owner"><ShieldCheck size={16}/> {tr("Owner account","Compte propriétaire")}</div><button className="admin-nav" onClick={logout}><LogOut size={18}/> {tr("Sign out","Déconnexion")}</button></div></aside>
- <main className="admin-main"><header className="admin-bar"><div><span className="admin-tag">{tr("PRIVATE ADMINISTRATION","ADMINISTRATION PRIVÉE")}</span><h1>{tr(tabs.find(t=>t.id===tab)?.name,({overview:'Vue d’ensemble',members:'Membres',invitations:'Invitations',subscriptions:'Abonnements',orders:'Commandes',billing:'Facturation',guides:'Guides',support:'Assistance',activity:'Activité',notifications:'Notifications'})[tab])}</h1></div><div className="admin-account"><button type="button" className="mykioo-bell-button" onClick={()=>setTab('notifications')} aria-label={tr('Open notifications','Ouvrir les notifications')}><Bell size={18}/>{notificationUnread>0&&<span className="mykioo-unread-dot">{notificationUnread>99?'99+':notificationUnread}</span>}</button><span>{user.email}</span><div className="mykioo-language-switch" role="group" aria-label="Website language"><button type="button" className={fr?'':'selected'} aria-pressed={!fr} onClick={()=>onLanguageChange('en')}>EN</button><button type="button" className={fr?'selected':''} aria-pressed={fr} onClick={()=>onLanguageChange('fr')}>FR</button></div><button onClick={refresh} title="Refresh data" aria-label="Refresh data"><RefreshCw size={19}/></button></div></header>
+ {mobileNav&&<button className="admin-mobile-overlay" type="button" onClick={()=>setMobileNav(false)} aria-label={tr('Close owner menu','Fermer le menu propriétaire')}/>}
+ <aside id="mykioo-owner-sidebar" className={'admin-side '+(mobileNav?'admin-side-open':'')}>
+  <button type="button" className="admin-mobile-close" onClick={()=>setMobileNav(false)} aria-label={tr('Close menu','Fermer le menu')}><X size={21}/></button>
+  <img className="admin-logo" src={logo} onError={e=>{if(fallbackLogo&&e.currentTarget.src!==fallbackLogo)e.currentTarget.src=fallbackLogo}} alt="MYKIOO"/>
+  <div className="admin-side-label">{tr('OWNER CONTROL CENTER','CENTRE DE GESTION')}</div>
+  <nav aria-label={tr('Owner navigation','Navigation propriétaire')}>
+   {ownerNavGroups.map(group=><div key={group.name[0]} className="admin-nav-group">
+    <span className="admin-nav-group-title">{tr(...group.name)}</span>
+    {group.ids.map(id=>{
+     const item=tabs.find(t=>t.id===id);if(!item)return null;
+     const Icon=item.icon;
+     return <button key={id} type="button" className={'admin-nav '+(tab===id?'active':'')}
+      aria-current={tab===id?'page':undefined} onClick={()=>navigate(id)}>
+      <Icon size={18}/><span>{tr(...ownerLabels[id])}</span>
+      {id==='support'&&unreadTotal>0&&<span className="mykioo-unread-dot">{unreadTotal>99?'99+':unreadTotal}</span>}
+      {id==='notifications'&&notificationUnread>0&&<span className="mykioo-unread-dot">{notificationUnread>99?'99+':notificationUnread}</span>}
+     </button>
+    })}
+   </div>)}
+  </nav>
+  <div className="admin-bottom">
+   <div className="admin-owner"><ShieldCheck size={16}/>{tr('Owner account','Compte propriétaire')}</div>
+   <button type="button" className="admin-nav" onClick={logout}><LogOut size={18}/>{tr('Sign out','Déconnexion')}</button>
+  </div>
+ </aside>
+ <main className="admin-main">
+  <header className="admin-bar">
+   <button className="admin-mobile-toggle" type="button" onClick={()=>setMobileNav(v=>!v)}
+    aria-controls="mykioo-owner-sidebar" aria-expanded={mobileNav} aria-label={tr('Open owner menu','Ouvrir le menu propriétaire')}><Menu size={22}/></button>
+   <div className="admin-page-heading">
+    <span className="admin-tag">{tr('PRIVATE ADMINISTRATION','ADMINISTRATION PRIVÉE')}</span>
+    <h1>{tr(...ownerLabels[tab])}</h1>
+    <p className="admin-page-caption">{tr(...ownerDescriptions[tab])}</p>
+   </div>
+   <div className="admin-account">
+    <button type="button" className="mykioo-bell-button" onClick={()=>navigate('notifications')}
+     aria-label={tr('Open notifications','Ouvrir les notifications')}><Bell size={18}/>{notificationUnread>0&&<span className="mykioo-unread-dot">{notificationUnread>99?'99+':notificationUnread}</span>}</button>
+    <span className="admin-account-email" title={user.email}>{user.email}</span>
+    <div className="mykioo-language-switch" role="group" aria-label="Website language">
+     <button type="button" className={fr?'':'selected'} aria-pressed={!fr} onClick={()=>onLanguageChange('en')}>EN</button>
+     <button type="button" className={fr?'selected':''} aria-pressed={fr} onClick={()=>onLanguageChange('fr')}>FR</button>
+    </div>
+    <button type="button" onClick={()=>refresh()} title={tr('Refresh data','Actualiser les données')} aria-label={tr('Refresh data','Actualiser les données')}><RefreshCw size={18}/></button>
+   </div>
+  </header>
  {error&&<div className="admin-error" role="alert"><AlertCircle size={18}/>{error}</div>}{notice&&<div className="admin-success" role="status"><CheckCircle2 size={18}/>{notice}</div>}
  {tab==='overview'&&<><OwnerFollowUpBoard compact language={language} followups={followups} tickets={rows.support||[]}/><SupportDashboard compact language={language} onOpenSupport={()=>setTab('support')}/><NotificationCenter compact owner items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>setTab(section)}/><ServiceAlertBanner alerts={serviceAlerts} language={language} onOpen={()=>setTab('support')}/><ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner onOpen={()=>setTab('subscriptions')}/><p className="admin-description">{tr("Welcome to your MYKIOO management space. All information comes from your private Supabase project.","Bienvenue dans votre espace de gestion MYKIOO. Toutes les informations proviennent de votre projet Supabase privé.")}</p><div className="admin-stats">{cards.map(([label,n,Icon])=><div className="admin-stat" key={label}><Icon size={22}/><small>{label}</small><strong>{loading?'…':n}</strong></div>)}</div><div className="admin-info"><CheckCircle2 size={22}/><div><strong>{tr("Owner access is active","Accès propriétaire activé")}</strong><p>{tr("Your account is approved. You can now invite members and manage approval requests from the Members and Invitations sections.","Votre compte est approuvé. Vous pouvez inviter des membres et gérer les demandes d’approbation dans les sections Membres et Invitations.")}</p></div></div></>}
   {tab==='subscriptions'&&<OwnerSubscriptionQueue requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} members={rows.members||[]} language={language}/>}{tab==='subscriptions'&&<ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner/>}{tab==='subscriptions'&&<ReminderSettings userId={user.id} subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language}/>}{tab==='subscriptions'&&<SubscriptionRequests owner userId={user.id} members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>}
