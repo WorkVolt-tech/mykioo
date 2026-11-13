@@ -79,7 +79,7 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
    <small>#{invoice.id.slice(0,8).toUpperCase()} · {when(invoice.issued_at,fr)}{memberName?' · '+memberName:''}</small>
    <small>{tr('Request','Demande')}: #{invoice.request_id.slice(0,8)} · {req?.contract_days||'—'} {tr('days','jours')}</small>
   </div><span className={'mykioo-billing-chip '+(paidStatus(invoice)?'paid':invoice.state==='payment_submitted'?'submitted':'')}>{status}</span></div>
-  <div className="mykioo-billing-price-row"><span>{tr('Invoice prices','Prix facturés')}</span>
+  <div className="mykioo-billing-price-row"><span>{tr('Subscription price','Prix de l’abonnement')}</span>
     <strong>{money(invoice.amount_cad,'CAD')}{invoice.amount_usd!=null?' · '+money(invoice.amount_usd,'USD'):''}</strong></div>
   {invoice.method&&<div className="mykioo-billing-price-row"><span>{tr('Selected method','Mode choisi')}</span><strong>{displayMethods}</strong></div>}
   {invoice.method&&invoice.amount_due!==null&&<div className="mykioo-billing-price-row"><span>{tr('Exact amount to send','Montant exact à envoyer')}</span><strong>{money(invoice.amount_due,invoice.currency)}</strong></div>}
@@ -178,13 +178,13 @@ export function MemberBilling({userId,language='en'}){
   finally{setBusy(false)}
  }
  return <section className="mykioo-billing">
-  <div className="mykioo-billing-head"><div><h2><Receipt size={22}/>{tr('Payments & invoices','Paiements et factures')}</h2>
-   <p>{tr('View invoices issued by MYKIOO and report your payments. Payment confirmation is always manual.','Consultez les factures émises par MYKIOO et signalez vos paiements. La confirmation est toujours manuelle.')}</p></div>
+  <div className="mykioo-billing-head"><div><h2><Receipt size={22}/>{tr('Payments & crypto invoices','Paiements et factures crypto')}</h2>
+   <p>{tr('Interac and Zelle payment confirmations are submitted with subscription requests. BTC and SHIB invoices are issued separately. The owner verifies actual funds.','Les confirmations Interac et Zelle accompagnent les demandes d’abonnement. Les factures BTC et SHIB sont émises séparément. Le propriétaire vérifie les fonds.')}</p></div>
    <button type="button" onClick={()=>{setLoading(true);reload().catch(()=>setError(tr('Could not refresh','Actualisation impossible'))).finally(()=>setLoading(false))}}><RefreshCw size={17}/>{tr('Refresh','Actualiser')}</button>
   </div>
   {error&&<p className="mykioo-billing-error" role="alert">{error}</p>}{notice&&<p className="mykioo-billing-notice" role="status">{notice}</p>}
   {loading&&<p className="mykioo-billing-muted">{tr('Loading invoices…','Chargement des factures…')}</p>}
-  {!loading&&invoices.length===0&&<p className="mykioo-billing-empty">{tr('No invoice has been issued yet. After you request a subscription or renewal, MYKIOO will review it and issue payment instructions.','Aucune facture n’a été émise. Après une demande d’abonnement ou de renouvellement, MYKIOO l’examinera et préparera les instructions de paiement.')}</p>}
+  {!loading&&invoices.length===0&&<p className="mykioo-billing-empty">{tr('No payment records yet. Bank transfers are confirmed within the subscription request form; crypto payment instructions arrive after owner review.','Aucun paiement enregistré. Les virements bancaires sont confirmés dans le formulaire d’abonnement; les instructions crypto arrivent après l’examen du propriétaire.')}</p>}
   <div className="mykioo-billing-list">{invoices.map(inv=><InvoiceCard key={inv.id} invoice={inv} language={language} busy={busy} onAction={action}/>)}</div>
  </section>;
 }
@@ -265,8 +265,8 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
   await action({action:'save_usd_prices',prices});
  }
  return <section className="mykioo-billing">
-  <div className="mykioo-billing-head"><div><h2><Wallet size={23}/>{tr('Billing & manual payments','Facturation et paiements manuels')}</h2>
-   <p>{tr('Interac (CAD), Zelle (USD), Bitcoin Mainnet, and SHIB on Ethereum Mainnet only. No gateway, automatic charges, or automatic activation.','Interac (CAD), Zelle (USD), Bitcoin Mainnet et SHIB sur Ethereum Mainnet uniquement. Aucun intermédiaire, prélèvement automatique ni activation automatique.')}</p></div>
+  <div className="mykioo-billing-head"><div><h2><Wallet size={23}/>{tr('Payment verification & crypto invoices','Vérification des paiements et factures crypto')}</h2>
+   <p>{tr('Bank customers submit payment confirmation with their subscription request. You issue invoices only for BTC and SHIB. Verify every payment before activating.','Les clients bancaires soumettent leur confirmation avec la demande. Vous émettez des factures uniquement pour BTC et SHIB. Vérifiez chaque paiement avant activation.')}</p></div>
    <button type="button" onClick={()=>reload().catch(()=>setError(tr('Could not refresh','Actualisation impossible')))}><RefreshCw size={17}/>{tr('Refresh','Actualiser')}</button></div>
   {error&&<p className="mykioo-billing-error" role="alert">{error}</p>}{notice&&<p className="mykioo-billing-notice" role="status">{notice}</p>}
   {loading?<p className="mykioo-billing-muted">{tr('Loading billing…','Chargement de la facturation…')}</p>:<>
@@ -323,7 +323,7 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
      <button type="submit" disabled={busy||!requestId||(['btc','shib'].includes(selectedRequest?.preferred_payment_method)&&!cryptoAddress.trim())} className="mykioo-billing-primary">{busy?tr('Preparing…','Préparation…'):tr('Create crypto invoice and payment instructions','Créer la facture crypto et les instructions de paiement')}</button>
     </form>
    <div className="mykioo-billing-box">
-    <h3><Receipt size={18}/>{tr('Invoices & payment verification','Factures et vérification des paiements')}</h3>
+    <h3><Receipt size={18}/>{tr('Payment confirmations & crypto invoices','Confirmations de paiement et factures crypto')}</h3>
     <p className="mykioo-billing-muted">{tr('Only mark a payment verified after checking the actual bank deposit or confirmed Coinbase transaction. Customer submissions alone are not proof.','Confirmez le paiement seulement après vérification du dépôt bancaire ou de la transaction Coinbase confirmée. Une déclaration du client ne constitue pas une preuve.')}</p>
     {invoices.length===0?<p className="mykioo-billing-empty">{tr('No invoices yet.','Aucune facture pour le moment.')}</p>:
      <div className="mykioo-billing-list">{invoices.map(inv=><InvoiceCard key={inv.id} invoice={inv} memberName={accounts.get(inv.member_id)} language={language} owner busy={busy} onAction={action}/>)}</div>}
