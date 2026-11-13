@@ -89,6 +89,8 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const selectedSubs=subscriptions.filter(s=>s.member_id===(owner?targetId:userId));
  const eligible=selectedSubs.filter(s=>['active','expired'].includes(s.status));
  const pendingRenewals=new Set(rows.filter(r=>r.request_type==='renewal'&&['pending','in_review'].includes(r.status)).map(r=>r.renewal_subscription_id));
+ const selectedRenewal=eligible.find(s=>s.id===renewalId);
+ const renewalExpiry=sub=>sub.expires_at?new Date(sub.expires_at).toLocaleDateString(fr?'fr-CA':'en-CA',{year:'numeric',month:'short',day:'numeric'}):tr('Not available','Non disponible');
  function chooseType(value){setRequestType(value);setRenewalId('');if(value==='new')setDeviceCount(1);setError('');setNotice('')}
  function chooseAccount(value){setTargetId(value);setRenewalId('');setRequestType('new');setError('');setNotice('')}
  async function requestCancellation(request){
@@ -120,7 +122,9 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   if(isBankPayment&&(senderName.trim().length<2||paymentReference.trim().length<3||!transferConfirmed)){
    setError(tr('Send your bank transfer first, then enter the sender name, transfer confirmation number and check the confirmation box.','Effectuez le virement, puis indiquez le nom de l’expéditeur, le numéro de confirmation et cochez la case.'));return;
   }
-  if(!owner&&renewal&&(!renewalId||pendingRenewals.has(renewalId)))return;
+  if(!owner&&renewal&&(!renewalId||pendingRenewals.has(renewalId))){
+   setError(tr('Choose the subscription you want to renew before continuing.','Choisissez l’abonnement à renouveler avant de continuer.'));return;
+  }
   if(owner&&!users.some(m=>m.user_id===targetId)){setError(tr('Select an approved account.','Choisissez un compte approuvé.'));return}
   if(renewal&&!eligible.some(s=>s.id===renewalId&&!pendingRenewals.has(s.id))){
    setError(tr('Choose an eligible subscription without a pending renewal.','Choisissez un abonnement admissible sans renouvellement en attente.'));return;
@@ -184,21 +188,35 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
     <label htmlFor="mykioo-request-kind">{tr('Request type','Type de demande')}</label>
     <select id="mykioo-request-kind" value={requestType} onChange={e=>chooseType(e.target.value)}>
      <option value="new">{tr('New subscription','Nouvel abonnement')}</option>
-     <option value="renewal" disabled={!eligible.length}>{tr('Renew existing subscription','Renouveler un abonnement existant')}</option>
+     <option value="renewal">{tr('Renew existing subscription','Renouveler un abonnement existant')}</option>
     </select>
     {requestType==='new'?<>{owner&&<>
      <label htmlFor="mykioo-request-service">{tr('Service or package requested','Service ou forfait demandé')}</label>
      <input id="mykioo-request-service" required minLength={3} maxLength={80} value={service}
       onChange={e=>setService(e.target.value)} placeholder={tr('Which service would you like?','Quel service souhaitez-vous ?')}/>
     </>}</>:<>
-     <label htmlFor="mykioo-request-renewal-sub">{tr('Existing subscription','Abonnement existant')}</label>
-     <select id="mykioo-request-renewal-sub" required value={renewalId} onChange={e=>{const id=e.target.value;setRenewalId(id);const previous=eligible.find(sub=>sub.id===id);if(previous?.device_count)setDeviceCount(previous.device_count)}}>
-      <option value="">{tr('Choose a subscription','Choisir un abonnement')}</option>
+     <label htmlFor="mykioo-request-renewal-sub">{tr('Which subscription would you like to renew?','Quel abonnement souhaitez-vous renouveler ?')}</label>
+     <select id="mykioo-request-renewal-sub" required value={renewalId} onChange={e=>{
+      const id=e.target.value;
+      setRenewalId(id);setError('');setNotice('');
+      const previous=eligible.find(sub=>sub.id===id);
+      if(previous?.device_count)setDeviceCount(previous.device_count);
+     }}>
+      <option value="">{tr('Select the subscription to renew','Sélectionnez l’abonnement à renouveler')}</option>
       {eligible.map(sub=><option key={sub.id} value={sub.id} disabled={pendingRenewals.has(sub.id)}>
-       {sub.service_name||tr('Service','Service')} · {sub.service_username||tr('Account','Compte')} {pendingRenewals.has(sub.id)?tr('(renewal pending)','(renouvellement en attente)'):''}
+       {sub.service_name||tr('Subscription','Abonnement')} · {sub.service_username||sub.supplier_reference||'#'+sub.id.slice(0,8)} · {renewalExpiry(sub)} {pendingRenewals.has(sub.id)?tr('(renewal already pending)','(renouvellement déjà en attente)'):''}
       </option>)}
      </select>
-     <p className="mykioo-request-hint">{tr('Renewal extends this subscription. Your existing login details will be retained.','Le renouvellement prolonge cet abonnement. Vos identifiants existants seront conservés.')}</p>
+     {eligible.length===0&&<p className="mykioo-request-hint" role="status">{tr('No active or expired subscriptions are available to renew. Visit My subscriptions to review your services, or choose New subscription.','Aucun abonnement actif ou expiré n’est disponible pour le renouvellement. Consultez Mes abonnements ou choisissez Nouvel abonnement.')}</p>}
+     {selectedRenewal&&<div className="mykioo-renewal-selection" aria-live="polite">
+      <strong>{tr('You are renewing','Vous renouvelez')} : {selectedRenewal.service_name||tr('Subscription','Abonnement')}</strong>
+      <span>{tr('Service login','Identifiant du service')} : {selectedRenewal.service_username||tr('Not provided','Non fourni')}</span>
+      {selectedRenewal.supplier_reference&&<span>{tr('Subscription reference','Référence de l’abonnement')} : {selectedRenewal.supplier_reference}</span>}
+      <span>{tr('Current devices','Appareils actuels')} : {selectedRenewal.device_count||1}</span>
+      <span>{tr('Current expiry','Expiration actuelle')} : {renewalExpiry(selectedRenewal)}</span>
+      {pendingRenewals.has(selectedRenewal.id)&&<span>{tr('A renewal is already pending for this subscription.','Un renouvellement est déjà en attente pour cet abonnement.')}</span>}
+     </div>}
+     <p className="mykioo-request-hint">{tr('Only the selected subscription will be renewed. Your existing service login is kept.','Seul l’abonnement sélectionné sera renouvelé. Vos identifiants de service seront conservés.')}</p>
     </>}
     <label id="mykioo-request-duration-label">{requestType==='renewal'?tr('Renewal duration','Durée du renouvellement'):tr('Subscription duration','Durée de l’abonnement')}</label>
     <div className="mykioo-duration-options" role="group" aria-labelledby="mykioo-request-duration-label">
@@ -259,7 +277,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
        <textarea id="mykioo-request-notes" maxLength={1000} rows={3} value={notes} onChange={e=>setNotes(e.target.value)}
         placeholder={tr('Anything else we should know?','Autres renseignements utiles ?')}/>
       </details>}
-    <button type="submit" disabled={saving||(isBankPayment&&(!bankReady||!transferConfirmed||senderName.trim().length<2||paymentReference.trim().length<3))||(requestType==='renewal'&&(!renewalId||pendingRenewals.has(renewalId)))||(owner&&!targetId)}>
+    <button type="submit" disabled={saving||(isBankPayment&&(!bankReady||!transferConfirmed||senderName.trim().length<2||paymentReference.trim().length<3))||(requestType==='renewal'&&(!selectedRenewal||pendingRenewals.has(renewalId)))||(owner&&!targetId)}>
      {saving?tr('Sending…','Envoi…'):isBankPayment?tr('Submit request with payment confirmation','Envoyer la demande avec confirmation du paiement'):requestType==='renewal'?tr('Request renewal — crypto invoice follows','Demander le renouvellement — facture crypto à suivre'):tr('Request subscription — crypto invoice follows','Demander l’abonnement — facture crypto à suivre')}
     </button>
    </form>
