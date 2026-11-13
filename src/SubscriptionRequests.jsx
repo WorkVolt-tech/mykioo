@@ -23,7 +23,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [targetId,setTargetId]=useState(userId||'');
  const [requestType,setRequestType]=useState('new');
- const [service,setService]=useState('MYKIOO TV'),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
+ const [service,setService]=useState(owner?'':'MYKIOO TV'),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
  const [deviceCount,setDeviceCount]=useState(1),[paymentMethod,setPaymentMethod]=useState('interac');
  const [checkout,setCheckout]=useState(null),[checkoutLoading,setCheckoutLoading]=useState(false);
  const [senderName,setSenderName]=useState(''),[paymentReference,setPaymentReference]=useState(''),[transferConfirmed,setTransferConfirmed]=useState(false);
@@ -150,7 +150,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
       service_name:renewal?(selected?.service_name||'Renewal'):service.trim(),
       contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim(),quoted_price_cad:priceCAD(contractDays,deviceCount),status:'pending'
     },...previous.filter(r=>r.id!==result.request.id)]);
-   setService('MYKIOO TV');setRenewalId('');setNotes('');setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setSenderName('');setPaymentReference('');setTransferConfirmed(false);setRequestType('new');
+   setService(owner?'':'MYKIOO TV');setRenewalId('');setNotes('');setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setSenderName('');setPaymentReference('');setTransferConfirmed(false);setRequestType('new');
    setNotice(isBankPayment?
       tr('Your subscription request and bank payment confirmation were submitted together. MYKIOO will verify receipt before activating service.','Votre demande d’abonnement et votre confirmation bancaire ont été envoyées ensemble. MYKIOO vérifiera le paiement avant l’activation.'):
       owner?tr('Crypto request created. Issue the crypto invoice from Billing.','Demande crypto créée. Émettez la facture crypto dans Facturation.'):
