@@ -1094,3 +1094,11 @@
 .mykioo-renewal-selection{display:grid;gap:7px;min-width:0;width:100%;box-sizing:border-box;padding:14px 15px;border-radius:10px;border:1px solid rgba(221,188,132,.5);background:rgba(221,188,132,.08);color:#e9d8e7}
 .mykioo-renewal-selection strong{color:#f0d5a6;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
 .mykioo-renewal-selection span{font-size:12px;line-height:1.55;color:#e0d2e4;overflow-wrap:anywhere}
+
+/* Member-only MYKIOO phone contact: scannable and tap-to-call. */
+.mykioo-support-phone{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;margin:13px 0 18px;padding:14px 16px;background:#252032;border:1px solid #594767;border-radius:10px}
+.mykioo-support-phone span{color:#c9bcd1;font-size:12px;font-weight:700}
+.mykioo-support-phone a{color:#e9c793;text-decoration:none;font-size:15px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+.mykioo-support-phone a:hover{text-decoration:underline}
+.mykioo-support-phone a:focus-visible{outline:2px solid #eac78f;outline-offset:4px;border-radius:3px}
+@media(max-width:480px){.mykioo-support-phone{align-items:flex-start;flex-direction:column}.mykioo-support-phone a{font-size:17px}}
