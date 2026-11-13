@@ -155,7 +155,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     tr('Subscription saved for this customer.','Abonnement enregistré pour ce client.'));
    onSaved?.();
   }catch(err){
-   setError((createdInvite?tr('A site invitation may already have been issued. ','Une invitation a peut-être déjà été envoyée. '):'')+
+   setError(((createdInvite||invitationSent)?tr('A site invitation may already have been issued. ','Une invitation a peut-être déjà été envoyée. '):'')+
     (err.message||tr('Unable to save subscription.','Impossible d’enregistrer l’abonnement.')));
   }finally{setSaving(false)}
  }
