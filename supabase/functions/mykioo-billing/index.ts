@@ -57,7 +57,7 @@ Deno.serve(async req=>{
   if(action==="issue_invoice"){
    if(!owner||!uuid(input.request_id))return reply({error:"Owner and subscription request required"},403);
    const {data:request,error:requestError}=await db.from("mykioo_subscription_requests")
-    .select("id,member_id,status,service_name,contract_days").eq("id",input.request_id).maybeSingle();
+    .select("id,member_id,status,service_name,contract_days,device_count,preferred_payment_method,quoted_price_cad").eq("id",input.request_id).maybeSingle();
    if(requestError||!request)return reply({error:"Subscription request not found"},404);
    if(!["pending","in_review"].includes(request.status))return reply({error:"Only active pending requests can be invoiced"},409);
    const {data:cancel,error:cancelError}=await db.from("mykioo_subscription_cancellation_requests")
@@ -69,11 +69,37 @@ Deno.serve(async req=>{
    if(existing)return reply({error:"An invoice already exists for this subscription request"},409);
    const {data:settings,error:settingsError}=await db.from("mykioo_billing_settings").select("*").eq("id",1).single();
    if(settingsError)return reply({error:"Billing settings unavailable"},500);
-   const amount_cad=input.amount_cad===undefined?Number(settings.default_cad):money(input.amount_cad);
-   const amount_usd=input.amount_usd===undefined?Number(settings.default_usd):money(input.amount_usd);
-   if(amount_cad===null||amount_usd===null)return reply({error:"Invalid CAD or USD amount"},400);
+   const priced=Boolean(request.preferred_payment_method);
+   let amount_cad,amount_usd,method=null;
+   if(priced){
+    const {data:packageRow,error:priceError}=await db.from("mykioo_package_prices")
+      .select("price_cad").eq("contract_days",request.contract_days).eq("device_count",request.device_count).maybeSingle();
+    if(priceError||!packageRow)return reply({error:"This subscription package price is unavailable"},409);
+    amount_cad=Number(packageRow.price_cad);
+    if(Math.abs(amount_cad-Number(request.quoted_price_cad))>0.001)
+     return reply({error:"The package price changed. Review the request before invoicing."},409);
+    method=request.preferred_payment_method;
+    if(!methods.includes(method))return reply({error:"Payment method on request is invalid"},409);
+    // USD pricing is not finalized for multi-device / 24-month plans.
+    amount_usd=input.amount_usd!==undefined&&String(input.amount_usd).trim()!==""?money(input.amount_usd):
+      (request.contract_days===365&&request.device_count===1?Number(settings.default_usd):null);
+    if(input.amount_usd!==undefined&&String(input.amount_usd).trim()!==""&&amount_usd===null)
+     return reply({error:"Invalid owner-entered USD quote"},400);
+   }else{
+    // Preserve historical requests with their existing manual pricing workflow.
+    amount_cad=input.amount_cad===undefined?Number(settings.default_cad):money(input.amount_cad);
+    amount_usd=input.amount_usd===undefined?Number(settings.default_usd):money(input.amount_usd);
+    if(amount_cad===null||amount_usd===null)return reply({error:"Invalid CAD or USD amount"},400);
+   }
+   const isFiat=method==="interac"||method==="zelle";
+   const destination=method==="interac"?settings.interac_destination:method==="zelle"?settings.zelle_destination:null;
+   const quoted=method==="interac"?amount_cad:method==="zelle"?amount_usd:null;
+   const state=priced?(isFiat&&destination&&quoted?"awaiting_payment":"awaiting_instructions"):"awaiting_method";
    const {data:invoice,error:insertError}=await db.from("mykioo_billing_invoices")
-    .insert({request_id:request.id,member_id:request.member_id,created_by:user.id,amount_cad,amount_usd})
+    .insert({request_id:request.id,member_id:request.member_id,created_by:user.id,amount_cad,amount_usd,
+      method,state,destination:destination||null,amount_due:quoted,
+      currency:method==="interac"?"CAD":method==="zelle"?"USD":method?method.toUpperCase():null,
+      network:method==="btc"?"Bitcoin Mainnet":method==="shib"?"Ethereum Mainnet (ERC-20)":null})
     .select("*").single();
    if(insertError)return reply({error:insertError.code==="23505"?"An invoice already exists":"Could not create invoice"},insertError.code==="23505"?409:500);
    await audit("billing_invoice_issued",invoice,{amount_cad,amount_usd,service_name:request.service_name});
@@ -98,9 +124,10 @@ Deno.serve(async req=>{
    if(settingError)return reply({error:"Billing settings unavailable"},500);
    const fiat=method==="interac"||method==="zelle";
    const destination=fiat?(method==="interac"?settings.interac_destination:settings.zelle_destination):null;
-   const patch={method,state:destination?"awaiting_payment":"awaiting_instructions",destination:destination||null,
+   const ready=Boolean(destination&&(method!=="zelle"||invoice.amount_usd!=null));
+   const patch={method,state:ready?"awaiting_payment":"awaiting_instructions",destination:destination||null,
     network:method==="btc"?"Bitcoin Mainnet":method==="shib"?"Ethereum Mainnet (ERC-20)":null,
-    amount_due:fiat?Number(method==="interac"?invoice.amount_cad:invoice.amount_usd):null,
+    amount_due:fiat?(method==="interac"?Number(invoice.amount_cad):invoice.amount_usd!=null?Number(invoice.amount_usd):null):null,
     currency:method==="interac"?"CAD":method==="zelle"?"USD":method.toUpperCase(),
     quote_expires_at:null,rate_cad:null,quote_source:null,sender_name:null,payment_reference:null,submitted_note:null,submitted_at:null,
     updated_at:new Date().toISOString()};
@@ -119,6 +146,13 @@ Deno.serve(async req=>{
    if(invoice.method==="btc"&&!btc.test(destination))return reply({error:"BTC requires a Coinbase Bitcoin Mainnet bc1 receiving address. Never use a BCH address."},400);
    if(invoice.method==="shib"&&!eth.test(destination))return reply({error:"SHIB requires an Ethereum 0x receiving address. Confirm Ethereum Mainnet (ERC-20) in Coinbase."},400);
    let amount_due=invoice.amount_due,quote_expires_at=null,rate_cad=null,quote_source=null;
+   let updatedUsd=invoice.amount_usd;
+   if(invoice.method==="zelle"){
+    updatedUsd=input.amount_usd!==undefined&&String(input.amount_usd).trim()!==""?
+      money(input.amount_usd):money(invoice.amount_usd);
+    if(updatedUsd===null)return reply({error:"Enter and verify the USD price before issuing Zelle instructions"},400);
+    amount_due=updatedUsd;
+   }
    if(cryptoMethods.includes(invoice.method)){
     if(input.manual_amount!==undefined&&String(input.manual_amount).trim()!==""){
      const custom=Number(input.manual_amount);
@@ -136,7 +170,7 @@ Deno.serve(async req=>{
     if(!Number.isFinite(amount_due)||amount_due<=0)return reply({error:"Could not calculate a valid crypto amount"},503);
     quote_expires_at=new Date(Date.now()+24*60*60*1000).toISOString();
    }
-   const {data,error}=await db.from("mykioo_billing_invoices").update({destination,amount_due,quote_expires_at,rate_cad,quote_source,
+   const {data,error}=await db.from("mykioo_billing_invoices").update({destination,amount_due,amount_usd:updatedUsd,quote_expires_at,rate_cad,quote_source,
     state:"awaiting_payment",updated_at:new Date().toISOString()}).eq("id",invoice.id).in("state",["awaiting_instructions","awaiting_payment"]).select("*").single();
    if(error)return reply({error:"Could not issue payment instructions"},500);
    await audit("billing_payment_instructions_ready",invoice,{method:invoice.method,amount_due,currency:invoice.currency,quote_source});
