@@ -193,21 +193,33 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
  const [settings,setSettings]=useState(null),[invoices,setInvoices]=useState([]),[loading,setLoading]=useState(true);
  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[requestId,setRequestId]=useState('');
  const [cad,setCad]=useState('80'),[usd,setUsd]=useState('');
+ const [cryptoAddress,setCryptoAddress]=useState(''),[cryptoAmount,setCryptoAmount]=useState('');
+ const [packagePrices,setPackagePrices]=useState([]),[usdDrafts,setUsdDrafts]=useState({});
  const [form,setForm]=useState({default_cad:'80',default_usd:'60',interac_destination:'',zelle_destination:''});
  const reload=useCallback(async()=>{
-  const [s,i]=await Promise.all([
+  const [s,i,pr]=await Promise.all([
    supabase.from('mykioo_billing_settings').select('*').eq('id',1).single(),
-   supabase.from('mykioo_billing_invoices').select('*,mykioo_subscription_requests(service_name,status,contract_days,request_type)').order('issued_at',{ascending:false}).limit(200)
+   supabase.from('mykioo_billing_invoices').select('*,mykioo_subscription_requests(service_name,status,contract_days,request_type)').order('issued_at',{ascending:false}).limit(200),
+   supabase.from('mykioo_package_prices').select('contract_days,device_count,price_cad,price_usd').order('contract_days').order('device_count')
   ]);
-  if(s.error||i.error)throw(s.error||i.error);
-  setSettings(s.data);
-  setInvoices(i.data||[]);
+  if(s.error||i.error||pr.error)throw(s.error||i.error||pr.error);
+  setSettings(s.data);setInvoices(i.data||[]);setPackagePrices(pr.data||[]);
+  setUsdDrafts(current=>{
+   const next={...current};
+   for(const row of pr.data||[]){
+    const k=row.contract_days+':'+row.device_count;
+    if(!(k in next))next[k]=row.price_usd==null?'':String(row.price_usd);
+   }
+   return next;
+  });
  },[]);
  useEffect(()=>{let active=true;reload().then(()=>{if(active)setLoading(false)}).catch(()=>{if(active){setError(tr('Billing data could not be loaded.','Impossible de charger les données de facturation.'));setLoading(false)}});
   const timer=setInterval(()=>{if(document.visibilityState==='visible')reload().catch(()=>{})},30000);return()=>{active=false;clearInterval(timer)}
  },[reload]);
  useEffect(()=>{if(settings)setForm({default_cad:String(settings.default_cad),default_usd:String(settings.default_usd),interac_destination:settings.interac_destination||'',zelle_destination:settings.zelle_destination||''})},[settings?.updated_at]);
- const payable=requests.filter(r=>['pending','in_review'].includes(r.status)&&!invoices.some(inv=>inv.request_id===r.id));
+ const payable=requests.filter(r=>['pending','in_review'].includes(r.status)&&
+   (!r.preferred_payment_method||['btc','shib'].includes(r.preferred_payment_method))&&
+   !invoices.some(inv=>inv.request_id===r.id));
  const selectedRequest=payable.find(r=>r.id===requestId);
  useEffect(()=>{
   if(!selectedRequest)return;
@@ -225,11 +237,32 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
  }
  async function saveSettings(e){e.preventDefault();await action({action:'save_settings',...form});}
  async function issue(e){
-  e.preventDefault();if(!requestId)return;
-  await action({action:'issue_invoice',request_id:requestId,
-   ...(selectedRequest?.preferred_payment_method?{}:{amount_cad:Number(cad)}),
-   ...(usd.trim()?{amount_usd:Number(usd)}:{})});
-  setRequestId('');
+  e.preventDefault();if(!requestId||busy)return;
+  const crypto=['btc','shib'].includes(selectedRequest?.preferred_payment_method);
+  if(crypto&&!cryptoAddress.trim()){
+   setError(tr('Paste the correct receiving address first.','Collez d’abord l’adresse de réception appropriée.'));return;
+  }
+  setBusy(true);setError('');setNotice('');
+  try{
+   const issued=await billingAction({action:'issue_invoice',request_id:requestId,
+     ...(crypto?{}:{amount_cad:Number(cad),amount_usd:Number(usd)})});
+   if(crypto){
+    await billingAction({action:'set_destination',invoice_id:issued.invoice.id,destination:cryptoAddress.trim(),
+     ...(cryptoAmount.trim()?{manual_amount:cryptoAmount.trim()}:{})});
+   }
+   await reload();
+   setRequestId('');setCryptoAddress('');setCryptoAmount('');
+   setNotice(crypto?tr('Crypto invoice and payment instructions are ready for the customer.','La facture et les instructions crypto sont prêtes pour le client.'):tr('Legacy invoice issued.','Ancienne facture émise.'));
+  }catch(err){
+   await reload().catch(()=>{});
+   setError(err.message||tr('Could not issue invoice. If created, finish instructions in its billing card.','Impossible d’émettre la facture. Si elle a été créée, terminez les instructions dans sa fiche.'));
+  }finally{setBusy(false)}
+ }
+ async function saveUsdPrices(e){
+  e.preventDefault();if(busy)return;
+  const prices=packagePrices.map(row=>({contract_days:row.contract_days,device_count:row.device_count,
+    price_usd:String(usdDrafts[row.contract_days+':'+row.device_count]??'').trim()}));
+  await action({action:'save_usd_prices',prices});
  }
  return <section className="mykioo-billing">
   <div className="mykioo-billing-head"><div><h2><Wallet size={23}/>{tr('Billing & manual payments','Facturation et paiements manuels')}</h2>
