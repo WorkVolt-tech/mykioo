@@ -56,38 +56,23 @@ Deno.serve(async req=>{
        "USD price for this package has not been configured"});
   }
   async function submitBankPayment(params:{member_id:string;request_type:string;renewal_subscription_id:string|null;service_name:string;notes:string;contract_days:number;device_count:number;preferred_payment_method:string}){
-   const sender=typeof input.sender_name==="string"?input.sender_name.trim():"";
-   const reference=typeof input.payment_reference==="string"?input.payment_reference.trim():"";
-   if(sender.length<2||sender.length>120||reference.length<3||reference.length>160||input.ack_sent!==true)
-     return respond({error:"Confirm the payment was sent and enter the sender name and transaction number"},400);
-   const {data:created,error:createError}=await db.rpc("mykioo_submit_fiat_subscription_request",{
+   // Atomic pending request plus unpaid invoice; payment confirmation is a separate action.
+   const {data:created,error:createError}=await db.rpc("mykioo_submit_unpaid_bank_subscription_request",{
     p_member_id:params.member_id,p_actor_id:user.id,p_request_type:params.request_type,
     p_renewal_subscription_id:params.renewal_subscription_id,
     p_service_name:params.service_name,p_contract_days:params.contract_days,
     p_device_count:params.device_count,p_payment_method:params.preferred_payment_method,
-    p_notes:params.notes,p_sender_name:sender,p_payment_reference:reference
+    p_notes:params.notes
    });
    if(createError){
     const reason=String(createError.message||"");
-    const known=[
-     "Bank payment method not configured for this package","Renewal already pending",
-     "Subscription cannot be renewed","Package not available","Invalid subscription or bank transfer confirmation details",
-     "Account must be approved","Select an existing subscription"
-    ].find(x=>reason.includes(x));
-    if(!known)console.error("MYKIOO bank checkout:",createError.code||"unknown");
-    return respond({error:known||"Unable to submit your subscription and payment confirmation. No new request was recorded."},known?409:500);
+    const known=["Bank payment method not configured for this package","Renewal already pending",
+     "Subscription cannot be renewed","Package not available","Invalid subscription or bank payment selection",
+     "Account must be approved","Select an existing subscription"].find(x=>reason.includes(x));
+    if(!known)console.error("MYKIOO unpaid checkout",createError.code||"unknown");
+    return respond({error:known||"Could not create the unpaid subscription request. Nothing was charged or collected."},known?409:500);
    }
-   const invoiceId=created?.invoice?.id;
-   if(invoiceId){
-    const {data:owners}=await db.from("mykioo_members").select("user_id").eq("role","owner").eq("status","approved");
-    if(owners?.length)await db.from("mykioo_notifications").upsert(owners.map(o=>({
-     user_id:o.user_id,kind:"billing_payment_reported",source_id:invoiceId,destination:"payments",
-     title_en:"Payment reported — verify receipt",title_fr:"Paiement signalé — vérifiez la réception",
-     body_en:"A customer submitted a subscription with "+params.preferred_payment_method+" payment confirmation. Verify bank receipt before activation.",
-     body_fr:"Un client a soumis une demande d’abonnement avec la confirmation de paiement "+params.preferred_payment_method+". Vérifiez la réception avant l’activation."
-    })),{onConflict:"user_id,kind,source_id"});
-   }
-   return respond({ok:true,request:created.request,invoice:created.invoice,payment_submitted:true});
+   return respond({ok:true,request:created.request,invoice:created.invoice,payment_submitted:false});
   }
   if(input.action==="create"){
    if(member.role!=="member")return respond({error:"Member access required"},403);
