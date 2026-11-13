@@ -120,6 +120,9 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
       <div className="mykioo-history-details">
        {item.kind==='request'?<>
         <span><b>{tr('Duration requested','Durée demandée')}:</b> {duration(r.contract_days)}</span>
+         {r.preferred_payment_method&&<span><b>{tr('Devices','Appareils')}:</b> {r.device_count||1}</span>}
+         {r.quoted_price_cad!=null&&<span><b>{tr('Package price','Prix du forfait')}:</b> CA$ {Number(r.quoted_price_cad).toFixed(2)}</span>}
+         {r.preferred_payment_method&&<span><b>{tr('Preferred payment','Paiement souhaité')}:</b> {({interac:'Interac e-Transfer',zelle:'Zelle',btc:'Bitcoin (BTC)',shib:'SHIB (ERC-20)'})[r.preferred_payment_method]||r.preferred_payment_method}</span>}
         {r.status==='fulfilled'&&(r.completed_at||r.updated_at)&&<span><b>{tr('Completed','Terminée')}:</b> {dateText(r.completed_at||r.updated_at)}</span>}
         {r.service_activated_at&&<div className="mykioo-history-activation-note">
          <strong>{tr('Service activated outside MYKIOO','Service activé en dehors de MYKIOO')}</strong>
@@ -154,6 +157,7 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
         {renew&&item.linked?.expires_at&&<span><b>{tr('Current expiration','Expiration actuelle')}:</b> {dateText(item.linked.expires_at)}</span>}
        </>:<>
         {r.contract_days&&<span><b>{tr('Plan duration','Durée du forfait')}:</b> {duration(r.contract_days)}</span>}
+         <span><b>{tr('Number of devices','Nombre d’appareils')}:</b> {r.device_count||1}</span>
         <span><b>{tr('Start','Début')}:</b> {dateText(r.starts_at)}</span>
         <span><b>{tr('Current expiry date','Date d’expiration actuelle')}:</b> {dateText(r.expires_at)}</span>
        </>}
