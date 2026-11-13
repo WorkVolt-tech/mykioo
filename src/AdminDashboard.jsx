@@ -70,7 +70,7 @@ const guideViews=[
  {id:'devices',en:'Setup guides',fr:'Guides d’installation',Icon:Settings2}
 ];
 export default function AdminDashboard({user,logout,logo,fallbackLogo,language='en',onLanguageChange}) {
- const {notifications,unread:notificationUnread,markRead:markNotificationRead}=useNotifications(user.id);
+ const {notifications,unread:notificationUnread,markRead:markNotificationRead,clearNotifications:clearNotifications}=useNotifications(user.id);
  const [serviceAlerts,setServiceAlerts]=useServiceAlerts();
  const {followups,refresh:refreshFollowups}=useSupportFollowups();
  const fr=language==='fr';
@@ -372,7 +372,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    </section>
    <section className="admin-overview-block">
     <div className="admin-section-heading"><div><h2>{tr('Latest updates','Dernières mises à jour')}</h2></div></div>
-    <NotificationCenter compact owner items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>navigate(section)}/>
+    <NotificationCenter compact owner items={notifications} language={language} markRead={markNotificationRead} clearNotifications={clearNotifications} onSelect={section=>navigate(section)}/>
     <ServiceAlertBanner alerts={serviceAlerts} language={language} onOpen={()=>{navigate('support');setSupportView('announcements')}}/>
    </section>
   </div>}
@@ -409,7 +409,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      <SubscriptionRequests owner view="form" userId={user.id} members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>
     </div>
    </section>}
-  {tab==='billing'&&<OwnerBilling language={language} requests={rows.subscription_requests||[]} members={rows.members||[]}/>}{tab==='activity'&&<ActivityHistory members={rows.members||[]} language={language}/>}{tab==='notifications'&&<NotificationCenter owner items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>setTab(section)}/>}{tab==='guides'&&<section className="admin-workspace-section">
+  {tab==='billing'&&<OwnerBilling language={language} requests={rows.subscription_requests||[]} members={rows.members||[]}/>}{tab==='activity'&&<ActivityHistory members={rows.members||[]} language={language}/>}{tab==='notifications'&&<NotificationCenter owner items={notifications} language={language} markRead={markNotificationRead} clearNotifications={clearNotifications} onSelect={section=>setTab(section)}/>}{tab==='guides'&&<section className="admin-workspace-section">
   <div className="admin-subnav" role="tablist" aria-label={tr('Help content sections','Sections du contenu d’aide')}>
    {guideViews.map(view=><button type="button" role="tab" key={view.id} aria-selected={guideView===view.id} onClick={()=>setGuideView(view.id)}>
     <view.Icon size={16}/>{tr(view.en,view.fr)}
