@@ -124,7 +124,10 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
    <strong>{tr('Set payment instructions','Définir les instructions de paiement')}</strong>
    <label>{isCrypto(invoice.method)?tr('Paste Coinbase receiving address for this invoice','Collez l’adresse Coinbase pour cette facture'):tr('Recipient email or payment contact','Courriel ou coordonnées du destinataire')}
      <input value={overrideAddress} onChange={e=>setOverrideAddress(e.target.value)} maxLength={254} placeholder={invoice.method==='btc'?'bc1…':invoice.method==='shib'?'0x…':tr('Recipient contact','Coordonnées du destinataire')} required/></label>
-   {isCrypto(invoice.method)&&<>
+   {invoice.method==='zelle'&&<label>{tr('Owner-confirmed Zelle amount (USD)','Montant Zelle (USD) confirmé par le propriétaire')}
+      <input type="number" step="0.01" min="0.01" value={usdQuote} onChange={e=>setUsdQuote(e.target.value)}
+       placeholder={invoice.amount_usd!=null?String(invoice.amount_usd):tr('Required before Zelle payment','Requis avant paiement Zelle')}/></label>}
+    {isCrypto(invoice.method)&&<>
     <p className="mykioo-billing-muted">{tr('A current CAD crypto quote will be fetched when you save. It is valid for 24 hours.','Une cotation crypto en CAD sera récupérée lors de l’enregistrement. Elle sera valide 24 heures.')}</p>
     <label>{tr('Optional: manually verified crypto amount if quote service is unavailable','Facultatif : montant crypto vérifié manuellement si la cotation est indisponible')}
      <input value={manual} type="number" step={invoice.method==='btc'?'0.00000001':'1'} min="0.00000001" placeholder={tr('Leave blank for live quote','Laisser vide pour une cotation en direct')} onChange={e=>setManual(e.target.value)}/></label>
