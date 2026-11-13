@@ -8,9 +8,10 @@ const addDays=(date,days)=>{if(!date||!days)return '';const d=new Date(date+'T12
 const newForm=()=>({...blank,starts_at:todayLocal(),expires_at:addDays(todayLocal(),365)});
 const dateOnly=value=>value?new Date(value).toISOString().slice(0,10):'';
 
-export default function SubscriptionManager({members=[],subscriptions=[],requests=[],cancellations=[],language='en',onSaved}){
+export default function SubscriptionManager({members=[],subscriptions=[],requests=[],cancellations=[],language='en',onSaved,view='all',onViewChange}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
  const [form,setForm]=useState(newForm),[saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [requestFilter,setRequestFilter]=useState('open');
  const [paidRequests,setPaidRequests]=useState(new Set());
  useEffect(()=>{
   let active=true;
@@ -23,6 +24,17 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
  },[requests]);
  const clients=members.filter(m=>m.role==='member'||m.role==='owner');
  const pendingCancellationIds=new Set(cancellations.filter(c=>c.status==='pending').map(c=>c.request_id));
+ const pendingRequests=requests.filter(r=>['pending','in_review'].includes(r.status));
+ const displayedRequests=requestFilter==='open'?pendingRequests:requests;
+ function openEditor(){
+  onViewChange?.('editor');
+  window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+   document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'});
+  }));
+ }
+ function startNewSubscription(){
+  setForm(newForm());setError('');setNotice('');openEditor();
+ }
  function update(field,value){
   setForm(current=>{
     const next={...current,[field]:value};
@@ -31,11 +43,10 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     return next;
   });setNotice('');setError('');
 }
- function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',device_count:row.device_count||1,request_id:''});setError('');setNotice('');window.requestAnimationFrame(()=>document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'}))}
+ function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',device_count:row.device_count||1,request_id:''});setError('');setNotice('');openEditor()}
  function completeRequest(r){
    if(r.preferred_payment_method&&!paidRequests.has(r.id)){
      setError(tr('Verify payment in Billing before completing this request.','Vérifiez le paiement dans Facturation avant de terminer cette demande.'));
-     document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'});
      return;
    }
    const today=todayLocal(),days=r.contract_days||365;
@@ -50,7 +61,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
      setForm({...blank,request_id:r.id,member_id:r.member_id,service_name:r.service_name,contract_days:days,device_count:r.device_count||1,starts_at:today,expires_at:addDays(today,days),status:'active'});
    }
    setNotice(pendingCancellationIds.has(r.id)?tr('Cancellation approval is pending. Completing this order will automatically deny cancellation. No refunds after activation.','Une demande d’annulation attend votre approbation. La finalisation de cette commande refusera automatiquement l’annulation. Aucun remboursement après activation.'):'' );setError('');
-   document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'});
+   openEditor();
  }
  async function markActivated(r){
   if(saving||r.service_activated_at||!['pending','in_review'].includes(r.status))return;
@@ -111,12 +122,23 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
   }catch(err){setError(err.message||tr('Unable to save subscription.','Impossible d’enregistrer l’abonnement.'))}
   finally{setSaving(false)}
  }
- return <div className="mykioo-sub-manager">
-  <section className="mykioo-sub-requests">
-   <h2>{tr('Subscription requests','Demandes d’abonnement')}{requests.some(r=>r.status==='pending')&&<span className="mykioo-unread-dot">{requests.filter(r=>r.status==='pending').length}</span>}</h2>
-   <p>{tr('Review requests and verify payment in Billing before completing a priced order.','Examinez les demandes et vérifiez le paiement dans Facturation avant de terminer une commande tarifée.')}</p>
-   {requests.length===0?<p>{tr('No requests yet.','Aucune demande pour le moment.')}</p>:
-    requests.map(r=>{
+ return <div className="mykioo-sub-manager mykioo-sub-manager-separated">
+  {(error||notice)&&<div className="mykioo-manager-feedback" aria-live="polite">
+   {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
+   {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
+  </div>}
+  {(view==='all'||view==='requests')&&<section className="mykioo-sub-requests">
+   <div className="mykioo-owner-section-tools">
+    <div><h2>{tr('Subscription requests','Demandes d’abonnement')} {pendingRequests.length>0&&<span className="mykioo-owner-count">{pendingRequests.length}</span>}</h2>
+     <p>{tr('Review requests and open one to complete it. Payment verification happens in Billing.','Examinez les demandes et ouvrez une demande pour la finaliser. La vérification des paiements se fait dans Facturation.')}</p></div>
+    <label className="mykioo-manager-filter">{tr('Show requests','Afficher les demandes')}
+     <select value={requestFilter} onChange={e=>setRequestFilter(e.target.value)}>
+      <option value="open">{tr('Awaiting action','À traiter')}</option><option value="all">{tr('All history','Tout l’historique')}</option>
+     </select>
+    </label>
+   </div>
+   {displayedRequests.length===0?<p className="mykioo-owner-empty">{requestFilter==='open'?tr('No requests waiting for action.','Aucune demande en attente.'):tr('No requests yet.','Aucune demande pour le moment.')}</p>:
+    displayedRequests.map(r=>{
       const client=clients.find(m=>m.user_id===r.member_id);
       const status=fr?({pending:'En attente',in_review:'En cours',fulfilled:'Terminé',declined:'Refusé',cancelled:'Annulé avant activation'})[r.status]:({pending:'Pending',in_review:'In review',fulfilled:'Completed',declined:'Declined',cancelled:'Cancelled before activation'})[r.status];
       return <article key={r.id} id={"mykioo-process-request-"+r.id} tabIndex={-1} className="mykioo-sub-request-row">
@@ -138,10 +160,20 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
        {r.status==='declined'&&<button type="button" disabled={saving} onClick={()=>changeRequest(r,'in_review')}>{tr('Reopen','Rouvrir')}</button>}
       </article>;
     })}
-  </section>
-  <SubscriptionDirectory subscriptions={subscriptions} members={clients} language={language} owner onEdit={edit}/>
-  <section className="admin-invite" id="mykioo-subscription-editor">
-   <strong>{form.request_id&&form.id?tr('Complete renewal','Terminer le renouvellement'):form.request_id?tr('Complete member request','Terminer la demande du membre'):form.id?tr('Edit subscription','Modifier l’abonnement'):tr('Add a member subscription','Ajouter un abonnement membre')}</strong>
+  </section>}
+  {(view==='all'||view==='directory')&&<section className="mykioo-owner-subscriptions-list">
+   <div className="mykioo-owner-section-tools">
+    <div><h2>{tr('Customer subscriptions','Abonnements des clients')}</h2>
+     <p>{tr('Search existing subscriptions and open a record to edit it.','Recherchez les abonnements existants et ouvrez un dossier pour le modifier.')}</p></div>
+    <button className="admin-action primary" type="button" onClick={startNewSubscription}>{tr('Add subscription','Ajouter un abonnement')}</button>
+   </div>
+   <SubscriptionDirectory subscriptions={subscriptions} members={clients} language={language} owner onEdit={edit}/>
+  </section>}
+  {(view==='all'||view==='editor')&&<section className="admin-invite mykioo-manager-editor" id="mykioo-subscription-editor">
+   <div className="mykioo-manager-editor-head">
+    <h2>{form.request_id&&form.id?tr('Complete renewal','Terminer le renouvellement'):form.request_id?tr('Complete member request','Terminer la demande du membre'):form.id?tr('Edit subscription','Modifier l’abonnement'):tr('Add a member subscription','Ajouter un abonnement membre')}</h2>
+    {view!=='all'&&<button type="button" className="admin-action" onClick={()=>onViewChange?.(form.request_id?'requests':'directory')}>{tr('Back to list','Retour à la liste')}</button>}
+   </div>
    <p>{form.request_id&&form.id?tr("This extends the existing subscription and keeps the same login and encrypted password. The expiry date is prefilled and may be adjusted.","Cette opération prolonge l’abonnement existant et conserve ses identifiants et son mot de passe chiffré. La date d’expiration est préremplie et modifiable."):form.request_id?tr("Add the service credentials and dates to complete this request. The member will then see the subscription in their account.","Ajoutez les identifiants et les dates pour terminer cette demande. Le membre verra alors l’abonnement dans son compte."):tr("Each service login can have its own subscription, contract and status.","Chaque identifiant de service peut avoir son propre abonnement, sa durée et son statut.")}</p>
    <form className="mykioo-sub-form" onSubmit={save}>
     <label>{tr('Member','Membre')}<select required value={form.member_id} onChange={e=>update('member_id',e.target.value)}>
@@ -172,13 +204,11 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     <label>{tr('Start date','Date de début')}<input type="date" value={form.starts_at} onChange={e=>update('starts_at',e.target.value)}/></label>
     <label>{tr('Expiry date — automatically calculated; editable','Date d’expiration — calculée automatiquement, modifiable')}<input type="date" value={form.expires_at} onChange={e=>update('expires_at',e.target.value)}/></label>
     <p className="mykioo-sub-note">{tr('Passwords are encrypted on the server. Members must verify their email before viewing them. Encryption must first be configured in Supabase.','Les mots de passe sont chiffrés sur le serveur. Les membres doivent vérifier leur adresse courriel avant de les afficher. Le chiffrement doit d’abord être configuré dans Supabase.')}</p>
-    {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
-    {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
     <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!clients.length} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):tr('Save subscription','Enregistrer l’abonnement')}</button>
      {(form.id||form.request_id)&&<button className="admin-action" type="button" onClick={()=>{setForm(newForm());setError('')}}>{tr("Cancel editing","Annuler")}</button>}
     </div>
    </form>
-  </section>
+  </section>}
 
  </div>;
 }
