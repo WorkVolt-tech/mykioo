@@ -2,7 +2,7 @@ import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 import SubscriptionDirectory from './SubscriptionDirectory';
 
-const blank={id:'',member_id:'',service_name:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:'',contract_days:365,service_password:'',request_id:''};
+const blank={id:'',member_id:'',service_name:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:'',contract_days:365,device_count:1,service_password:'',request_id:''};
 const todayLocal=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const addDays=(date,days)=>{if(!date||!days)return '';const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+Number(days));return d.toISOString().slice(0,10)};
 const newForm=()=>({...blank,starts_at:todayLocal(),expires_at:addDays(todayLocal(),365)});
@@ -11,6 +11,16 @@ const dateOnly=value=>value?new Date(value).toISOString().slice(0,10):'';
 export default function SubscriptionManager({members=[],subscriptions=[],requests=[],cancellations=[],language='en',onSaved}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
  const [form,setForm]=useState(newForm),[saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [paidRequests,setPaidRequests]=useState(new Set());
+ useEffect(()=>{
+  let active=true;
+  const refresh=async()=>{
+   const {data,error}=await supabase.from('mykioo_billing_invoices').select('request_id,state').eq('state','paid').limit(500);
+   if(active&&!error)setPaidRequests(new Set((data||[]).map(i=>i.request_id)));
+  };
+  refresh();const timer=setInterval(refresh,30000);
+  return()=>{active=false;clearInterval(timer)};
+ },[requests]);
  const clients=members.filter(m=>m.role==='member'||m.role==='owner');
  const pendingCancellationIds=new Set(cancellations.filter(c=>c.status==='pending').map(c=>c.request_id));
  function update(field,value){
@@ -21,8 +31,13 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     return next;
   });setNotice('');setError('');
 }
- function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',request_id:''});setError('');setNotice('');window.requestAnimationFrame(()=>document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'}))}
+ function edit(row){setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',device_count:row.device_count||1,request_id:''});setError('');setNotice('');window.requestAnimationFrame(()=>document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'}))}
  function completeRequest(r){
+   if(r.preferred_payment_method&&!paidRequests.has(r.id)){
+     setError(tr('Verify payment in Billing before completing this request.','Vérifiez le paiement dans Facturation avant de terminer cette demande.'));
+     document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'});
+     return;
+   }
    const today=todayLocal(),days=r.contract_days||365;
    if(r.request_type==='renewal'){
      const previous=subscriptions.find(sub=>sub.id===r.renewal_subscription_id&&sub.member_id===r.member_id);
@@ -30,9 +45,9 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
      const base=previous.expires_at&&dateOnly(previous.expires_at)>today?dateOnly(previous.expires_at):today;
      setForm({...blank,id:previous.id,request_id:r.id,member_id:r.member_id,service_name:previous.service_name||r.service_name,
        service_username:previous.service_username||'',supplier_reference:previous.supplier_reference||'',status:'active',
-       contract_days:days,starts_at:base,expires_at:addDays(base,days)});
+       contract_days:days,device_count:r.device_count||1,starts_at:base,expires_at:addDays(base,days)});
    }else{
-     setForm({...blank,request_id:r.id,member_id:r.member_id,service_name:r.service_name,contract_days:days,starts_at:today,expires_at:addDays(today,days),status:'active'});
+     setForm({...blank,request_id:r.id,member_id:r.member_id,service_name:r.service_name,contract_days:days,device_count:r.device_count||1,starts_at:today,expires_at:addDays(today,days),status:'active'});
    }
    setNotice(pendingCancellationIds.has(r.id)?tr('Cancellation approval is pending. Completing this order will automatically deny cancellation. No refunds after activation.','Une demande d’annulation attend votre approbation. La finalisation de cette commande refusera automatiquement l’annulation. Aucun remboursement après activation.'):'' );setError('');
    document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'});
@@ -99,14 +114,20 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
  return <div className="mykioo-sub-manager">
   <section className="mykioo-sub-requests">
    <h2>{tr('Subscription requests','Demandes d’abonnement')}{requests.some(r=>r.status==='pending')&&<span className="mykioo-unread-dot">{requests.filter(r=>r.status==='pending').length}</span>}</h2>
-   <p>{tr('Review member requests. Complete one to assign a subscription and its service login.','Examinez les demandes des membres. Terminez une demande pour attribuer un abonnement et ses identifiants.')}</p>
+   <p>{tr('Review requests and verify payment in Billing before completing a priced order.','Examinez les demandes et vérifiez le paiement dans Facturation avant de terminer une commande tarifée.')}</p>
    {requests.length===0?<p>{tr('No requests yet.','Aucune demande pour le moment.')}</p>:
     requests.map(r=>{
       const client=clients.find(m=>m.user_id===r.member_id);
       const status=fr?({pending:'En attente',in_review:'En cours',fulfilled:'Terminé',declined:'Refusé',cancelled:'Annulé avant activation'})[r.status]:({pending:'Pending',in_review:'In review',fulfilled:'Completed',declined:'Declined',cancelled:'Cancelled before activation'})[r.status];
       return <article key={r.id} id={"mykioo-process-request-"+r.id} tabIndex={-1} className="mykioo-sub-request-row">
        <div className="mykioo-sub-request-content"><strong>{r.request_type==='renewal'?tr('Renewal: ','Renouvellement : '):''}{r.service_name}</strong><span>{client?.display_name||client?.email||tr('Member','Membre')} · {({30:tr('1 month','1 mois'),90:tr('3 months','3 mois'),183:tr('6 months','6 mois'),365:tr('1 year','1 an'),730:tr('2 years','2 ans')})[r.contract_days]||tr('Custom duration','Durée personnalisée')}</span>
-       {r.notes&&<p>{r.notes}</p>}{r.first_reviewed_at&&<small>{tr('Review started','Traitement commencé')}: {new Date(r.first_reviewed_at).toLocaleString(fr?'fr-CA':'en-CA')}</small>}{r.service_activated_at&&<p className="mykioo-external-activation-flag">{tr('Service activated externally','Service activé à l’extérieur')} · {new Date(r.service_activated_at).toLocaleString(fr?'fr-CA':'en-CA')} · {tr('Complete the MYKIOO record next.','Terminez ensuite le dossier MYKIOO.')}</p>}{pendingCancellationIds.has(r.id)&&<p className="mykioo-cancellation-inline-warning">{tr('Cancellation approval requested — completing will automatically deny it.','Demande d’annulation en attente — la finalisation la refusera automatiquement.')}</p>}<small>{new Date(r.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>
+       {r.notes&&<p>{r.notes}</p>}{r.first_reviewed_at&&<small>{tr('Review started','Traitement commencé')}: {new Date(r.first_reviewed_at).toLocaleString(fr?'fr-CA':'en-CA')}</small>}{r.service_activated_at&&<p className="mykioo-external-activation-flag">{tr('Service activated externally','Service activé à l’extérieur')} · {new Date(r.service_activated_at).toLocaleString(fr?'fr-CA':'en-CA')} · {tr('Complete the MYKIOO record next.','Terminez ensuite le dossier MYKIOO.')}</p>}{pendingCancellationIds.has(r.id)&&<p className="mykioo-cancellation-inline-warning">{tr('Cancellation approval requested — completing will automatically deny it.','Demande d’annulation en attente — la finalisation la refusera automatiquement.')}</p>}{r.preferred_payment_method&&<p className="mykioo-package-request-summary">
+       {r.device_count||1} {tr('device(s)','appareil(s)')} · {r.contract_days===365?tr('12 months','12 mois'):tr('24 months','24 mois')} · CA$ {Number(r.quoted_price_cad||0).toFixed(2)} · {r.preferred_payment_method.toUpperCase()}
+      </p>}
+      {r.preferred_payment_method&&<span className={'mykioo-payment-ready '+(paidRequests.has(r.id)?'verified':'pending')}>
+       {paidRequests.has(r.id)?tr('Payment verified — ready to complete','Paiement vérifié — prêt à finaliser'):tr('Awaiting verified payment','En attente de vérification du paiement')}
+      </span>}
+      <small>{new Date(r.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>
        <span className="mykioo-ticket-status">{status||r.status}</span>
        {['pending','in_review'].includes(r.status)&&<div className="mykioo-sub-request-actions">
          <button type="button" disabled={saving} onClick={()=>completeRequest(r)}>{r.request_type==='renewal'?tr('Approve / extend contract','Approuver / prolonger le contrat'):tr('Complete / add login','Terminer / ajouter les accès')}</button>
@@ -137,11 +158,13 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     <label>{tr('Status','Statut')}<select value={form.status} onChange={e=>update('status',e.target.value)}>
      {['pending','active','expired','suspended','cancelled'].map(status=><option key={status} value={status}>{tr(({pending:'Pending',active:'Active',expired:'Expired',suspended:'Suspended',cancelled:'Cancelled'})[status],({pending:'En attente',active:'Actif',expired:'Expiré',suspended:'Suspendu',cancelled:'Annulé'})[status])}</option>)}
     </select></label>
-    <label>{tr('Service contract','Durée du contrat')}
+    <label>{tr('Number of devices','Nombre d’appareils')}
+      <select value={form.device_count} onChange={e=>update('device_count',Number(e.target.value))}>
+       {[1,2,3,4,5].map(count=><option key={count} value={count}>{count} {count===1?tr('device','appareil'):tr('devices','appareils')}</option>)}
+      </select></label>
+     <label>{tr('Service contract','Durée du contrat')}
      <select value={form.contract_days} onChange={e=>update('contract_days',e.target.value?Number(e.target.value):'')}>
-      <option value={30}>{tr('1 month (30 days)','1 mois (30 jours)')}</option>
-      <option value={90}>{tr('3 months (90 days)','3 mois (90 jours)')}</option>
-      <option value={183}>{tr('6 months (183 days)','6 mois (183 jours)')}</option>
+      {[30,90,183].includes(Number(form.contract_days))&&<option value={form.contract_days}>{tr('Legacy contract','Ancien contrat')} · {form.contract_days} {tr('days','jours')}</option>}
       <option value={365}>{tr('1 year (365 days)','1 an (365 jours)')}</option>
       <option value={730}>{tr('2 years (730 days)','2 ans (730 jours)')}</option>
       <option value="">{tr('Custom / no preset','Personnalisé / sans durée prédéfinie')}</option>
