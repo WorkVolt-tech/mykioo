@@ -123,7 +123,8 @@ Deno.serve(async req=>{
     .insert({request_id:request.id,member_id:request.member_id,created_by:user.id,amount_cad,amount_usd,
       method,state,destination:destination||null,amount_due:quoted,
       currency:method==="interac"?"CAD":method==="zelle"?"USD":method?method.toUpperCase():null,
-      network:method==="btc"?"Bitcoin Mainnet":method==="shib"?"Ethereum Mainnet (ERC-20)":null})
+      network:method==="btc"?"Bitcoin Mainnet":method==="shib"?"Ethereum Mainnet (ERC-20)":null,
+      payment_instructions_at:state==="awaiting_payment"?new Date().toISOString():null})
     .select("*").single();
    if(insertError)return reply({error:insertError.code==="23505"?"An invoice already exists":"Could not create invoice"},insertError.code==="23505"?409:500);
    await audit("billing_invoice_issued",invoice,{amount_cad,amount_usd,service_name:request.service_name});
@@ -161,6 +162,7 @@ Deno.serve(async req=>{
     amount_due:fiat?(method==="interac"?Number(invoice.amount_cad):invoice.amount_usd!=null?Number(invoice.amount_usd):null):null,
     currency:method==="interac"?"CAD":method==="zelle"?"USD":method.toUpperCase(),
     quote_expires_at:null,rate_cad:null,quote_source:null,sender_name:null,payment_reference:null,submitted_note:null,submitted_at:null,
+    payment_instructions_at:ready?new Date().toISOString():null,
     updated_at:new Date().toISOString()};
    const {data,error}=await db.from("mykioo_billing_invoices").update(patch).eq("id",invoice.id)
      .in("state",["awaiting_method","awaiting_instructions","awaiting_payment"]).select("*").single();
@@ -202,7 +204,7 @@ Deno.serve(async req=>{
     quote_expires_at=new Date(Date.now()+24*60*60*1000).toISOString();
    }
    const {data,error}=await db.from("mykioo_billing_invoices").update({destination,amount_due,amount_usd:updatedUsd,quote_expires_at,rate_cad,quote_source,
-    state:"awaiting_payment",updated_at:new Date().toISOString()}).eq("id",invoice.id).in("state",["awaiting_instructions","awaiting_payment"]).select("*").single();
+    state:"awaiting_payment",payment_instructions_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",invoice.id).in("state",["awaiting_instructions","awaiting_payment"]).select("*").single();
    if(error)return reply({error:"Could not issue payment instructions"},500);
    await audit("billing_payment_instructions_ready",invoice,{method:invoice.method,amount_due,currency:invoice.currency,quote_source});
    return reply({ok:true,invoice:data});
