@@ -21,17 +21,17 @@ import './AdminExperience.css';
 import {usePageSection} from './usePageSection';
 import {Users,MailPlus,ShieldCheck,CalendarDays,Receipt,Headphones,LogOut,RefreshCw,Clock3,LockKeyhole,AlertCircle,CheckCircle2,Bell,BookOpen,History,Menu,X,ClipboardList,BarChart3,SlidersHorizontal,Megaphone,Settings2,Inbox} from 'lucide-react';
 import {supabase} from './supabase';
-const tabs=[{id:'overview',name:'Overview',icon:ShieldCheck},{id:'members',name:'Members',icon:Users},{id:'invitations',name:'Invitations',icon:MailPlus},{id:'subscriptions',name:'Subscriptions',icon:CalendarDays},{id:'orders',name:'Orders',icon:Receipt},{id:'billing',name:'Billing',icon:Receipt},{id:'guides',name:'Guides',icon:BookOpen},{id:'support',name:'Support',icon:Headphones},{id:'activity',name:'Activity',icon:History},{id:'notifications',name:'Notifications',icon:Bell}];
+const tabs=[{id:'overview',name:'Overview',icon:ShieldCheck},{id:'members',name:'Members',icon:Users},{id:'invitations',name:'Invitations',icon:MailPlus},{id:'subscriptions',name:'Subscriptions',icon:CalendarDays},{id:'create-request',name:'Create request',icon:MailPlus},{id:'orders',name:'Orders',icon:Receipt},{id:'billing',name:'Billing',icon:Receipt},{id:'guides',name:'Guides',icon:BookOpen},{id:'support',name:'Support',icon:Headphones},{id:'activity',name:'Activity',icon:History},{id:'notifications',name:'Notifications',icon:Bell}];
 const ownerNavGroups=[
  {name:['WORKSPACE','ESPACE DE TRAVAIL'],ids:['overview','notifications']},
  {name:['CUSTOMERS','CLIENTS'],ids:['members','invitations']},
- {name:['SUBSCRIPTIONS & PAYMENTS','ABONNEMENTS ET PAIEMENTS'],ids:['subscriptions','orders','billing']},
+ {name:['SUBSCRIPTIONS & PAYMENTS','ABONNEMENTS ET PAIEMENTS'],ids:['subscriptions','create-request','orders','billing']},
  {name:['SUPPORT & CONTENT','ASSISTANCE ET CONTENU'],ids:['support','guides']},
  {name:['RECORDS','HISTORIQUE'],ids:['activity']}
 ];
 const ownerLabels={
  overview:['Overview','Vue d’ensemble'],members:['Members','Membres'],invitations:['Invitations','Invitations'],
- subscriptions:['Subscriptions','Abonnements'],orders:['Orders','Commandes'],billing:['Billing','Facturation'],
+ subscriptions:['Subscriptions','Abonnements'],'create-request':['Create request','Créer une demande'],orders:['Orders','Commandes'],billing:['Billing','Facturation'],
  guides:['Help content','Contenu d’aide'],support:['Support','Assistance'],activity:['Activity history','Historique des activités'],
  notifications:['Notifications','Notifications']
 };
@@ -39,7 +39,8 @@ const ownerDescriptions={
  overview:['Your priorities, recent activity and key numbers in one place.','Vos priorités, activités récentes et chiffres clés en un seul endroit.'],
  members:['Review and manage access for your members.','Consultez et gérez les accès de vos membres.'],
  invitations:['Invite new members and track invitations.','Invitez de nouveaux membres et suivez les invitations.'],
- subscriptions:['Process requests, manage services and handle renewals.','Traitez les demandes, gérez les services et les renouvellements.'],
+ subscriptions:['Review requests, manage services and handle renewals.','Consultez les demandes, gérez les services et les renouvellements.'],
+ 'create-request':['Submit a new or renewal subscription request for an approved member.','Soumettez une nouvelle demande d’abonnement ou de renouvellement pour un membre approuvé.'],
  orders:['Review order records and their status.','Consultez les commandes et leurs statuts.'],
  billing:['Set up receiving details, verify transfers and manage crypto invoices.','Configurez les paiements, vérifiez les virements et gérez les factures crypto.'],
  guides:['Maintain help articles and device setup instructions.','Gérez les articles d’aide et les instructions d’installation.'],
@@ -59,7 +60,6 @@ const subscriptionViews=[
  {id:'requests',en:'Requests',fr:'Demandes',Icon:Inbox},
  {id:'directory',en:'Subscriptions',fr:'Abonnements',Icon:CalendarDays},
  {id:'editor',en:'Edit / add service',fr:'Modifier / ajouter',Icon:Settings2},
- {id:'create',en:'Submit request',fr:'Soumettre une demande',Icon:MailPlus},
  {id:'cancellations',en:'Cancellations',fr:'Annulations',Icon:AlertCircle},
  {id:'reminders',en:'Reminders',fr:'Rappels',Icon:Clock3}
 ];
@@ -387,10 +387,6 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]}
      language={language} onSaved={()=>refresh({silent:true})}/>
    </div>}
-      {subscriptionView==='create'&&<div className="admin-panel-content">
-    <div className="admin-panel-header"><h2>{tr('Create a request','Créer une demande')}</h2><p>{tr('Create a new or renewal request on behalf of an approved member.','Créez une demande ou un renouvellement au nom d’un membre approuvé.')}</p></div>
-    <SubscriptionRequests owner view="form" userId={user.id} members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>
-   </div>}
    {subscriptionView==='cancellations'&&<div className="admin-panel-content">
     <div className="admin-panel-header"><h2>{tr('Cancellation approvals','Approbation des annulations')}</h2><p>{tr('Review cancellation requests before approving or declining them.','Examinez les annulations avant de les approuver ou de les refuser.')}</p></div>
     <OwnerCancellationRequests requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} members={rows.members||[]} language={language} onSaved={()=>refresh({silent:true})}/>
@@ -400,6 +396,11 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     <ReminderSettings userId={user.id} subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language}/>
    </div>}
   </section>}
+  {tab==='create-request'&&<section className="admin-workspace-section admin-owner-create-request">
+    <div className="admin-panel-content">
+     <SubscriptionRequests owner view="form" userId={user.id} members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>
+    </div>
+   </section>}
   {tab==='billing'&&<OwnerBilling language={language} requests={rows.subscription_requests||[]} members={rows.members||[]}/>}{tab==='activity'&&<ActivityHistory members={rows.members||[]} language={language}/>}{tab==='notifications'&&<NotificationCenter owner items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>setTab(section)}/>}{tab==='guides'&&<section className="admin-workspace-section">
   <div className="admin-subnav" role="tablist" aria-label={tr('Help content sections','Sections du contenu d’aide')}>
    {guideViews.map(view=><button type="button" role="tab" key={view.id} aria-selected={guideView===view.id} onClick={()=>setGuideView(view.id)}>
@@ -551,7 +552,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    </div>}
   </section>}
   {tab==='invitations'&&<form className="admin-invite" onSubmit={invite}><div><strong>{tr("Invite a new member","Inviter un nouveau membre")}</strong><p>{tr("An invitation email will be sent in the website language. The member remains pending until you approve them.","Une invitation sera envoyée dans la langue du site. Le membre restera en attente jusqu’à votre approbation.")}</p></div><div className="admin-invite-row"><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="customer@example.com" required maxLength={254} aria-label={tr("Invitee email","Courriel du destinataire")}/><button className="admin-action primary" type="submit" disabled={saving}>{saving?tr('Sending…','Envoi…'):tr('Send invitation','Envoyer l’invitation')}</button></div><small>{tr("Email language follows the EN/FR selection above. Supabase controls invitation expiry.","La langue du courriel suit le choix EN/FR ci-dessus. Supabase gère l’expiration de l’invitation.")}</small></form>}
- {tab!=='overview'&&tab!=='support'&&tab!=='subscriptions'&&tab!=='notifications'&&tab!=='billing'&&tab!=='guides'&&tab!=='activity'&&<><p className="admin-description">{tab==='invitations'?tr('View invitations sent through MYKIOO.','Consultez les invitations envoyées depuis MYKIOO.'):tab==='members'?tr('Approve, reject or suspend customer memberships. Owner accounts are protected.','Approuvez, refusez ou suspendez les membres. Les comptes propriétaires sont protégés.'):tr('View your current MYKIOO records.','Consultez les données MYKIOO.')}</p>{loading?<div className="admin-empty">{tr("Loading records…","Chargement…")}</div>:list.length===0?<div className="admin-empty"><LockKeyhole size={28}/><strong>{tr("No records yet","Aucune donnée")}</strong><span>{tr("Information will appear here when available.","Les informations apparaîtront ici dès qu’elles seront disponibles.")}</span></div>:<div className="admin-table-wrap"><table className="admin-table"><thead><tr>{columns[tab].map(c=><th scope="col" key={c}>{columnLabels[c]?tr(...columnLabels[c]):c.replaceAll('_',' ')}</th>)}{tab==='members'&&<th>{tr("Actions","Actions")}</th>}</tr></thead><tbody>{list.map(row=><tr key={row.id||row.user_id}>{columns[tab].map(c=><td key={c}>{displayTableValue(row,c)}</td>)}{tab==='members'&&<td><div className="admin-controls">{row.role==='member'?<>{row.status!=='approved'&&<button disabled={saving} className="admin-mini positive" onClick={()=>changeStatus(row,'approved')}>{tr("Approve","Approuver")}</button>}{row.status!=='rejected'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'rejected')}>{tr("Reject","Refuser")}</button>}{row.status==='approved'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'suspended')}>{tr("Suspend","Suspendre")}</button>}</>:<span>{tr("Owner","Propriétaire")}</span>}</div></td>}</tr>)}</tbody></table></div>}</>}
+ {tab!=='overview'&&tab!=='support'&&tab!=='subscriptions'&&tab!=='create-request'&&tab!=='notifications'&&tab!=='billing'&&tab!=='guides'&&tab!=='activity'&&<><p className="admin-description">{tab==='invitations'?tr('View invitations sent through MYKIOO.','Consultez les invitations envoyées depuis MYKIOO.'):tab==='members'?tr('Approve, reject or suspend customer memberships. Owner accounts are protected.','Approuvez, refusez ou suspendez les membres. Les comptes propriétaires sont protégés.'):tr('View your current MYKIOO records.','Consultez les données MYKIOO.')}</p>{loading?<div className="admin-empty">{tr("Loading records…","Chargement…")}</div>:list.length===0?<div className="admin-empty"><LockKeyhole size={28}/><strong>{tr("No records yet","Aucune donnée")}</strong><span>{tr("Information will appear here when available.","Les informations apparaîtront ici dès qu’elles seront disponibles.")}</span></div>:<div className="admin-table-wrap"><table className="admin-table"><thead><tr>{columns[tab].map(c=><th scope="col" key={c}>{columnLabels[c]?tr(...columnLabels[c]):c.replaceAll('_',' ')}</th>)}{tab==='members'&&<th>{tr("Actions","Actions")}</th>}</tr></thead><tbody>{list.map(row=><tr key={row.id||row.user_id}>{columns[tab].map(c=><td key={c}>{displayTableValue(row,c)}</td>)}{tab==='members'&&<td><div className="admin-controls">{row.role==='member'?<>{row.status!=='approved'&&<button disabled={saving} className="admin-mini positive" onClick={()=>changeStatus(row,'approved')}>{tr("Approve","Approuver")}</button>}{row.status!=='rejected'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'rejected')}>{tr("Reject","Refuser")}</button>}{row.status==='approved'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'suspended')}>{tr("Suspend","Suspendre")}</button>}</>:<span>{tr("Owner","Propriétaire")}</span>}</div></td>}</tr>)}</tbody></table></div>}</>}
  </main> {pendingChange&&<div className="mykioo-modal-overlay" onMouseDown={e=>{if(e.target===e.currentTarget&&!saving)setPendingChange(null)}}><div className="mykioo-modal" role="alertdialog" aria-modal="true" aria-labelledby="mykioo-confirm-title" aria-describedby="mykioo-confirm-description"><div className="mykioo-modal-icon"><ShieldCheck size={27}/></div><div className="admin-tag">MYKIOO</div><h2 id="mykioo-confirm-title">{tr(({approved:'Approve membership',rejected:'Reject membership',suspended:'Suspend membership',deactivated:'Deactivate membership'})[pendingChange.status]||'Change membership',({approved:'Approuver l’adhésion',rejected:'Refuser l’adhésion',suspended:'Suspendre l’adhésion',deactivated:'Désactiver l’adhésion'})[pendingChange.status]||'Modifier l’adhésion')}</h2><p id="mykioo-confirm-description">{tr('Are you sure you want to change the status of this member?','Voulez-vous vraiment modifier le statut de ce membre?')}</p><div className="mykioo-modal-member"><span>{pendingChange.member.email}</span><div><span className="mykioo-status-chip">{tr(pendingChange.member.status,({pending:'en attente',approved:'approuvé',rejected:'refusé',suspended:'suspendu',deactivated:'désactivé'})[pendingChange.member.status]||pendingChange.member.status)}</span><span className="mykioo-modal-arrow">→</span><span className="mykioo-status-chip target">{tr(pendingChange.status,({pending:'en attente',approved:'approuvé',rejected:'refusé',suspended:'suspendu',deactivated:'désactivé'})[pendingChange.status]||pendingChange.status)}</span></div></div><div className="mykioo-modal-buttons"><button type="button" className="mykioo-modal-cancel" onClick={()=>setPendingChange(null)}>{tr('Cancel','Annuler')}</button><button type="button" className="mykioo-modal-confirm" autoFocus onClick={confirmChange}>{tr('Confirm change','Confirmer')}</button></div></div></div>}
 </div>
 }
