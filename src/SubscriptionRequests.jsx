@@ -19,11 +19,11 @@ const displayDuration=(days,tr)=>({
  730:tr('2 years (730 days)','2 ans (730 jours)')
 })[days]||tr('Custom duration','Durée personnalisée');
 
-export default function SubscriptionRequests({userId,subscriptions=[],language='en',owner=false,members=[],requests=[],cancellations=[],onSaved}){
+export default function SubscriptionRequests({userId,subscriptions=[],language='en',owner=false,members=[],requests=[],cancellations=[],onSaved,view='all'}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [targetId,setTargetId]=useState(userId||'');
  const [requestType,setRequestType]=useState('new');
- const [service,setService]=useState(''),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
+ const [service,setService]=useState('MYKIOO TV'),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
  const [deviceCount,setDeviceCount]=useState(1),[paymentMethod,setPaymentMethod]=useState('interac');
  const [checkout,setCheckout]=useState(null),[checkoutLoading,setCheckoutLoading]=useState(false);
  const [senderName,setSenderName]=useState(''),[paymentReference,setPaymentReference]=useState(''),[transferConfirmed,setTransferConfirmed]=useState(false);
@@ -89,7 +89,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const selectedSubs=subscriptions.filter(s=>s.member_id===(owner?targetId:userId));
  const eligible=selectedSubs.filter(s=>['active','expired'].includes(s.status));
  const pendingRenewals=new Set(rows.filter(r=>r.request_type==='renewal'&&['pending','in_review'].includes(r.status)).map(r=>r.renewal_subscription_id));
- function chooseType(value){setRequestType(value);setRenewalId('');setError('');setNotice('')}
+ function chooseType(value){setRequestType(value);setRenewalId('');if(value==='new')setDeviceCount(1);setError('');setNotice('')}
  function chooseAccount(value){setTargetId(value);setRenewalId('');setRequestType('new');setError('');setNotice('')}
  async function requestCancellation(request){
   if(owner||saving||cancellingId||!['pending','in_review'].includes(request.status)||request.subscription_id||request.completed_at||request.service_activated_at)return;
@@ -150,7 +150,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
       service_name:renewal?(selected?.service_name||'Renewal'):service.trim(),
       contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim(),quoted_price_cad:priceCAD(contractDays,deviceCount),status:'pending'
     },...previous.filter(r=>r.id!==result.request.id)]);
-   setService('');setRenewalId('');setNotes('');setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setSenderName('');setPaymentReference('');setTransferConfirmed(false);setRequestType('new');
+   setService('MYKIOO TV');setRenewalId('');setNotes('');setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setSenderName('');setPaymentReference('');setTransferConfirmed(false);setRequestType('new');
    setNotice(isBankPayment?
       tr('Your subscription request and bank payment confirmation were submitted together. MYKIOO will verify receipt before activating service.','Votre demande d’abonnement et votre confirmation bancaire ont été envoyées ensemble. MYKIOO vérifiera le paiement avant l’activation.'):
       owner?tr('Crypto request created. Issue the crypto invoice from Billing.','Demande crypto créée. Émettez la facture crypto dans Facturation.'):
@@ -160,6 +160,9 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   }catch(err){setError(err.message||tr('Request could not be submitted.','Impossible d’envoyer la demande.'))}
   finally{setSaving(false)}
  }
+ if(view==='history')return <section className="mykioo-request-history-page">
+    <SubscriptionHistory requests={rows} cancellations={cancellationRows} subscriptions={selectedSubs} language={language} owner={owner} onRequestCancellation={owner?undefined:requestCancellation} cancellingId={cancellingId}/>
+  </section>;
  return <section className={'mykioo-request-area '+(owner?'mykioo-owner-request-area':'')}>
   <div className="mykioo-support-card">
    <h2>{owner?tr('Create a subscription request','Créer une demande d’abonnement'):tr('Request a subscription','Demander un abonnement')}</h2>
@@ -252,6 +255,6 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
    {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
   </div>
-  <SubscriptionHistory requests={rows} cancellations={cancellationRows} subscriptions={selectedSubs} language={language} owner={owner} onRequestCancellation={owner?undefined:requestCancellation} cancellingId={cancellingId}/>
+  {view!=='form'&&<SubscriptionHistory requests={rows} cancellations={cancellationRows} subscriptions={selectedSubs} language={language} owner={owner} onRequestCancellation={owner?undefined:requestCancellation} cancellingId={cancellingId}/>}
  </section>;
 }
