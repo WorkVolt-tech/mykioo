@@ -1,5 +1,5 @@
 import React,{useEffect,useState,useCallback} from 'react';
-import {Bell,CheckCheck,LifeBuoy,CalendarDays,AlertTriangle,ClipboardList,MessageSquarePlus,Receipt,Wallet} from 'lucide-react';
+import {Bell,CheckCheck,LifeBuoy,CalendarDays,AlertTriangle,ClipboardList,MessageSquarePlus,Receipt,Wallet,MailPlus} from 'lucide-react';
 import {supabase} from './supabase';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-notifications';
@@ -42,7 +42,7 @@ export function useNotifications(userId){
  },[sync]);
  return {notifications:items,unread:items.filter(x=>!x.read_at).length,markRead};
 }
-const icons={support_reply:LifeBuoy,support_ticket:MessageSquarePlus,support_attachment:MessageSquarePlus,support_completed:LifeBuoy,support_reopened:AlertTriangle,support_confirmed:CheckCheck,support_issue_update:AlertTriangle,subscription_update:CalendarDays,subscription_expiry_reminder:CalendarDays,subscription_request:ClipboardList,subscription_activation_recorded:CalendarDays,billing_invoice:Receipt,billing_verified:CheckCheck,billing_payment_reported:Wallet,service_alert:AlertTriangle};
+const icons={support_reply:LifeBuoy,support_ticket:MessageSquarePlus,support_attachment:MessageSquarePlus,support_completed:LifeBuoy,support_reopened:AlertTriangle,support_confirmed:CheckCheck,support_issue_update:AlertTriangle,subscription_update:CalendarDays,subscription_expiry_reminder:CalendarDays,subscription_request:ClipboardList,subscription_activation_recorded:CalendarDays,billing_invoice:Receipt,billing_verified:CheckCheck,billing_payment_reported:Wallet,membership_invitation_requested:MailPlus,membership_invitation_approved:CheckCheck,membership_invitation_rejected:AlertTriangle,service_alert:AlertTriangle};
 export function NotificationCenter({items=[],language='en',owner=false,onSelect,markRead,compact=false}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [error,setError]=useState('');
@@ -50,7 +50,7 @@ export function NotificationCenter({items=[],language='en',owner=false,onSelect,
  async function select(n){
   setError('');
   if(!n.read_at){const ok=await markRead(n.id);if(!ok)setError(tr('Could not update read status.','Impossible de mettre à jour la lecture.'))}
-  onSelect?.(n.destination==='payments'?(owner?'billing':'Payments'):n.destination==='subscription'?(owner?'subscriptions':'Subscription'):(owner?'support':'Support'),n);
+  onSelect?.(n.destination?.toLowerCase()==='invitations'?(owner?'invitations':'Invitations'):n.destination==='payments'?(owner?'billing':'Payments'):n.destination==='subscription'?(owner?'subscriptions':'Subscription'):(owner?'support':'Support'),n);
  }
  return <section className={'mykioo-notification-center '+(compact?'compact':'')}>
   <div className="mykioo-notification-header">
