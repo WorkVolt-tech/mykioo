@@ -157,9 +157,10 @@ Deno.serve(async req=>{
      return respond({error:"Select a valid account and request type"},400);
    const {data:target,error:targetError}=await db.from("mykioo_members")
      .select("user_id,role,status").eq("user_id",member_id).maybeSingle();
-   if(targetError||!target||target.status!=="approved"||
-       !(target.role==="member"||(target.role==="owner"&&target.user_id===user.id)))
-     return respond({error:"Choose an approved member or your own owner account"},403);
+   if(targetError||!target||
+       !(target.status==="approved"||(request_type==="new"&&target.status==="pending"))||
+       !(target.role==="member"||(target.role==="owner"&&target.user_id===user.id&&target.status==="approved")))
+     return respond({error:"Choose a valid member. Only new requests may use accounts awaiting approval."},403);
    const contract_days=Number(input.contract_days);
    const notes=typeof input.notes==="string"?input.notes.trim():"";
    if(![365,730].includes(contract_days)||notes.length>1000)
