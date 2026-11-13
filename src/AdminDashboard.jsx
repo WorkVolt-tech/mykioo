@@ -55,9 +55,11 @@ const supportViews=[
  {id:'announcements',en:'Announcements',fr:'Annonces',Icon:Megaphone}
 ];
 const subscriptionViews=[
- {id:'queue',en:'Request queue',fr:'Demandes à traiter',Icon:ClipboardList},
- {id:'services',en:'Manage services',fr:'Gérer les services',Icon:CalendarDays},
- {id:'create',en:'New request',fr:'Nouvelle demande',Icon:MailPlus},
+ {id:'queue',en:'Overview queue',fr:'File d’attente',Icon:ClipboardList},
+ {id:'requests',en:'Requests',fr:'Demandes',Icon:Inbox},
+ {id:'directory',en:'Subscriptions',fr:'Abonnements',Icon:CalendarDays},
+ {id:'editor',en:'Edit / add service',fr:'Modifier / ajouter',Icon:Settings2},
+ {id:'create',en:'Submit request',fr:'Soumettre une demande',Icon:MailPlus},
  {id:'cancellations',en:'Cancellations',fr:'Annulations',Icon:AlertCircle},
  {id:'reminders',en:'Reminders',fr:'Rappels',Icon:Clock3}
 ];
@@ -287,7 +289,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  const openSupportCount=(rows.support||[]).filter(ticket=>['open','in_progress'].includes(ticket.status)).length;
  function navigate(next){setTab(next);setMobileNav(false);if(next==='support')setSupportView('tickets')}
  function jumpToSubscription(item){
-  setSubscriptionView(item.category==='cancellations'?'cancellations':'services');
+  setSubscriptionView(item.category==='cancellations'?'cancellations':'requests');
   window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
    const target=document.getElementById(item.targetId);
    target?.scrollIntoView({behavior:'smooth',block:'center'});target?.focus({preventScroll:true});
@@ -354,7 +356,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    <section className="admin-overview-block">
     <div className="admin-section-heading"><div><h2>{tr('Needs attention','À traiter')}</h2><p>{tr('Follow-ups and subscriptions needing action.','Suivis et abonnements qui demandent une intervention.')}</p></div></div>
     <OwnerFollowUpBoard compact language={language} followups={followups} tickets={rows.support||[]} onOpenTicket={viewSupportTicket}/>
-    <ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner onOpen={()=>{navigate('subscriptions');setSubscriptionView('services')}}/>
+    <ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner onOpen={()=>{navigate('subscriptions');setSubscriptionView('directory')}}/>
    </section>
    <section className="admin-overview-block">
     <div className="admin-section-heading"><div><h2>{tr('Support snapshot','Aperçu de l’assistance')}</h2><p>{tr('See ticket activity without opening the full support workspace.','Consultez l’activité des demandes sans ouvrir l’espace d’assistance.')}</p></div></div>
@@ -370,7 +372,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    <div className="admin-subnav" role="tablist" aria-label={tr('Subscription management sections','Sections de gestion des abonnements')}>
     {subscriptionViews.map(view=><button key={view.id} type="button" role="tab" aria-selected={subscriptionView===view.id}
      onClick={()=>setSubscriptionView(view.id)}><view.Icon size={16}/>{tr(view.en,view.fr)}
-     {view.id==='queue'&&pendingSubscriptionCount>0&&<span className="admin-subnav-count">{pendingSubscriptionCount}</span>}
+     {view.id==='requests'&&pendingSubscriptionCount>0&&<span className="admin-subnav-count">{pendingSubscriptionCount}</span>}
      {view.id==='cancellations'&&pendingCancellationCount>0&&<span className="admin-subnav-count">{pendingCancellationCount}</span>}
     </button>)}
    </div>
@@ -378,14 +380,26 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     <div className="admin-panel-header"><h2>{tr('Processing queue','File de traitement')}</h2><p>{tr('Review what needs to be completed next. Open an item to continue in the right section.','Consultez les tâches en attente. Ouvrez une demande pour accéder directement à la bonne section.')}</p></div>
     <OwnerSubscriptionQueue requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} members={rows.members||[]} language={language} onOpenTarget={jumpToSubscription}/>
    </div>}
-   {subscriptionView==='services'&&<div className="admin-panel-content">
-    <div className="admin-panel-header"><h2>{tr('Manage customer subscriptions','Gérer les abonnements clients')}</h2><p>{tr('Complete requests, manage logins and dates, and review upcoming expirations.','Finalisez les demandes, gérez les accès et les dates, et consultez les expirations.')}</p></div>
-    <ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner/>
-    <SubscriptionManager members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>
+   {['requests','directory','editor'].includes(subscriptionView)&&<div className="admin-panel-content">
+    <div className="admin-panel-header">
+     <h2>{subscriptionView==='requests'?tr('Subscription requests','Demandes d’abonnement'):
+       subscriptionView==='directory'?tr('Customer subscriptions','Abonnements des clients'):
+       tr('Subscription editor','Éditeur d’abonnement')}</h2>
+     <p>{subscriptionView==='requests'?
+       tr('Process new orders and renewals without the subscription editor taking up space.','Traitez les commandes et les renouvellements sans afficher le formulaire de modification.'):
+       subscriptionView==='directory'?
+       tr('Find existing subscriptions, inspect their status, and select Edit when needed.','Recherchez les abonnements, consultez leur statut et choisissez Modifier au besoin.'):
+       tr('Edit the selected subscription, complete a request, or add a service.','Modifiez l’abonnement sélectionné, finalisez une demande ou ajoutez un service.')}</p>
+    </div>
+    {subscriptionView==='directory'&&<ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner/>}
+    <SubscriptionManager view={subscriptionView} onViewChange={setSubscriptionView}
+     members={rows.members||[]} subscriptions={rows.subscriptions||[]}
+     requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]}
+     language={language} onSaved={()=>refresh({silent:true})}/>
    </div>}
-   {subscriptionView==='create'&&<div className="admin-panel-content">
+      {subscriptionView==='create'&&<div className="admin-panel-content">
     <div className="admin-panel-header"><h2>{tr('Create a request','Créer une demande')}</h2><p>{tr('Create a new or renewal request on behalf of an approved member.','Créez une demande ou un renouvellement au nom d’un membre approuvé.')}</p></div>
-    <SubscriptionRequests owner userId={user.id} members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>
+    <SubscriptionRequests owner view="form" userId={user.id} members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>
    </div>}
    {subscriptionView==='cancellations'&&<div className="admin-panel-content">
     <div className="admin-panel-header"><h2>{tr('Cancellation approvals','Approbation des annulations')}</h2><p>{tr('Review cancellation requests before approving or declining them.','Examinez les annulations avant de les approuver ou de les refuser.')}</p></div>
