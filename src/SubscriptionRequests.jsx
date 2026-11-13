@@ -165,12 +165,13 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   </section>;
  return <section className={'mykioo-request-area '+(owner?'mykioo-owner-request-area':'')}>
   <div className="mykioo-support-card">
-   <h2>{owner?tr('Create a subscription request','Créer une demande d’abonnement'):tr('Request a subscription','Demander un abonnement')}</h2>
+   <h2>{owner?tr('Create a subscription request','Créer une demande d’abonnement'):tr('New subscription or renewal','Nouvel abonnement ou renouvellement')}</h2>
    <p>{owner?
      tr('Create a new or renewal request for your own account or an approved member. Complete requests using the subscription manager below.','Créez une demande nouvelle ou de renouvellement pour votre compte ou un membre approuvé. Terminez les demandes avec le gestionnaire ci-dessous.'):
-     tr('Select whether you need a new subscription or want to renew your existing service. MYKIOO will review the request before activation.','Choisissez si vous voulez un nouvel abonnement ou renouveler votre service existant. MYKIOO examinera la demande avant l’activation.')}</p>
-   <p className="mykioo-request-policy-note">{tr('Cancellation requests need owner approval and must be approved before we complete or activate the service. Once the service is activated, no cancellation or refund is offered, subject to applicable law.','Les demandes d’annulation doivent être approuvées par le propriétaire avant la finalisation ou l’activation du service. Une fois le service activé, aucune annulation ni aucun remboursement ne sont offerts, sous réserve des lois applicables.')}</p>
+     tr('Choose a plan and payment method. You can finish in just a few steps.','Choisissez un forfait et un mode de paiement. Quelques étapes suffisent.')}</p>
+   {owner&&<p className="mykioo-request-policy-note">{tr('Cancellation requests need owner approval and must be approved before we complete or activate the service. Once the service is activated, no cancellation or refund is offered, subject to applicable law.','Les demandes d’annulation doivent être approuvées par le propriétaire avant la finalisation ou l’activation du service. Une fois le service activé, aucune annulation ni aucun remboursement ne sont offerts, sous réserve des lois applicables.')}</p>}
    <form onSubmit={submit}>
+    {!owner&&<div className="mykioo-checkout-step"><span>1</span><strong>{tr('Choose your plan','Choisissez votre forfait')}</strong></div>}
     {owner&&<>
      <label htmlFor="mykioo-request-account">{tr('Request for account','Demande pour le compte')}</label>
      <select id="mykioo-request-account" required value={targetId} onChange={e=>chooseAccount(e.target.value)}>
@@ -185,13 +186,13 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
      <option value="new">{tr('New subscription','Nouvel abonnement')}</option>
      <option value="renewal" disabled={!eligible.length}>{tr('Renew existing subscription','Renouveler un abonnement existant')}</option>
     </select>
-    {requestType==='new'?<>
+    {requestType==='new'?<>{owner&&<>
      <label htmlFor="mykioo-request-service">{tr('Service or package requested','Service ou forfait demandé')}</label>
      <input id="mykioo-request-service" required minLength={3} maxLength={80} value={service}
       onChange={e=>setService(e.target.value)} placeholder={tr('Which service would you like?','Quel service souhaitez-vous ?')}/>
-    </>:<>
+    </>}</>:<>
      <label htmlFor="mykioo-request-renewal-sub">{tr('Existing subscription','Abonnement existant')}</label>
-     <select id="mykioo-request-renewal-sub" required value={renewalId} onChange={e=>setRenewalId(e.target.value)}>
+     <select id="mykioo-request-renewal-sub" required value={renewalId} onChange={e=>{const id=e.target.value;setRenewalId(id);const previous=eligible.find(sub=>sub.id===id);if(previous?.device_count)setDeviceCount(previous.device_count)}}>
       <option value="">{tr('Choose a subscription','Choisir un abonnement')}</option>
       {eligible.map(sub=><option key={sub.id} value={sub.id} disabled={pendingRenewals.has(sub.id)}>
        {sub.service_name||tr('Service','Service')} · {sub.service_username||tr('Account','Compte')} {pendingRenewals.has(sub.id)?tr('(renewal pending)','(renouvellement en attente)'):''}
@@ -199,11 +200,14 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
      </select>
      <p className="mykioo-request-hint">{tr('Renewal extends this subscription. Your existing login details will be retained.','Le renouvellement prolonge cet abonnement. Vos identifiants existants seront conservés.')}</p>
     </>}
-    <label htmlFor="mykioo-request-duration">{requestType==='renewal'?tr('Renewal duration','Durée du renouvellement'):tr('Subscription duration','Durée de l’abonnement')}</label>
-    <select id="mykioo-request-duration" value={contractDays} onChange={e=>setContractDays(Number(e.target.value))}>
-     {durations.map(days=><option key={days} value={days}>{displayDuration(days,tr)}</option>)}
-    </select>
-    <label htmlFor="mykioo-request-devices">{tr('Number of devices','Nombre d’appareils')}</label>
+    <label id="mykioo-request-duration-label">{requestType==='renewal'?tr('Renewal duration','Durée du renouvellement'):tr('Subscription duration','Durée de l’abonnement')}</label>
+    <div className="mykioo-duration-options" role="group" aria-labelledby="mykioo-request-duration-label">
+     {durations.map(days=><button key={days} type="button" aria-pressed={contractDays===days} className={'mykioo-duration-option '+(contractDays===days?'selected':'')} onClick={()=>setContractDays(days)}>
+      <strong>{days===365?tr('12 months','12 mois'):tr('24 months','24 mois')}</strong>
+      <span>{days===365?tr('1 year','1 an'):tr('2 years','2 ans')}</span>
+     </button>)}
+    </div>
+    <label htmlFor="mykioo-request-devices">{tr('How many devices?','Combien d’appareils ?')}</label>
      <select id="mykioo-request-devices" required value={deviceCount} onChange={e=>setDeviceCount(Number(e.target.value))}>
       {[1,2,3,4,5].map(count=><option value={count} key={count}>{count} {count===1?tr('device','appareil'):tr('devices','appareils')}</option>)}
      </select>
@@ -212,7 +216,8 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
       <strong>CA$ {priceCAD(contractDays,deviceCount)?.toFixed(2)}</strong>
       <small>{tr('Total for','Total pour')} {deviceCount} {deviceCount===1?tr('device','appareil'):tr('devices','appareils')} · {contractDays===365?tr('12 months','12 mois'):tr('24 months','24 mois')} · CA$ {(priceCAD(contractDays,deviceCount)/deviceCount).toFixed(2)} {tr('per device','par appareil')}</small>
      </div>
-     <label htmlFor="mykioo-request-payment-method">{tr('Preferred payment method','Mode de paiement souhaité')}</label>
+     {!owner&&<div className="mykioo-checkout-step"><span>2</span><strong>{tr('Choose how to pay','Choisissez comment payer')}</strong></div>}
+    <label htmlFor="mykioo-request-payment-method">{tr('Payment method','Mode de paiement')}</label>
      <select id="mykioo-request-payment-method" required value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)}>
       {Object.entries(PAYMENT_LABELS).map(([value,label])=><option key={value} value={value}>{label}</option>)}
      </select>
