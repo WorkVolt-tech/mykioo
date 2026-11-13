@@ -41,7 +41,8 @@ function networkWarning(method,language){
  return null;
 }
 function MethodPicker({invoice,language,onAction,busy}){
- const [method,setMethod]=useState('interac');
+ const [method,setMethod]=useState(invoice.method||'interac');
+ useEffect(()=>setMethod(invoice.method||'interac'),[invoice.method]);
  const tr=(en,fr)=>trFor(language,en,fr);
  return <div className="mykioo-billing-method">
    <label>{tr('Choose how you want to pay','Choisissez votre mode de paiement')}
@@ -50,7 +51,7 @@ function MethodPicker({invoice,language,onAction,busy}){
     </select>
    </label>
    <p className="mykioo-billing-muted">{method==='interac'?tr('Amount: ','Montant : ')+money(invoice.amount_cad,'CAD'):
-    method==='zelle'?tr('Amount: ','Montant : ')+money(invoice.amount_usd,'USD'):
+    method==='zelle'?(invoice.amount_usd==null?tr('USD amount will be confirmed by the owner before payment.','Le montant USD sera confirmé par le propriétaire avant le paiement.'):tr('Amount: ','Montant : ')+money(invoice.amount_usd,'USD')):
     tr('Your crypto amount will be calculated when the owner prepares the payment address.','Le montant en cryptomonnaie sera calculé lorsque le propriétaire préparera l’adresse de paiement.')}</p>
    {isCrypto(method)&&networkWarning(method,language)}
    <button type="button" className="mykioo-billing-primary" disabled={busy} onClick={()=>onAction({action:'select_method',invoice_id:invoice.id,method})}>{tr('Choose this method','Choisir cette méthode')}</button>
@@ -61,8 +62,8 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
  const [accepted,setAccepted]=useState(false),[revealed,setRevealed]=useState(false),[senderName,setSenderName]=useState(''),[reference,setReference]=useState(''),[note,setNote]=useState('');
  const [overrideAddress,setOverrideAddress]=useState(''),[manual,setManual]=useState(''),[verifyNote,setVerifyNote]=useState(''),[verifyReference,setVerifyReference]=useState('');
  const [verified,setVerified]=useState(false);
- const [localNotice,setLocalNotice]=useState('');
- useEffect(()=>{setAccepted(false);setRevealed(false);setSenderName('');setReference('');setNote('');setLocalNotice('')},[invoice.id,invoice.method,invoice.destination]);
+ const [localNotice,setLocalNotice]=useState(''),[changeMethod,setChangeMethod]=useState(false),[usdQuote,setUsdQuote]=useState('');
+ useEffect(()=>{setAccepted(false);setRevealed(false);setSenderName('');setReference('');setNote('');setLocalNotice('');setChangeMethod(false)},[invoice.id,invoice.method,invoice.destination]);
  const isReady=!!invoice.destination&&!!invoice.amount_due;
  const quoteExpired=isCrypto(invoice.method)&&invoice.quote_expires_at&&Date.now()>new Date(invoice.quote_expires_at).getTime();
  const status=statusNames[invoice.state]?.[fr?1:0]||invoice.state;
@@ -79,11 +80,12 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
    <small>{tr('Request','Demande')}: #{invoice.request_id.slice(0,8)} · {req?.contract_days||'—'} {tr('days','jours')}</small>
   </div><span className={'mykioo-billing-chip '+(paidStatus(invoice)?'paid':invoice.state==='payment_submitted'?'submitted':'')}>{status}</span></div>
   <div className="mykioo-billing-price-row"><span>{tr('Invoice prices','Prix facturés')}</span>
-    <strong>{money(invoice.amount_cad,'CAD')} · {money(invoice.amount_usd,'USD')}</strong></div>
+    <strong>{money(invoice.amount_cad,'CAD')}{invoice.amount_usd!=null?' · '+money(invoice.amount_usd,'USD'):''}</strong></div>
   {invoice.method&&<div className="mykioo-billing-price-row"><span>{tr('Selected method','Mode choisi')}</span><strong>{displayMethods}</strong></div>}
   {invoice.method&&invoice.amount_due!==null&&<div className="mykioo-billing-price-row"><span>{tr('Exact amount to send','Montant exact à envoyer')}</span><strong>{money(invoice.amount_due,invoice.currency)}</strong></div>}
   {invoice.quote_expires_at&&<p className="mykioo-billing-muted">{tr('Crypto quote valid until','Devis crypto valide jusqu’au')} {when(invoice.quote_expires_at,fr)} {quoteExpired&&<strong className="mykioo-billing-danger">{tr('— expired: do not send','— expiré : ne pas envoyer')}</strong>}</p>}
-  {!owner&&invoice.state==='awaiting_method'&&<MethodPicker invoice={invoice} language={language} onAction={onAction} busy={busy}/>}
+  {!owner&&['awaiting_instructions','awaiting_payment'].includes(invoice.state)&&<button type="button" className="mykioo-billing-outline" onClick={()=>setChangeMethod(v=>!v)}>{changeMethod?tr('Hide payment options','Masquer les modes de paiement'):tr('Change payment method','Modifier le mode de paiement')}</button>}
+   {!owner&&(invoice.state==='awaiting_method'||changeMethod)&&<MethodPicker invoice={invoice} language={language} onAction={onAction} busy={busy}/>}
   {!owner&&invoice.state==='awaiting_instructions'&&<p className="mykioo-billing-muted"><Clock3 size={16}/>{tr('Your payment method was saved. The owner must provide your payment address or contact. Do not send money yet.','Votre mode de paiement est enregistré. Le propriétaire doit fournir l’adresse ou les coordonnées. N’envoyez rien pour le moment.')}</p>}
   {!owner&&invoice.state==='awaiting_payment'&&!isCrypto(invoice.method)&&isReady&&<div className="mykioo-billing-payment-details">
    <p><strong>{tr('Send to','Envoyer à')}:</strong> <span className="mykioo-billing-address">{invoice.destination}</span> <button type="button" onClick={()=>copyValue(invoice.destination)}><Copy size={14}/>{tr('Copy','Copier')}</button></p>
@@ -118,7 +120,7 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
   {paidStatus(invoice)&&<div className="mykioo-billing-info paid"><CheckCircle2 size={18}/>{tr('Payment receipt — verified','Reçu de paiement — vérifié')} · {when(invoice.paid_at,fr)}. {tr('Service activation remains a separate owner action.','L’activation du service demeure une action distincte du propriétaire.')}</div>}
   {invoice.state==='cancelled'&&<p className="mykioo-billing-muted">{tr('This invoice is closed. Contact support for questions.','Cette facture est fermée. Contactez le soutien pour toute question.')}</p>}
   {owner&&invoice.state==='awaiting_method'&&<p className="mykioo-billing-muted">{tr('Waiting for customer to choose Interac, Zelle, Bitcoin or SHIB.','En attente du choix du client : Interac, Zelle, Bitcoin ou SHIB.')}</p>}
-  {owner&&['awaiting_instructions','awaiting_payment'].includes(invoice.state)&&invoice.method&&<form className="mykioo-billing-owner-form" onSubmit={e=>{e.preventDefault();onAction({action:'set_destination',invoice_id:invoice.id,destination:overrideAddress.trim(),...(isCrypto(invoice.method)&&manual.trim()?{manual_amount:manual.trim()}:{})})}}>
+  {owner&&['awaiting_instructions','awaiting_payment'].includes(invoice.state)&&invoice.method&&<form className="mykioo-billing-owner-form" onSubmit={e=>{e.preventDefault();onAction({action:'set_destination',invoice_id:invoice.id,destination:overrideAddress.trim(),...(isCrypto(invoice.method)&&manual.trim()?{manual_amount:manual.trim()}:{}),...(invoice.method==='zelle'&&usdQuote.trim()?{amount_usd:usdQuote.trim()}:{})})}}>
    <strong>{tr('Set payment instructions','Définir les instructions de paiement')}</strong>
    <label>{isCrypto(invoice.method)?tr('Paste Coinbase receiving address for this invoice','Collez l’adresse Coinbase pour cette facture'):tr('Recipient email or payment contact','Courriel ou coordonnées du destinataire')}
      <input value={overrideAddress} onChange={e=>setOverrideAddress(e.target.value)} maxLength={254} placeholder={invoice.method==='btc'?'bc1…':invoice.method==='shib'?'0x…':tr('Recipient contact','Coordonnées du destinataire')} required/></label>
@@ -187,7 +189,7 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
  const tr=(en,fr)=>trFor(language,en,fr);
  const [settings,setSettings]=useState(null),[invoices,setInvoices]=useState([]),[loading,setLoading]=useState(true);
  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[requestId,setRequestId]=useState('');
- const [cad,setCad]=useState('80'),[usd,setUsd]=useState('60');
+ const [cad,setCad]=useState('80'),[usd,setUsd]=useState('');
  const [form,setForm]=useState({default_cad:'80',default_usd:'60',interac_destination:'',zelle_destination:''});
  const reload=useCallback(async()=>{
   const [s,i]=await Promise.all([
@@ -203,6 +205,14 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
  },[reload]);
  useEffect(()=>{if(settings)setForm({default_cad:String(settings.default_cad),default_usd:String(settings.default_usd),interac_destination:settings.interac_destination||'',zelle_destination:settings.zelle_destination||''})},[settings?.updated_at]);
  const payable=requests.filter(r=>['pending','in_review'].includes(r.status)&&!invoices.some(inv=>inv.request_id===r.id));
+ const selectedRequest=payable.find(r=>r.id===requestId);
+ useEffect(()=>{
+  if(!selectedRequest)return;
+  setCad(String(selectedRequest.quoted_price_cad??settings?.default_cad??80));
+  setUsd(selectedRequest.preferred_payment_method?
+   (selectedRequest.contract_days===365&&selectedRequest.device_count===1?String(settings?.default_usd??60):''):
+   String(settings?.default_usd??60));
+ },[requestId,selectedRequest?.quoted_price_cad,settings?.default_usd]);
  const accounts=new Map(members.map(m=>[m.user_id,m.display_name||m.email||m.user_id]));
  async function action(payload){
   setBusy(true);setError('');setNotice('');
@@ -211,7 +221,13 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
   finally{setBusy(false)}
  }
  async function saveSettings(e){e.preventDefault();await action({action:'save_settings',...form});}
- async function issue(e){e.preventDefault();if(!requestId)return;await action({action:'issue_invoice',request_id:requestId,amount_cad:Number(cad),amount_usd:Number(usd)});setRequestId('');}
+ async function issue(e){
+  e.preventDefault();if(!requestId)return;
+  await action({action:'issue_invoice',request_id:requestId,
+   ...(selectedRequest?.preferred_payment_method?{}:{amount_cad:Number(cad)}),
+   ...(usd.trim()?{amount_usd:Number(usd)}:{})});
+  setRequestId('');
+ }
  return <section className="mykioo-billing">
   <div className="mykioo-billing-head"><div><h2><Wallet size={23}/>{tr('Billing & manual payments','Facturation et paiements manuels')}</h2>
    <p>{tr('Interac (CAD), Zelle (USD), Bitcoin Mainnet, and SHIB on Ethereum Mainnet only. No gateway, automatic charges, or automatic activation.','Interac (CAD), Zelle (USD), Bitcoin Mainnet et SHIB sur Ethereum Mainnet uniquement. Aucun intermédiaire, prélèvement automatique ni activation automatique.')}</p></div>
@@ -220,10 +236,10 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
   {loading?<p className="mykioo-billing-muted">{tr('Loading billing…','Chargement de la facturation…')}</p>:<>
    <form className="mykioo-billing-box" onSubmit={saveSettings}>
     <h3><Settings size={18}/>{tr('Billing defaults & receiving contacts','Tarifs par défaut et coordonnées de réception')}</h3>
-    <p className="mykioo-billing-muted">{tr('The selected CAD/USD prices are used for new invoices only. Confirm the correct price for each duration before issuing.','Les prix CAD/USD sélectionnés s’appliquent uniquement aux nouvelles factures. Vérifiez le prix selon la durée avant l’émission.')}</p>
+    <p className="mykioo-billing-muted">{tr('The package catalog determines new subscription prices in CAD. These amounts are legacy defaults and the USD quote for one device for 12 months.','Le catalogue fixe les prix CAD. Ces montants servent aux anciens dossiers et au devis USD pour 1 appareil sur 12 mois.')}</p>
     <div className="mykioo-billing-form-grid">
-      <label>{tr('Default Interac price (CAD)','Prix Interac par défaut (CAD)')}<input type="number" min="0.01" step="0.01" value={form.default_cad} onChange={e=>setForm(v=>({...v,default_cad:e.target.value}))} required/></label>
-      <label>{tr('Default Zelle price (USD)','Prix Zelle par défaut (USD)')}<input type="number" min="0.01" step="0.01" value={form.default_usd} onChange={e=>setForm(v=>({...v,default_usd:e.target.value}))} required/></label>
+      <label>{tr('Legacy default CAD price','Prix CAD par défaut des anciens dossiers')}<input type="number" min="0.01" step="0.01" value={form.default_cad} onChange={e=>setForm(v=>({...v,default_cad:e.target.value}))} required/></label>
+      <label>{tr('1-device / 12-month USD default','Prix USD par défaut : 1 appareil / 12 mois')}<input type="number" min="0.01" step="0.01" value={form.default_usd} onChange={e=>setForm(v=>({...v,default_usd:e.target.value}))} required/></label>
       <label>{tr('Interac e-Transfer receiving email','Courriel de réception Interac')}<input type="text" maxLength={254} value={form.interac_destination} onChange={e=>setForm(v=>({...v,interac_destination:e.target.value}))} placeholder={tr('Add your Interac receiving email','Ajoutez votre courriel de réception')}/></label>
       <label>{tr('Zelle receiving email / US phone','Courriel ou numéro américain Zelle')}<input type="text" maxLength={254} value={form.zelle_destination} onChange={e=>setForm(v=>({...v,zelle_destination:e.target.value}))} placeholder={tr('Add your Zelle receiving contact','Ajoutez vos coordonnées Zelle')}/></label>
     </div>
@@ -235,14 +251,14 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
     <label>{tr('Subscription request','Demande d’abonnement')}
      <select required value={requestId} onChange={e=>setRequestId(e.target.value)}>
       <option value="">{tr('Choose request','Choisir une demande')}</option>
-      {payable.map(r=><option value={r.id} key={r.id}>{accounts.get(r.member_id)||r.member_id.slice(0,8)} · {r.service_name} · {r.contract_days} {tr('days','jours')} · #{r.id.slice(0,8)}</option>)}
+      {payable.map(r=><option value={r.id} key={r.id}>{accounts.get(r.member_id)||r.member_id.slice(0,8)} · {r.service_name} · {r.contract_days} {tr('days','jours')} · {r.device_count||1} {tr('device(s)','appareil(s)')} · {r.preferred_payment_method||tr('Legacy request','Ancienne demande')} · #{r.id.slice(0,8)}</option>)}
      </select></label>
     {payable.length===0&&<p className="mykioo-billing-muted">{tr('No uninvoiced pending requests.','Aucune demande en attente sans facture.')}</p>}
     <div className="mykioo-billing-form-grid">
-     <label>{tr('Interac (CAD)','Interac (CAD)')}<input type="number" min="0.01" step="0.01" value={cad} onChange={e=>setCad(e.target.value)} required/></label>
-     <label>{tr('Zelle (USD)','Zelle (USD)')}<input type="number" min="0.01" step="0.01" value={usd} onChange={e=>setUsd(e.target.value)} required/></label>
+     <label>{tr('Interac (CAD)','Interac (CAD)')}<input type="number" min="0.01" step="0.01" value={cad} onChange={e=>setCad(e.target.value)} readOnly={Boolean(selectedRequest?.preferred_payment_method)} required/></label>
+     <label>{tr('Optional owner-confirmed Zelle amount (USD)','Montant Zelle (USD) confirmé par le propriétaire, facultatif')}<input type="number" min="0.01" step="0.01" value={usd} onChange={e=>setUsd(e.target.value)} placeholder={tr('Now or when issuing instructions','Maintenant ou aux instructions')}/></label>
     </div>
-    <p className="mykioo-billing-muted">{tr('Check the requested service and duration. These two numbers are alternatives, not charges to collect together.','Vérifiez le service et la durée demandés. Ces deux montants sont des options alternatives, pas des montants à cumuler.')}</p>
+    <p className="mykioo-billing-muted">{tr('For new requests, the CAD price is fixed by the selected package. Enter an owner-verified USD amount if available; otherwise Zelle waits for a quote.','Pour les nouveaux forfaits, le prix CAD est fixe. Saisissez le montant USD vérifié, sinon Zelle attend un devis.')}</p>
     <button type="submit" disabled={busy||!requestId} className="mykioo-billing-primary">{tr('Issue invoice','Émettre la facture')}</button>
    </form>
    <div className="mykioo-billing-box">
