@@ -13,6 +13,7 @@ import {OwnerBilling} from './Billing';
 import OwnerSubscriptionQueue from './OwnerSubscriptionQueue';
 import OwnerCancellationRequests from './OwnerCancellationRequests';
 import SubscriptionRequests from './SubscriptionRequests';
+import OwnerInvitationReviews from './OwnerInvitationReviews';
 import SubscriptionManager from './SubscriptionManager';
 import {useSupportUnread} from './useSupportUnread';
 import SupportThread from './SupportThread';
@@ -80,7 +81,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  async function refresh({silent=false}={}){
   if(!silent){setLoading(true);setError('')}
   try{
-   const collections={members:'mykioo_members',invitations:'mykioo_invitations',subscriptions:'mykioo_subscriptions',orders:'mykioo_orders',support:'mykioo_support_tickets',subscription_requests:'mykioo_subscription_requests',cancellation_requests:'mykioo_subscription_cancellation_requests'};
+   const collections={members:'mykioo_members',invitations:'mykioo_invitations',invitation_requests:'mykioo_invitation_requests',subscriptions:'mykioo_subscriptions',orders:'mykioo_orders',support:'mykioo_support_tickets',subscription_requests:'mykioo_subscription_requests',cancellation_requests:'mykioo_subscription_cancellation_requests'};
    const all=await Promise.all(Object.entries(collections).map(async ([key,table])=>{
     const {data,error}=await supabase.from(table).select('*').order('created_at',{ascending:false}).limit(100);
     if(error)throw Error(table+': '+error.message);
@@ -206,7 +207,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    }finally{running=false}
   }
   refresh();
-  const tables=['mykioo_members','mykioo_invitations','mykioo_membership_history','mykioo_plans','mykioo_subscriptions','mykioo_orders','mykioo_support_tickets','mykioo_subscription_requests','mykioo_subscription_cancellation_requests','mykioo_audit_logs'];
+  const tables=['mykioo_members','mykioo_invitations','mykioo_invitation_requests','mykioo_membership_history','mykioo_plans','mykioo_subscriptions','mykioo_orders','mykioo_support_tickets','mykioo_subscription_requests','mykioo_subscription_cancellation_requests','mykioo_audit_logs'];
   let channel=supabase.channel('mykioo-admin-live-'+user.id);
   tables.forEach(table=>{channel=channel.on('postgres_changes',{event:'*',schema:'public',table},sync)});
   channel.subscribe(status=>{if(status==='SUBSCRIBED')sync()});
@@ -258,10 +259,10 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
   window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>document.getElementById('mykioo-support-ticket-results')?.scrollIntoView({behavior:'smooth',block:'start'})));
  }
  const cards=[[tr('Total members','Total des membres'),rows.members?.length||0,Users],[tr('Pending approval','En attente d’approbation'),rows.members?.filter(m=>m.status==='pending').length||0,Clock3],[tr('Active subscriptions','Abonnements actifs'),rows.subscriptions?.filter(s=>s.status==='active').length||0,CalendarDays],[tr('Open support tickets','Demandes d’assistance ouvertes'),rows.support?.filter(t=>t.status==='open').length||0,Headphones]];
- const columns={members:['display_name','email','status','role','created_at'],invitations:['email','status','expires_at','created_at'],subscriptions:['member_id','status','starts_at','expires_at'],orders:['member_id','status','total_amount','created_at'],support:['subject','status','member_id','created_at']};
+ const columns={members:['display_name','email','invited_by','status','role','created_at'],invitations:['email','status','expires_at','created_at'],subscriptions:['member_id','status','starts_at','expires_at'],orders:['member_id','status','total_amount','created_at'],support:['subject','status','member_id','created_at']};
  const list=rows[tab]||[];
  const columnLabels={
-  display_name:['Member','Membre'],email:['Email','Courriel'],status:['Status','Statut'],role:['Role','Rôle'],
+  display_name:['Member','Membre'],email:['Email','Courriel'],invited_by:['Invited by','Invité par'],status:['Status','Statut'],role:['Role','Rôle'],
   member_id:['Member','Membre'],total_amount:['Amount','Montant'],starts_at:['Start date','Date de début'],
   expires_at:['Expires','Expiration'],created_at:['Created','Création']
  };
@@ -273,6 +274,11 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  };
  function displayTableValue(row,key){
   const value=row[key];if(value===null||value===undefined||value==='')return '—';
+  if(key==='invited_by'){
+   if(!value)return tr('Owner / system','Propriétaire / système');
+   const inviter=(rows.members||[]).find(m=>m.user_id===value);
+   return inviter?.display_name?inviter.display_name+' · '+inviter.email:inviter?.email||tr('Former member','Ancien membre');
+  }
   if(key==='member_id'){
    const member=(rows.members||[]).find(m=>m.user_id===value);
    return member?.display_name||member?.email||String(value).slice(0,8);
@@ -318,6 +324,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
       <Icon size={18}/><span>{tr(...ownerLabels[id])}</span>
       {id==='support'&&unreadTotal>0&&<span className="mykioo-unread-dot">{unreadTotal>99?'99+':unreadTotal}</span>}
       {id==='notifications'&&notificationUnread>0&&<span className="mykioo-unread-dot">{notificationUnread>99?'99+':notificationUnread}</span>}
+      {id==='invitations'&&(rows.invitation_requests||[]).some(r=>r.status==='pending')&&<span className="mykioo-unread-dot">{(rows.invitation_requests||[]).filter(r=>r.status==='pending').length}</span>}
      </button>
     })}
    </div>)}
@@ -551,8 +558,26 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     <ServiceAlertHistory alerts={serviceAlerts} language={language}/>
    </div>}
   </section>}
-  {tab==='invitations'&&<form className="admin-invite" onSubmit={invite}><div><strong>{tr("Invite a new member","Inviter un nouveau membre")}</strong><p>{tr("An invitation email will be sent in the website language. The member remains pending until you approve them.","Une invitation sera envoyée dans la langue du site. Le membre restera en attente jusqu’à votre approbation.")}</p></div><div className="admin-invite-row"><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="customer@example.com" required maxLength={254} aria-label={tr("Invitee email","Courriel du destinataire")}/><button className="admin-action primary" type="submit" disabled={saving}>{saving?tr('Sending…','Envoi…'):tr('Send invitation','Envoyer l’invitation')}</button></div><small>{tr("Email language follows the EN/FR selection above. Supabase controls invitation expiry.","La langue du courriel suit le choix EN/FR ci-dessus. Supabase gère l’expiration de l’invitation.")}</small></form>}
- {tab!=='overview'&&tab!=='support'&&tab!=='subscriptions'&&tab!=='create-request'&&tab!=='notifications'&&tab!=='billing'&&tab!=='guides'&&tab!=='activity'&&<><p className="admin-description">{tab==='invitations'?tr('View invitations sent through MYKIOO.','Consultez les invitations envoyées depuis MYKIOO.'):tab==='members'?tr('Approve, reject or suspend customer memberships. Owner accounts are protected.','Approuvez, refusez ou suspendez les membres. Les comptes propriétaires sont protégés.'):tr('View your current MYKIOO records.','Consultez les données MYKIOO.')}</p>{loading?<div className="admin-empty">{tr("Loading records…","Chargement…")}</div>:list.length===0?<div className="admin-empty"><LockKeyhole size={28}/><strong>{tr("No records yet","Aucune donnée")}</strong><span>{tr("Information will appear here when available.","Les informations apparaîtront ici dès qu’elles seront disponibles.")}</span></div>:<div className="admin-table-wrap"><table className="admin-table"><thead><tr>{columns[tab].map(c=><th scope="col" key={c}>{columnLabels[c]?tr(...columnLabels[c]):c.replaceAll('_',' ')}</th>)}{tab==='members'&&<th>{tr("Actions","Actions")}</th>}</tr></thead><tbody>{list.map(row=><tr key={row.id||row.user_id}>{columns[tab].map(c=><td key={c}>{displayTableValue(row,c)}</td>)}{tab==='members'&&<td><div className="admin-controls">{row.role==='member'?<>{row.status!=='approved'&&<button disabled={saving} className="admin-mini positive" onClick={()=>changeStatus(row,'approved')}>{tr("Approve","Approuver")}</button>}{row.status!=='rejected'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'rejected')}>{tr("Reject","Refuser")}</button>}{row.status==='approved'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'suspended')}>{tr("Suspend","Suspendre")}</button>}</>:<span>{tr("Owner","Propriétaire")}</span>}</div></td>}</tr>)}</tbody></table></div>}</>}
+  {tab==='invitations'&&<section className="admin-workspace-section admin-owner-invitations">
+   <div className="admin-panel-content">
+    <OwnerInvitationReviews requests={rows.invitation_requests||[]} invitations={rows.invitations||[]}
+     members={rows.members||[]} language={language} saving={saving} onAction={runAction}
+     onRefresh={()=>refresh({silent:true})}/>
+    <details className="mykioo-owner-direct-invite">
+     <summary>{tr('Send an invitation directly as owner','Envoyer une invitation directement comme propriétaire')}</summary>
+     <form className="admin-invite" onSubmit={invite}>
+      <div><strong>{tr('Invite a customer','Inviter un client')}</strong>
+       <p>{tr('The invitation email is sent immediately. The new member still needs membership approval before entering MYKIOO.','Le courriel d’invitation est envoyé immédiatement. Le nouveau membre doit encore être approuvé avant d’accéder à MYKIOO.')}</p>
+      </div>
+      <div className="admin-invite-row">
+       <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="customer@example.com" required maxLength={254} aria-label={tr('Invitee email','Courriel du destinataire')}/>
+       <button className="admin-action primary" type="submit" disabled={saving}>{saving?tr('Sending…','Envoi…'):tr('Send invitation','Envoyer l’invitation')}</button>
+      </div>
+     </form>
+    </details>
+   </div>
+  </section>}
+  {tab!=='overview'&&tab!=='support'&&tab!=='subscriptions'&&tab!=='create-request'&&tab!=='invitations'&&tab!=='notifications'&&tab!=='billing'&&tab!=='guides'&&tab!=='activity'&&<><p className="admin-description">{tab==='invitations'?tr('View invitations sent through MYKIOO.','Consultez les invitations envoyées depuis MYKIOO.'):tab==='members'?tr('Approve, reject or suspend customer memberships. Owner accounts are protected.','Approuvez, refusez ou suspendez les membres. Les comptes propriétaires sont protégés.'):tr('View your current MYKIOO records.','Consultez les données MYKIOO.')}</p>{loading?<div className="admin-empty">{tr("Loading records…","Chargement…")}</div>:list.length===0?<div className="admin-empty"><LockKeyhole size={28}/><strong>{tr("No records yet","Aucune donnée")}</strong><span>{tr("Information will appear here when available.","Les informations apparaîtront ici dès qu’elles seront disponibles.")}</span></div>:<div className="admin-table-wrap"><table className="admin-table"><thead><tr>{columns[tab].map(c=><th scope="col" key={c}>{columnLabels[c]?tr(...columnLabels[c]):c.replaceAll('_',' ')}</th>)}{tab==='members'&&<th>{tr("Actions","Actions")}</th>}</tr></thead><tbody>{list.map(row=><tr key={row.id||row.user_id}>{columns[tab].map(c=><td key={c}>{displayTableValue(row,c)}</td>)}{tab==='members'&&<td><div className="admin-controls">{row.role==='member'?<>{row.status!=='approved'&&<button disabled={saving} className="admin-mini positive" onClick={()=>changeStatus(row,'approved')}>{tr("Approve","Approuver")}</button>}{row.status!=='rejected'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'rejected')}>{tr("Reject","Refuser")}</button>}{row.status==='approved'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'suspended')}>{tr("Suspend","Suspendre")}</button>}</>:<span>{tr("Owner","Propriétaire")}</span>}</div></td>}</tr>)}</tbody></table></div>}</>}
  </main> {pendingChange&&<div className="mykioo-modal-overlay" onMouseDown={e=>{if(e.target===e.currentTarget&&!saving)setPendingChange(null)}}><div className="mykioo-modal" role="alertdialog" aria-modal="true" aria-labelledby="mykioo-confirm-title" aria-describedby="mykioo-confirm-description"><div className="mykioo-modal-icon"><ShieldCheck size={27}/></div><div className="admin-tag">MYKIOO</div><h2 id="mykioo-confirm-title">{tr(({approved:'Approve membership',rejected:'Reject membership',suspended:'Suspend membership',deactivated:'Deactivate membership'})[pendingChange.status]||'Change membership',({approved:'Approuver l’adhésion',rejected:'Refuser l’adhésion',suspended:'Suspendre l’adhésion',deactivated:'Désactiver l’adhésion'})[pendingChange.status]||'Modifier l’adhésion')}</h2><p id="mykioo-confirm-description">{tr('Are you sure you want to change the status of this member?','Voulez-vous vraiment modifier le statut de ce membre?')}</p><div className="mykioo-modal-member"><span>{pendingChange.member.email}</span><div><span className="mykioo-status-chip">{tr(pendingChange.member.status,({pending:'en attente',approved:'approuvé',rejected:'refusé',suspended:'suspendu',deactivated:'désactivé'})[pendingChange.member.status]||pendingChange.member.status)}</span><span className="mykioo-modal-arrow">→</span><span className="mykioo-status-chip target">{tr(pendingChange.status,({pending:'en attente',approved:'approuvé',rejected:'refusé',suspended:'suspendu',deactivated:'désactivé'})[pendingChange.status]||pendingChange.status)}</span></div></div><div className="mykioo-modal-buttons"><button type="button" className="mykioo-modal-cancel" onClick={()=>setPendingChange(null)}>{tr('Cancel','Annuler')}</button><button type="button" className="mykioo-modal-confirm" autoFocus onClick={confirmChange}>{tr('Confirm change','Confirmer')}</button></div></div></div>}
 </div>
 }
