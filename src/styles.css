@@ -1044,3 +1044,21 @@
 .mykioo-package-request-summary{color:#e5c89d!important;font-size:12px!important;font-weight:650}
 .mykioo-payment-ready{display:inline-flex;align-items:center;align-self:flex-start;gap:6px;border:1px solid #88705a;background:#302637;color:#eed0a0;font-size:11px;font-weight:700;padding:6px 9px;border-radius:99px;max-width:100%;overflow-wrap:anywhere}
 .mykioo-payment-ready.verified{background:#20382b;color:#c2e8cb;border-color:#5f966c}
+
+/* Direct bank-payment checkout appears inside the subscription request form. */
+.mykioo-inline-bank-payment,.mykioo-crypto-request-note{box-sizing:border-box;width:100%;min-width:0;max-width:100%;display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:16px;margin:7px 0;border-radius:12px;border:1px solid rgba(209,173,119,.6);background:#241e2e;color:#e8dce9}
+.mykioo-inline-bank-payment h3{font-family:Outfit,sans-serif;font-size:17px;color:#edd0a2;margin:0 0 5px}
+.mykioo-inline-bank-payment label{margin:0}
+.mykioo-inline-bank-payment input[type=text],.mykioo-inline-bank-payment input:not([type]){max-width:100%;width:100%;box-sizing:border-box}
+.mykioo-bank-pay-amount{display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;gap:10px;color:#e6d3e9;font-size:14px!important;margin:0!important}
+.mykioo-bank-pay-amount strong{font-family:Outfit,sans-serif;font-size:23px;color:#f5d6a3}
+.mykioo-bank-pay-address{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;background:rgba(255,255,255,.04);padding:11px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.1);margin:0!important}
+.mykioo-bank-pay-address span{min-width:0;overflow-wrap:anywhere;flex:1 1 180px}
+.mykioo-bank-pay-address strong{color:#f1e1b6;overflow-wrap:anywhere}
+.mykioo-bank-pay-address button{flex-shrink:0;border-radius:7px;padding:8px 12px}
+.mykioo-bank-pay-ack{display:flex!important;flex-direction:row!important;align-items:flex-start!important;gap:11px!important;min-width:0;cursor:pointer;font-size:12px!important;line-height:1.6}
+.mykioo-bank-pay-ack input{width:19px!important;height:19px!important;flex:none;accent-color:#d6b587;margin:1px 0 0!important}
+.mykioo-bank-pay-ack span{flex:1;min-width:0}
+.mykioo-crypto-request-note strong{color:#f0d0a2}
+.mykioo-crypto-request-note p{margin:0!important;line-height:1.55;font-size:12px!important}
+@media(max-width:650px){.mykioo-inline-bank-payment,.mykioo-crypto-request-note{padding:13px}.mykioo-bank-pay-amount strong{font-size:20px}}
