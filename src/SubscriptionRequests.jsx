@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {supabase} from './supabase';
 import SubscriptionHistory from './SubscriptionHistory';
+import {MemberBilling} from './Billing';
 import {priceCAD,PAYMENT_LABELS} from './PackagePricing';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-subscription-requests';
@@ -27,7 +28,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const [service,setService]=useState(owner?'':'MYKIOO TV'),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
  const [deviceCount,setDeviceCount]=useState(1),[paymentMethod,setPaymentMethod]=useState('interac');
  const [checkout,setCheckout]=useState(null),[checkoutLoading,setCheckoutLoading]=useState(false);
- const [senderName,setSenderName]=useState(''),[paymentReference,setPaymentReference]=useState(''),[transferConfirmed,setTransferConfirmed]=useState(false);
+ const [submittedInvoiceId,setSubmittedInvoiceId]=useState(null);
  const [ownRows,setOwnRows]=useState([]),[ownCancellations,setOwnCancellations]=useState([]),[loading,setLoading]=useState(!owner),
   [saving,setSaving]=useState(false),[cancellingId,setCancellingId]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{if(userId&&(!targetId||!owner))setTargetId(userId)},[userId,owner]);
@@ -125,9 +126,6 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   if(isBankPayment&&(!bankReady||checkoutLoading)){
    setError(tr('Bank payment instructions are not ready. Select a configured method or contact MYKIOO.','Les instructions de paiement bancaire ne sont pas prêtes. Choisissez un autre mode configuré ou contactez MYKIOO.'));return;
   }
-  if(isBankPayment&&(senderName.trim().length<2||paymentReference.trim().length<3||!transferConfirmed)){
-   setError(tr('Send your bank transfer first, then enter the sender name, transfer confirmation number and check the confirmation box.','Effectuez le virement, puis indiquez le nom de l’expéditeur, le numéro de confirmation et cochez la case.'));return;
-  }
   if(!owner&&renewal&&(!renewalId||pendingRenewals.has(renewalId))){
    setError(tr('Choose the subscription you want to renew before continuing.','Choisissez l’abonnement à renouveler avant de continuer.'));return;
   }
@@ -169,7 +167,6 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
      renewal?
       {action:'renew',subscription_id:renewalId,contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim()}:
       {action:'create',service_name:service.trim(),contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim()};
-   if(isBankPayment)Object.assign(payload,{sender_name:senderName.trim(),payment_reference:paymentReference.trim(),ack_sent:transferConfirmed});
    const response=await fetch(endpoint,{method:'POST',headers:{
      'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
      'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -183,16 +180,26 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
       service_name:renewal?(selected?.service_name||'Renewal'):service.trim(),
       contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim(),quoted_price_cad:priceCAD(contractDays,deviceCount),status:'pending'
     },...previous.filter(r=>r.id!==result.request.id)]);
-   setService(owner?'':'MYKIOO TV');setRenewalId('');if(owner){setOwnerEmail('');setCreatedInvite(null)}setNotes('');setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setSenderName('');setPaymentReference('');setTransferConfirmed(false);setRequestType('new');
+   setService(owner?'':'MYKIOO TV');setRenewalId('');if(owner){setOwnerEmail('');setCreatedInvite(null)}setNotes('');setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setRequestType('new');
    setNotice(owner?
     (invitationSent?tr('Request created and a customer invitation was issued. The new member must be approved before they can access MYKIOO.','Demande créée et invitation envoyée au client. Le nouveau membre doit être approuvé avant d’accéder à MYKIOO.'):tr('Request created for the existing customer.','Demande créée pour le client existant.')):
-    isBankPayment?tr('Your subscription request and bank payment confirmation were submitted together. MYKIOO will verify receipt before activating service.','Votre demande et confirmation bancaire ont été envoyées. MYKIOO vérifiera le paiement avant activation.'):
+    isBankPayment?tr('Request submitted. Complete payment in the next step. The owner verifies actual receipt before activation.','Demande envoyée. Effectuez le paiement à la prochaine étape. Le propriétaire vérifiera la réception avant activation.'):
     renewal?tr('Renewal requested. Your existing login will be kept.','Renouvellement demandé. Vos identifiants actuels seront conservés.'):
     tr('Your request was sent for review.','Votre demande a été envoyée pour examen.'));
+   if(!owner&&isBankPayment&&result.invoice?.id)setSubmittedInvoiceId(result.invoice.id);
    if(owner)await onSaved?.();
   }catch(err){setError((invitationSent||createdInvite?tr('A site invitation may already have been issued. ','Une invitation a peut-être déjà été envoyée. '):'')+(err.message||tr('Request could not be submitted.','Impossible d’envoyer la demande.')))}
   finally{setSaving(false)}
  }
+ if(!owner&&submittedInvoiceId)return <section className="mykioo-request-area mykioo-payment-after-request">
+  <div className="mykioo-support-card mykioo-payment-next-card">
+   <span className="mykioo-payment-success-check">✓</span>
+   <h2>{tr('Request received — now send payment','Demande reçue — effectuez le paiement')}</h2>
+   <p>{tr('Step 1 is complete. Follow the instructions below. After sending payment, select “Confirm I’ve sent payment.” The owner will verify receipt before activating service.','La première étape est terminée. Suivez les instructions ci-dessous. Après le paiement, cliquez sur « Confirmer l’envoi du paiement ». Le propriétaire vérifiera la réception avant l’activation.')}</p>
+   <button type="button" className="mykioo-payment-other-request" onClick={()=>setSubmittedInvoiceId(null)}>{tr('Create another subscription request','Créer une autre demande d’abonnement')}</button>
+  </div>
+  <MemberBilling userId={userId} language={language} highlightInvoiceId={submittedInvoiceId}/>
+ </section>;
  if(view==='history')return <section className="mykioo-request-history-page">
     <SubscriptionHistory requests={rows} cancellations={cancellationRows} subscriptions={selectedSubs} language={language} owner={owner} onRequestCancellation={owner?undefined:requestCancellation} cancellingId={cancellingId}/>
   </section>;
@@ -269,28 +276,13 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
      <select id="mykioo-request-payment-method" required value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)}>
       {Object.entries(PAYMENT_LABELS).map(([value,label])=><option key={value} value={value}>{label}</option>)}
      </select>
-     {isBankPayment&&<div className="mykioo-inline-bank-payment">
-      <h3>{tr('Send payment before submitting','Effectuez le paiement avant d’envoyer la demande')}</h3>
-      {checkoutLoading?<p className="mykioo-request-payment-note">{tr('Checking payment instructions…','Vérification des instructions de paiement…')}</p>:
+     {isBankPayment&&<div className="mykioo-inline-bank-payment mykioo-bank-after-request">
+      <h3>{tr('Payment comes next','Paiement à l’étape suivante')}</h3>
+      {checkoutLoading?<p className="mykioo-request-payment-note">{tr('Checking the selected payment method…','Vérification du mode de paiement choisi…')}</p>:
        !bankReady?<p className="mykioo-request-payment-note" role="status">
-        {tr('This bank payment option is not yet configured for this package. Do not send funds until payment details appear.','Ce mode de paiement n’est pas encore configuré pour ce forfait. N’envoyez aucun paiement tant que les détails ne sont pas affichés.')}
-        {paymentMethod==='zelle'&&<span> {tr('The USD amount also needs to be set by MYKIOO.','Le montant en USD doit également être défini par MYKIOO.')}</span>}
-       </p>:<>
-        <p className="mykioo-bank-pay-amount">{tr('Transfer exactly','Transférez exactement')} <strong>{checkout.currency==='CAD'?'CA$':'US$'}{Number(checkout.amount_due).toFixed(2)}</strong></p>
-        <p className="mykioo-bank-pay-address"><span>{tr('Send to','Envoyez à')}: <strong>{checkout.destination}</strong></span>
-          <button type="button" onClick={()=>navigator.clipboard?.writeText(String(checkout.destination)).catch(()=>{})}>{tr('Copy','Copier')}</button></p>
-        <p className="mykioo-request-payment-note">{tr('Pay in your banking app, enter the confirmation below, then submit. MYKIOO verifies the funds before activation.','Payez dans votre application bancaire, entrez la confirmation ci-dessous, puis envoyez. MYKIOO vérifiera les fonds avant l’activation.')}</p>
-        <label htmlFor="mykioo-bank-sender">{tr('Name on the sending account','Nom du titulaire du compte expéditeur')} *</label>
-        <input id="mykioo-bank-sender" required minLength={2} maxLength={120} autoComplete="name" value={senderName} onChange={e=>setSenderName(e.target.value)}
-         placeholder={tr('Full sender name','Nom complet de l’expéditeur')}/>
-        <label htmlFor="mykioo-bank-reference">{tr('Bank transfer confirmation / transaction number','Numéro de confirmation / transaction bancaire')} *</label>
-        <input id="mykioo-bank-reference" required minLength={3} maxLength={160} value={paymentReference} onChange={e=>setPaymentReference(e.target.value)}
-         placeholder={tr('Confirmation number from your bank','Numéro de confirmation de votre banque')}/>
-        <label className="mykioo-bank-pay-ack">
-          <input type="checkbox" checked={transferConfirmed} onChange={e=>setTransferConfirmed(e.target.checked)} required/>
-          <span>{tr('I confirm I have actually sent this payment to the listed account.','Je confirme avoir réellement envoyé ce paiement au compte indiqué.')}</span>
-        </label>
-       </>}
+        {tr('This payment method is not fully configured. Choose an available option before submitting. Do not send money yet.','Ce mode de paiement n’est pas entièrement configuré. Choisissez une option disponible avant de soumettre. N’envoyez pas d’argent pour le moment.')}
+       </p>:
+       <p className="mykioo-request-payment-note">{tr('Submit your request first. Your exact amount, receiving details and separate payment confirmation button will then appear.','Soumettez d’abord votre demande. Le montant exact, les coordonnées de paiement et le bouton distinct de confirmation seront ensuite affichés.')}</p>}
      </div>}
      {(paymentMethod==='btc'||paymentMethod==='shib')&&<div className="mykioo-crypto-request-note">
        <strong>{tr('Cryptocurrency invoice provided by MYKIOO','Facture crypto fournie par MYKIOO')}</strong>
@@ -307,8 +299,8 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
        <textarea id="mykioo-request-notes" maxLength={1000} rows={3} value={notes} onChange={e=>setNotes(e.target.value)}
         placeholder={tr('Anything else we should know?','Autres renseignements utiles ?')}/>
       </details>}
-    <button type="submit" disabled={saving||(isBankPayment&&(!bankReady||!transferConfirmed||senderName.trim().length<2||paymentReference.trim().length<3))||(requestType==='renewal'&&(!selectedRenewal||pendingRenewals.has(renewalId)))||(owner&&!ownerEmail.trim())}>
-     {saving?tr('Sending…','Envoi…'):isBankPayment?tr('Submit request with payment confirmation','Envoyer la demande avec confirmation du paiement'):requestType==='renewal'?tr('Request renewal — crypto invoice follows','Demander le renouvellement — facture crypto à suivre'):tr('Request subscription — crypto invoice follows','Demander l’abonnement — facture crypto à suivre')}
+    <button type="submit" disabled={saving||(isBankPayment&&(!bankReady||checkoutLoading))||(requestType==='renewal'&&(!selectedRenewal||pendingRenewals.has(renewalId)))||(owner&&!ownerEmail.trim())}>
+     {saving?tr('Sending…','Envoi…'):isBankPayment?tr('Submit request — continue to payment','Soumettre — continuer vers le paiement'):requestType==='renewal'?tr('Request renewal — crypto invoice follows','Demander le renouvellement — facture crypto à suivre'):tr('Request subscription — crypto invoice follows','Demander l’abonnement — facture crypto à suivre')}
     </button>
    </form>
    {!owner&&<details className="mykioo-checkout-policy">
