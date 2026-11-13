@@ -282,7 +282,22 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
     <button type="submit" className="mykioo-billing-primary" disabled={busy}>{tr('Save billing settings','Enregistrer les paramètres')}</button>
     <p className="mykioo-billing-muted">{tr('BTC and SHIB receiving addresses are entered on each invoice once the customer selects crypto. Never enter your Coinbase password or seed phrase.','Les adresses BTC et SHIB sont saisies sur chaque facture après le choix du client. N’entrez jamais votre mot de passe Coinbase ni votre phrase de récupération.')}</p>
    </form>
-   <form className="mykioo-billing-box" onSubmit={issue}>
+   <form className="mykioo-billing-box" onSubmit={saveUsdPrices}>
+     <h3><Settings size={18}/>{tr('One-time Zelle USD package prices','Prix des forfaits Zelle en USD (à configurer une fois)')}</h3>
+     <p className="mykioo-billing-muted">{tr('CAD prices are fixed. Enter your chosen USD price for any package you want to offer through Zelle. Leave blank to disable Zelle for that package until configured.','Les prix CAD sont fixes. Saisissez votre prix USD pour les forfaits que vous souhaitez proposer avec Zelle. Laissez vide pour désactiver Zelle pour ce forfait jusqu’à sa configuration.')}</p>
+     <div className="mykioo-usd-price-grid">
+      {packagePrices.map(price=>{
+       const key=price.contract_days+':'+price.device_count;
+       return <label key={key}>
+        <span>{price.contract_days===365?tr('12 months','12 mois'):tr('24 months','24 mois')} · {price.device_count} {tr('device(s)','appareil(s)')} · CA$ {Number(price.price_cad).toFixed(2)}</span>
+        <input type="number" step="0.01" min="0.01" placeholder={tr('USD not set','USD non défini')}
+          value={usdDrafts[key]??''} onChange={e=>setUsdDrafts(v=>({...v,[key]:e.target.value}))}/>
+       </label>;
+      })}
+     </div>
+     <button type="submit" className="mykioo-billing-primary" disabled={busy||packagePrices.length!==10}>{tr('Save USD package prices','Enregistrer les prix USD')}</button>
+    </form>
+    <form className="mykioo-billing-box" onSubmit={issue}>
     <h3><FileText size={18}/>{tr('Issue invoice for a pending request','Émettre une facture pour une demande en attente')}</h3>
     <label>{tr('Subscription request','Demande d’abonnement')}
      <select required value={requestId} onChange={e=>setRequestId(e.target.value)}>
