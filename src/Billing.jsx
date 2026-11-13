@@ -156,7 +156,7 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
   {localNotice&&<p role="status" className="mykioo-billing-muted">{localNotice}</p>}
  </article>;
 }
-export function MemberBilling({userId,language='en'}){
+export function MemberBilling({userId,language='en',highlightInvoiceId=null}){
  const tr=(en,fr)=>trFor(language,en,fr);
  const [invoices,setInvoices]=useState([]),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const reload=useCallback(async()=>{
@@ -177,15 +177,16 @@ export function MemberBilling({userId,language='en'}){
   catch(err){setError(err.message||tr('Unable to update invoice','Impossible de modifier la facture'))}
   finally{setBusy(false)}
  }
+ const visibleInvoices=highlightInvoiceId?invoices.filter(invoice=>invoice.id===highlightInvoiceId):invoices;
  return <section className="mykioo-billing">
   <div className="mykioo-billing-head"><div><h2><Receipt size={22}/>{tr('Payments & crypto invoices','Paiements et factures crypto')}</h2>
-   <p>{tr('Interac and Zelle payment confirmations are submitted with subscription requests. BTC and SHIB invoices are issued separately. The owner verifies actual funds.','Les confirmations Interac et Zelle accompagnent les demandes d’abonnement. Les factures BTC et SHIB sont émises séparément. Le propriétaire vérifie les fonds.')}</p></div>
+   <p>{tr('Send payment using the invoice instructions, then confirm you have sent it. The owner verifies actual receipt separately. BTC and SHIB instructions are prepared by the owner.','Effectuez le paiement selon les instructions de la facture, puis confirmez son envoi. Le propriétaire vérifiera la réception réelle. Les instructions BTC et SHIB sont préparées par le propriétaire.')}</p></div>
    <button type="button" onClick={()=>{setLoading(true);reload().catch(()=>setError(tr('Could not refresh','Actualisation impossible'))).finally(()=>setLoading(false))}}><RefreshCw size={17}/>{tr('Refresh','Actualiser')}</button>
   </div>
   {error&&<p className="mykioo-billing-error" role="alert">{error}</p>}{notice&&<p className="mykioo-billing-notice" role="status">{notice}</p>}
   {loading&&<p className="mykioo-billing-muted">{tr('Loading invoices…','Chargement des factures…')}</p>}
-  {!loading&&invoices.length===0&&<p className="mykioo-billing-empty">{tr('No payment records yet. Bank transfers are confirmed within the subscription request form; crypto payment instructions arrive after owner review.','Aucun paiement enregistré. Les virements bancaires sont confirmés dans le formulaire d’abonnement; les instructions crypto arrivent après l’examen du propriétaire.')}</p>}
-  <div className="mykioo-billing-list">{invoices.map(inv=><InvoiceCard key={inv.id} invoice={inv} language={language} busy={busy} onAction={action}/>)}</div>
+  {!loading&&visibleInvoices.length===0&&<p className="mykioo-billing-empty">{tr('No payment instructions are available yet. Submit a subscription request or check back once the owner prepares your crypto invoice.','Aucune instruction de paiement n’est disponible pour le moment. Soumettez une demande ou revenez lorsque le propriétaire préparera votre facture crypto.')}</p>}
+  <div className="mykioo-billing-list">{visibleInvoices.map(inv=><InvoiceCard key={inv.id} invoice={inv} language={language} busy={busy} onAction={action}/>)}</div>
  </section>;
 }
 export function OwnerBilling({language='en',requests=[],members=[]}){
