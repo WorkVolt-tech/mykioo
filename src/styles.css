@@ -1033,3 +1033,14 @@
  .stat-grid>.stat:last-child:nth-child(odd){grid-column:1/-1}
  .stat{min-width:0}
 }
+
+
+/* Customer-facing fixed package quote and owner payment readiness. */
+.mykioo-package-quote{display:grid;gap:5px;margin:4px 0 5px;padding:16px;background:#292336;border:1px solid #a78662;border-radius:11px;min-width:0;max-width:100%;box-sizing:border-box}
+.mykioo-package-quote span{font-size:12px;color:#e0c291;font-weight:750}
+.mykioo-package-quote strong{font-size:24px;color:#f9e6c0;font-family:Outfit,sans-serif}
+.mykioo-package-quote small{font-size:11px;line-height:1.5;color:#c4b5ce;overflow-wrap:anywhere}
+.mykioo-request-payment-note{background:#211d2b;border-left:3px solid #a78863;color:#d9c9dd!important;padding:10px 12px;border-radius:6px;margin:3px 0!important;line-height:1.6!important;font-size:12px!important}
+.mykioo-package-request-summary{color:#e5c89d!important;font-size:12px!important;font-weight:650}
+.mykioo-payment-ready{display:inline-flex;align-items:center;align-self:flex-start;gap:6px;border:1px solid #88705a;background:#302637;color:#eed0a0;font-size:11px;font-weight:700;padding:6px 9px;border-radius:99px;max-width:100%;overflow-wrap:anywhere}
+.mykioo-payment-ready.verified{background:#20382b;color:#c2e8cb;border-color:#5f966c}
