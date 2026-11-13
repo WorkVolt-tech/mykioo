@@ -54,6 +54,28 @@ Deno.serve(async req=>{
    await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:"billing_settings_updated",entity_type:"settings",entity_id:"1",details:{default_cad,default_usd}});
    return reply({ok:true,settings:data});
   }
+  if(action==="save_usd_prices"){
+   if(!owner)return reply({error:"Owner access required"},403);
+   const items=input.prices;
+   if(!Array.isArray(items)||items.length!==10)return reply({error:"Provide all ten package rows"},400);
+   const seen=new Set<string>();
+   for(const row of items){
+    const days=Number(row?.contract_days),devices=Number(row?.device_count),id=days+":"+devices;
+    if(![365,730].includes(days)||!Number.isInteger(devices)||devices<1||devices>5||seen.has(id))
+     return reply({error:"Invalid or duplicate package"},400);
+    seen.add(id);
+    const raw=row.price_usd;
+    if(raw!=null&&String(raw).trim()!==""&&money(raw)===null)
+     return reply({error:"Invalid USD amount"},400);
+   }
+   for(const row of items){
+    const raw=row.price_usd,value=raw==null||String(raw).trim()===""?null:money(raw);
+    const {error}=await db.from("mykioo_package_prices").update({price_usd:value,updated_at:new Date().toISOString()})
+      .eq("contract_days",Number(row.contract_days)).eq("device_count",Number(row.device_count));
+    if(error)return reply({error:"Could not update USD package prices"},500);
+   }
+   return reply({ok:true});
+  }
   if(action==="issue_invoice"){
    if(!owner||!uuid(input.request_id))return reply({error:"Owner and subscription request required"},403);
    const {data:request,error:requestError}=await db.from("mykioo_subscription_requests")
@@ -70,6 +92,8 @@ Deno.serve(async req=>{
    const {data:settings,error:settingsError}=await db.from("mykioo_billing_settings").select("*").eq("id",1).single();
    if(settingsError)return reply({error:"Billing settings unavailable"},500);
    const priced=Boolean(request.preferred_payment_method);
+   if(["interac","zelle"].includes(request.preferred_payment_method))
+    return reply({error:"Bank payments are submitted with the subscription form; no owner invoice is required"},409);
    let amount_cad,amount_usd,method=null;
    if(priced){
     const {data:packageRow,error:priceError}=await db.from("mykioo_package_prices")
