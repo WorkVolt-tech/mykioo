@@ -41,3 +41,10 @@
 .mykioo-billing-notice{border-color:#57875d;color:#bde0c4;background:rgba(50,122,66,.13)}
 .mykioo-billing-outline{margin:10px 10px 0 0}
 @media(max-width:700px){.mykioo-billing-box,.mykioo-billing-invoice{padding:13px}.mykioo-billing-form-grid{grid-template-columns:1fr}.mykioo-billing-head{flex-direction:column}.mykioo-billing-crypto-address{flex-direction:column}}
+
+/* One-time USD price configuration; CAD amounts are fixed in the package catalog. */
+.mykioo-usd-price-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0;min-width:0}
+.mykioo-usd-price-grid label{display:grid;gap:7px;min-width:0;background:rgba(255,255,255,.04);padding:12px;border:1px solid rgba(219,188,134,.2);border-radius:9px}
+.mykioo-usd-price-grid label span{font-size:12px;color:#e8d1a5;overflow-wrap:anywhere}
+.mykioo-usd-price-grid input{max-width:100%;width:100%;min-width:0;box-sizing:border-box}
+@media(max-width:700px){.mykioo-usd-price-grid{grid-template-columns:minmax(0,1fr)}}
