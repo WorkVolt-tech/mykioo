@@ -22,6 +22,7 @@ const displayDuration=(days,tr)=>({
 export default function SubscriptionRequests({userId,subscriptions=[],language='en',owner=false,members=[],requests=[],cancellations=[],onSaved,view='all'}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [targetId,setTargetId]=useState(userId||'');
+ const [ownerEmail,setOwnerEmail]=useState(''),[createdInvite,setCreatedInvite]=useState(null);
  const [requestType,setRequestType]=useState('new');
  const [service,setService]=useState(owner?'':'MYKIOO TV'),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
  const [deviceCount,setDeviceCount]=useState(1),[paymentMethod,setPaymentMethod]=useState('interac');
@@ -83,7 +84,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  },[contractDays,deviceCount,paymentMethod,view]);
  const isBankPayment=paymentMethod==='interac'||paymentMethod==='zelle';
  const bankReady=isBankPayment&&checkout?.available===true&&!!checkout?.destination&&Number(checkout?.amount_due)>0;
- const users=useMemo(()=>members.filter(m=>m.status==='approved'&&(m.role==='member'||(m.role==='owner'&&m.user_id===userId))),[members,userId]);
+ const users=useMemo(()=>members.filter(m=>['approved','pending'].includes(m.status)&&(m.role==='member'||(m.role==='owner'&&m.user_id===userId))),[members,userId]);
  const rows=owner?requests.filter(r=>r.member_id===targetId):ownRows;
  const cancellationRows=owner?cancellations.filter(c=>c.member_id===targetId):ownCancellations;
  const selectedSubs=subscriptions.filter(s=>s.member_id===(owner?targetId:userId));
@@ -92,7 +93,12 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const selectedRenewal=eligible.find(s=>s.id===renewalId);
  const renewalExpiry=sub=>sub.expires_at?new Date(sub.expires_at).toLocaleDateString(fr?'fr-CA':'en-CA',{year:'numeric',month:'short',day:'numeric'}):tr('Not available','Non disponible');
  function chooseType(value){setRequestType(value);setRenewalId('');if(value==='new')setDeviceCount(1);setError('');setNotice('')}
- function chooseAccount(value){setTargetId(value);setRenewalId('');setRequestType('new');setError('');setNotice('')}
+ function chooseAccount(value){setTargetId(value);setRenewalId('');setError('');setNotice('')}
+ function chooseOwnerEmail(value){
+  setOwnerEmail(value);setCreatedInvite(null);
+  const member=users.find(m=>m.email?.trim().toLowerCase()===value.trim().toLowerCase());
+  chooseAccount(member?.user_id||'');
+ }
  async function requestCancellation(request){
   if(owner||saving||cancellingId||!['pending','in_review'].includes(request.status)||request.subscription_id||request.completed_at||request.service_activated_at)return;
   if(cancellationRows.some(c=>c.request_id===request.id))return;
@@ -125,7 +131,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   if(!owner&&renewal&&(!renewalId||pendingRenewals.has(renewalId))){
    setError(tr('Choose the subscription you want to renew before continuing.','Choisissez l’abonnement à renouveler avant de continuer.'));return;
   }
-  if(owner&&!users.some(m=>m.user_id===targetId)){setError(tr('Select an approved account.','Choisissez un compte approuvé.'));return}
+  if(owner&&(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail.trim())||ownerEmail.trim().length>254)){setError(tr('Enter the customer email address.','Saisissez l’adresse courriel du client.'));return;}
   if(renewal&&!eligible.some(s=>s.id===renewalId&&!pendingRenewals.has(s.id))){
    setError(tr('Choose an eligible subscription without a pending renewal.','Choisissez un abonnement admissible sans renouvellement en attente.'));return;
   }
@@ -133,8 +139,31 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   try{
    const {data:{session},error:authError}=await supabase.auth.getSession();
    if(authError||!session)throw Error(tr('Your session expired. Sign in again.','Votre session a expiré. Reconnectez-vous.'));
+   let resolvedTargetId=targetId;
+   let invitationSent=false;
+   if(owner){
+    const email=ownerEmail.trim().toLowerCase();
+    const matching=users.find(m=>m.email?.trim().toLowerCase()===email);
+    if(matching)resolvedTargetId=matching.user_id;
+    else if(createdInvite?.email===email)resolvedTargetId=createdInvite.member_id;
+    else{
+     if(requestType==='renewal')throw Error(tr('Renewal requires an existing subscription.','Le renouvellement nécessite un abonnement existant.'));
+     const invitedResponse=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-admin',{
+      method:'POST',headers:{'Content-Type':'application/json',
+       'Authorization':'Bearer '+session.access_token,'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},
+      body:JSON.stringify({action:'invite',email,language})
+     });
+     const invited=await invitedResponse.json().catch(()=>({}));
+     if(!invitedResponse.ok||!invited.ok||!invited.member_id)
+      throw Error(invited.error||tr('Unable to issue invitation.','Impossible d’envoyer l’invitation.'));
+     resolvedTargetId=invited.member_id;
+     invitationSent=true;
+     setTargetId(resolvedTargetId);
+     setCreatedInvite({email,member_id:resolvedTargetId});
+    }
+   }
    const payload=owner?
-     {action:'owner_create',member_id:targetId,request_type:requestType,
+     {action:'owner_create',member_id:resolvedTargetId,request_type:requestType,
        service_name:renewal?undefined:service.trim(),subscription_id:renewal?renewalId:undefined,
        contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim()}:
      renewal?
@@ -154,12 +183,12 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
       service_name:renewal?(selected?.service_name||'Renewal'):service.trim(),
       contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim(),quoted_price_cad:priceCAD(contractDays,deviceCount),status:'pending'
     },...previous.filter(r=>r.id!==result.request.id)]);
-   setService(owner?'':'MYKIOO TV');setRenewalId('');setNotes('');setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setSenderName('');setPaymentReference('');setTransferConfirmed(false);setRequestType('new');
-   setNotice(isBankPayment?
-      tr('Your subscription request and bank payment confirmation were submitted together. MYKIOO will verify receipt before activating service.','Votre demande d’abonnement et votre confirmation bancaire ont été envoyées ensemble. MYKIOO vérifiera le paiement avant l’activation.'):
-      owner?tr('Crypto request created. Issue the crypto invoice from Billing.','Demande crypto créée. Émettez la facture crypto dans Facturation.'):
-     renewal?tr('Renewal requested. Your existing login will be kept.','Renouvellement demandé. Vos identifiants actuels seront conservés.'):
-     tr('Your request was sent for review. You can track its status below.','Votre demande a été envoyée pour examen. Vous pouvez suivre son statut ci-dessous.'));
+   setService(owner?'':'MYKIOO TV');setRenewalId('');if(owner){setOwnerEmail('');setCreatedInvite(null)}setNotes('');setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setSenderName('');setPaymentReference('');setTransferConfirmed(false);setRequestType('new');
+   setNotice(owner?
+    (invitationSent?tr('Request created and a customer invitation was issued. The new member must be approved before they can access MYKIOO.','Demande créée et invitation envoyée au client. Le nouveau membre doit être approuvé avant d’accéder à MYKIOO.'):tr('Request created for the existing customer.','Demande créée pour le client existant.')):
+    isBankPayment?tr('Your subscription request and bank payment confirmation were submitted together. MYKIOO will verify receipt before activating service.','Votre demande et confirmation bancaire ont été envoyées. MYKIOO vérifiera le paiement avant activation.'):
+    renewal?tr('Renewal requested. Your existing login will be kept.','Renouvellement demandé. Vos identifiants actuels seront conservés.'):
+    tr('Your request was sent for review.','Votre demande a été envoyée pour examen.'));
    if(owner)await onSaved?.();
   }catch(err){setError(err.message||tr('Request could not be submitted.','Impossible d’envoyer la demande.'))}
   finally{setSaving(false)}
@@ -177,13 +206,14 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    <form onSubmit={submit}>
     {!owner&&<div className="mykioo-checkout-step"><span>1</span><strong>{tr('Choose your plan','Choisissez votre forfait')}</strong></div>}
     {owner&&<>
-     <label htmlFor="mykioo-request-account">{tr('Request for account','Demande pour le compte')}</label>
-     <select id="mykioo-request-account" required value={targetId} onChange={e=>chooseAccount(e.target.value)}>
-      <option value="">{tr('Choose account','Choisir un compte')}</option>
-      {users.map(m=><option value={m.user_id} key={m.user_id}>
-       {m.user_id===userId?tr('My owner account','Mon compte propriétaire'):m.display_name||m.email} ({m.email})
-      </option>)}
-     </select>
+     <label htmlFor="mykioo-request-account">{tr('Customer email address','Adresse courriel du client')} *</label>
+     <input id="mykioo-request-account" type="email" autoComplete="email" required maxLength={254}
+      list="mykioo-owner-request-emails" placeholder="customer@example.com" value={ownerEmail}
+      onChange={e=>chooseOwnerEmail(e.target.value)}/>
+     <datalist id="mykioo-owner-request-emails">
+      {users.map(m=><option key={m.user_id} value={m.email}>{m.display_name||m.email}</option>)}
+     </datalist>
+     <small className="mykioo-request-hint">{tr('Existing email: link the request to that account. New email: automatically issue a site invitation and create an account.','Courriel existant : associer la demande au compte. Nouveau courriel : envoyer automatiquement une invitation et créer un compte.')}</small>
     </>}
     <label htmlFor="mykioo-request-kind">{tr('Request type','Type de demande')}</label>
     <select id="mykioo-request-kind" value={requestType} onChange={e=>chooseType(e.target.value)}>
@@ -277,7 +307,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
        <textarea id="mykioo-request-notes" maxLength={1000} rows={3} value={notes} onChange={e=>setNotes(e.target.value)}
         placeholder={tr('Anything else we should know?','Autres renseignements utiles ?')}/>
       </details>}
-    <button type="submit" disabled={saving||(isBankPayment&&(!bankReady||!transferConfirmed||senderName.trim().length<2||paymentReference.trim().length<3))||(requestType==='renewal'&&(!selectedRenewal||pendingRenewals.has(renewalId)))||(owner&&!targetId)}>
+    <button type="submit" disabled={saving||(isBankPayment&&(!bankReady||!transferConfirmed||senderName.trim().length<2||paymentReference.trim().length<3))||(requestType==='renewal'&&(!selectedRenewal||pendingRenewals.has(renewalId)))||(owner&&!ownerEmail.trim())}>
      {saving?tr('Sending…','Envoi…'):isBankPayment?tr('Submit request with payment confirmation','Envoyer la demande avec confirmation du paiement'):requestType==='renewal'?tr('Request renewal — crypto invoice follows','Demander le renouvellement — facture crypto à suivre'):tr('Request subscription — crypto invoice follows','Demander l’abonnement — facture crypto à suivre')}
     </button>
    </form>
