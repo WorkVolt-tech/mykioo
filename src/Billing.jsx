@@ -298,20 +298,30 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
      <button type="submit" className="mykioo-billing-primary" disabled={busy||packagePrices.length!==10}>{tr('Save USD package prices','Enregistrer les prix USD')}</button>
     </form>
     <form className="mykioo-billing-box" onSubmit={issue}>
-    <h3><FileText size={18}/>{tr('Issue invoice for a pending request','Émettre une facture pour une demande en attente')}</h3>
-    <label>{tr('Subscription request','Demande d’abonnement')}
-     <select required value={requestId} onChange={e=>setRequestId(e.target.value)}>
-      <option value="">{tr('Choose request','Choisir une demande')}</option>
-      {payable.map(r=><option value={r.id} key={r.id}>{accounts.get(r.member_id)||r.member_id.slice(0,8)} · {r.service_name} · {r.contract_days} {tr('days','jours')} · {r.device_count||1} {tr('device(s)','appareil(s)')} · {r.preferred_payment_method||tr('Legacy request','Ancienne demande')} · #{r.id.slice(0,8)}</option>)}
-     </select></label>
-    {payable.length===0&&<p className="mykioo-billing-muted">{tr('No uninvoiced pending requests.','Aucune demande en attente sans facture.')}</p>}
-    <div className="mykioo-billing-form-grid">
-     <label>{tr('Interac (CAD)','Interac (CAD)')}<input type="number" min="0.01" step="0.01" value={cad} onChange={e=>setCad(e.target.value)} readOnly={Boolean(selectedRequest?.preferred_payment_method)} required/></label>
-     <label>{tr('Optional owner-confirmed Zelle amount (USD)','Montant Zelle (USD) confirmé par le propriétaire, facultatif')}<input type="number" min="0.01" step="0.01" value={usd} onChange={e=>setUsd(e.target.value)} placeholder={tr('Now or when issuing instructions','Maintenant ou aux instructions')}/></label>
-    </div>
-    <p className="mykioo-billing-muted">{tr('For new requests, the CAD price is fixed by the selected package. Enter an owner-verified USD amount if available; otherwise Zelle waits for a quote.','Pour les nouveaux forfaits, le prix CAD est fixe. Saisissez le montant USD vérifié, sinon Zelle attend un devis.')}</p>
-    <button type="submit" disabled={busy||!requestId} className="mykioo-billing-primary">{tr('Issue invoice','Émettre la facture')}</button>
-   </form>
+     <h3><FileText size={18}/>{tr('Issue cryptocurrency invoice','Émettre une facture en cryptomonnaie')}</h3>
+     <p className="mykioo-billing-muted">{tr('Only BTC and SHIB requests need you to issue an invoice. Interac and Zelle payment confirmations arrive automatically in the verification list below.','Seules les demandes BTC et SHIB nécessitent l’émission d’une facture. Les confirmations Interac et Zelle apparaissent automatiquement dans la liste de vérification ci-dessous.')}</p>
+     <label>{tr('Crypto subscription request','Demande d’abonnement crypto')}
+      <select required value={requestId} onChange={e=>{setRequestId(e.target.value);setCryptoAddress('');setCryptoAmount('')}}>
+       <option value="">{tr('Choose request','Choisir une demande')}</option>
+       {payable.map(r=><option value={r.id} key={r.id}>{accounts.get(r.member_id)||r.member_id.slice(0,8)} · {r.service_name} · {r.contract_days===365?'12':'24'} {tr('months','mois')} · {r.device_count||1} {tr('device(s)','appareil(s)')} · {(r.preferred_payment_method||'legacy').toUpperCase()} · #{r.id.slice(0,8)}</option>)}
+      </select></label>
+     {payable.length===0&&<p className="mykioo-billing-muted">{tr('No crypto requests awaiting an invoice.','Aucune demande crypto en attente de facture.')}</p>}
+     {selectedRequest&&['btc','shib'].includes(selectedRequest.preferred_payment_method)?<>
+      <div className="mykioo-billing-price-row"><span>{tr('Fixed package price','Prix fixe du forfait')}</span><strong>CA$ {Number(selectedRequest.quoted_price_cad).toFixed(2)}</strong></div>
+      {networkWarning(selectedRequest.preferred_payment_method,language)}
+      <label>{selectedRequest.preferred_payment_method==='btc'?tr('Bitcoin Mainnet bc1 receiving address','Adresse de réception Bitcoin Mainnet bc1'):tr('SHIB Ethereum Mainnet ERC-20 receiving address','Adresse de réception SHIB sur Ethereum Mainnet ERC-20')}
+       <input value={cryptoAddress} onChange={e=>setCryptoAddress(e.target.value)} maxLength={254} required placeholder={selectedRequest.preferred_payment_method==='btc'?'bc1…':'0x…'}/>
+      </label>
+      <label>{tr('Optional: manually confirmed crypto amount','Facultatif : montant crypto vérifié manuellement')}
+       <input type="number" min="0.00000001" step={selectedRequest.preferred_payment_method==='btc'?'0.00000001':'1'} value={cryptoAmount} onChange={e=>setCryptoAmount(e.target.value)} placeholder={tr('Blank = automatic live quote','Vide = taux de change en direct')}/>
+      </label>
+      <p className="mykioo-billing-muted">{tr('One action creates the invoice and prepares the receiving instructions. The crypto quote expires in 24 hours.','Une seule action crée la facture et prépare les instructions. La cotation crypto expire dans 24 heures.')}</p>
+     </>:selectedRequest&&<div className="mykioo-billing-form-grid">
+      <label>{tr('Legacy amount (CAD)','Ancien montant (CAD)')}<input type="number" step="0.01" min="0.01" value={cad} onChange={e=>setCad(e.target.value)} required/></label>
+      <label>{tr('Legacy amount (USD)','Ancien montant (USD)')}<input type="number" step="0.01" min="0.01" value={usd} onChange={e=>setUsd(e.target.value)} required/></label>
+     </div>}
+     <button type="submit" disabled={busy||!requestId||(['btc','shib'].includes(selectedRequest?.preferred_payment_method)&&!cryptoAddress.trim())} className="mykioo-billing-primary">{busy?tr('Preparing…','Préparation…'):tr('Create crypto invoice and payment instructions','Créer la facture crypto et les instructions de paiement')}</button>
+    </form>
    <div className="mykioo-billing-box">
     <h3><Receipt size={18}/>{tr('Invoices & payment verification','Factures et vérification des paiements')}</h3>
     <p className="mykioo-billing-muted">{tr('Only mark a payment verified after checking the actual bank deposit or confirmed Coinbase transaction. Customer submissions alone are not proof.','Confirmez le paiement seulement après vérification du dépôt bancaire ou de la transaction Coinbase confirmée. Une déclaration du client ne constitue pas une preuve.')}</p>
