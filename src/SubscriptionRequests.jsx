@@ -231,7 +231,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
         <p className="mykioo-bank-pay-amount">{tr('Transfer exactly','Transférez exactement')} <strong>{checkout.currency==='CAD'?'CA$':'US$'}{Number(checkout.amount_due).toFixed(2)}</strong></p>
         <p className="mykioo-bank-pay-address"><span>{tr('Send to','Envoyez à')}: <strong>{checkout.destination}</strong></span>
           <button type="button" onClick={()=>navigator.clipboard?.writeText(String(checkout.destination)).catch(()=>{})}>{tr('Copy','Copier')}</button></p>
-        <p className="mykioo-request-payment-note">{tr('Complete the transfer in your banking app, then enter the information below and submit this form. Your payment is not considered verified until MYKIOO checks the deposit.','Effectuez le virement dans votre application bancaire, puis remplissez les champs ci-dessous et soumettez la demande. Le paiement ne sera confirmé qu’après vérification du dépôt par MYKIOO.')}</p>
+        <p className="mykioo-request-payment-note">{tr('Pay in your banking app, enter the confirmation below, then submit. MYKIOO verifies the funds before activation.','Payez dans votre application bancaire, entrez la confirmation ci-dessous, puis envoyez. MYKIOO vérifiera les fonds avant l’activation.')}</p>
         <label htmlFor="mykioo-bank-sender">{tr('Name on the sending account','Nom du titulaire du compte expéditeur')} *</label>
         <input id="mykioo-bank-sender" required minLength={2} maxLength={120} autoComplete="name" value={senderName} onChange={e=>setSenderName(e.target.value)}
          placeholder={tr('Full sender name','Nom complet de l’expéditeur')}/>
@@ -246,17 +246,27 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
      </div>}
      {(paymentMethod==='btc'||paymentMethod==='shib')&&<div className="mykioo-crypto-request-note">
        <strong>{tr('Cryptocurrency invoice provided by MYKIOO','Facture crypto fournie par MYKIOO')}</strong>
-       <p>{tr('Submit your subscription request now without sending payment. The owner will prepare your invoice with the exact crypto amount and receiving address. You will then pay and confirm the transaction hash in Payments.','Soumettez votre demande sans envoyer de paiement. Le propriétaire préparera la facture avec le montant crypto exact et l’adresse de réception. Vous paierez ensuite et confirmerez le hachage de la transaction dans Paiements.')}</p>
+       <p>{tr('Send your request now. Your exact amount and receiving address will appear in a crypto invoice under Payments. Pay only after it arrives.','Envoyez votre demande maintenant. Le montant exact et l’adresse de réception figureront dans une facture crypto sous Paiements. Ne payez qu’après sa réception.')}</p>
        <p>{paymentMethod==='btc'?tr('BTC on Bitcoin Mainnet only — never send Bitcoin Cash (BCH).','BTC uniquement sur Bitcoin Mainnet — jamais Bitcoin Cash (BCH).'):
           tr('SHIB on Ethereum Mainnet (ERC-20) only — not Shibarium, Base, Polygon or BNB Chain.','SHIB uniquement sur Ethereum Mainnet (ERC-20) — pas Shibarium, Base, Polygon ou BNB Chain.')}</p>
      </div>}
-     <label htmlFor="mykioo-request-notes">{tr('Additional details (optional)','Détails supplémentaires (facultatif)')}</label>
-    <textarea id="mykioo-request-notes" maxLength={1000} rows={3} value={notes} onChange={e=>setNotes(e.target.value)}
-     placeholder={tr('Anything else we should know?','Autres renseignements utiles ?')}/>
+     {owner?<><label htmlFor="mykioo-request-notes">{tr('Additional details (optional)','Détails supplémentaires (facultatif)')}</label>
+      <textarea id="mykioo-request-notes" maxLength={1000} rows={3} value={notes} onChange={e=>setNotes(e.target.value)}
+       placeholder={tr('Anything else we should know?','Autres renseignements utiles ?')}/></>:
+      <details className="mykioo-checkout-optional">
+       <summary>{tr('Add a note (optional)','Ajouter une note (facultatif)')}</summary>
+       <label htmlFor="mykioo-request-notes">{tr('Message for MYKIOO','Message pour MYKIOO')}</label>
+       <textarea id="mykioo-request-notes" maxLength={1000} rows={3} value={notes} onChange={e=>setNotes(e.target.value)}
+        placeholder={tr('Anything else we should know?','Autres renseignements utiles ?')}/>
+      </details>}
     <button type="submit" disabled={saving||(isBankPayment&&(!bankReady||!transferConfirmed||senderName.trim().length<2||paymentReference.trim().length<3))||(requestType==='renewal'&&(!renewalId||pendingRenewals.has(renewalId)))||(owner&&!targetId)}>
      {saving?tr('Sending…','Envoi…'):isBankPayment?tr('Submit request with payment confirmation','Envoyer la demande avec confirmation du paiement'):requestType==='renewal'?tr('Request renewal — crypto invoice follows','Demander le renouvellement — facture crypto à suivre'):tr('Request subscription — crypto invoice follows','Demander l’abonnement — facture crypto à suivre')}
     </button>
    </form>
+   {!owner&&<details className="mykioo-checkout-policy">
+    <summary>{tr('Cancellation and refund policy','Politique d’annulation et de remboursement')}</summary>
+    <p className="mykioo-request-policy-note">{tr('Cancellation requests need owner approval and must be approved before we complete or activate the service. Once the service is activated, no cancellation or refund is offered, subject to applicable law.','Les demandes d’annulation doivent être approuvées par le propriétaire avant la finalisation ou l’activation du service. Une fois le service activé, aucune annulation ni aucun remboursement ne sont offerts, sous réserve des lois applicables.')}</p>
+   </details>}
    {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
    {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
   </div>
