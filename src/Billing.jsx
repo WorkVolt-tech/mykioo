@@ -80,7 +80,7 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
    <small>{tr('Request','Demande')}: #{invoice.request_id.slice(0,8)} · {req?.contract_days||'—'} {tr('days','jours')}</small>
   </div><span className={'mykioo-billing-chip '+(paidStatus(invoice)?'paid':invoice.state==='payment_submitted'?'submitted':'')}>{status}</span></div>
   <div className="mykioo-billing-price-row"><span>{tr('Subscription price','Prix de l’abonnement')}</span>
-    <strong>{money(invoice.amount_cad,'CAD')}{invoice.amount_usd!=null?' · '+money(invoice.amount_usd,'USD'):''}</strong></div>
+    <strong>{invoice.method==='zelle'&&invoice.amount_usd!=null?money(invoice.amount_usd,'USD'):money(invoice.amount_cad,'CAD')}</strong></div>
   {invoice.method&&<div className="mykioo-billing-price-row"><span>{tr('Selected method','Mode choisi')}</span><strong>{displayMethods}</strong></div>}
   {invoice.method&&invoice.amount_due!==null&&<div className="mykioo-billing-price-row"><span>{tr('Exact amount to send','Montant exact à envoyer')}</span><strong>{money(invoice.amount_due,invoice.currency)}</strong></div>}
   {invoice.quote_expires_at&&<p className="mykioo-billing-muted">{tr('Crypto quote valid until','Devis crypto valide jusqu’au')} {when(invoice.quote_expires_at,fr)} {quoteExpired&&<strong className="mykioo-billing-danger">{tr('— expired: do not send','— expiré : ne pas envoyer')}</strong>}</p>}
