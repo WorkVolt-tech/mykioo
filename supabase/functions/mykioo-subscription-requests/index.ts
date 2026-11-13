@@ -31,6 +31,64 @@ Deno.serve(async req=>{
    if(error||!price)return {error:"Selected package price is unavailable"};
    return {device_count:devices,preferred_payment_method:method,quoted_price_cad:Number(price.price_cad)};
   }
+
+  if(input.action==="get_checkout"){
+   const days=Number(input.contract_days),devices=Number(input.device_count),method=input.preferred_payment_method;
+   if(![365,730].includes(days)||!Number.isInteger(devices)||devices<1||devices>5||
+       !["interac","zelle","btc","shib"].includes(method))
+     return respond({error:"Select a valid package and payment method"},400);
+   const {data:price,error:priceError}=await db.from("mykioo_package_prices")
+      .select("price_cad,price_usd").eq("contract_days",days).eq("device_count",devices).maybeSingle();
+   if(priceError||!price)return respond({error:"Package unavailable"},503);
+   if(method==="btc"||method==="shib")
+     return respond({ok:true,available:true,requires_crypto_invoice:true,amount_cad:Number(price.price_cad)});
+   const {data:settings,error:settingsError}=await db.from("mykioo_billing_settings")
+      .select("interac_destination,zelle_destination").eq("id",1).maybeSingle();
+   if(settingsError||!settings)return respond({error:"Payment settings unavailable"},503);
+   const destination=method==="interac"?settings.interac_destination:settings.zelle_destination;
+   const amount_due=method==="interac"?Number(price.price_cad):
+      price.price_usd==null?null:Number(price.price_usd);
+   const available=Boolean(destination&&String(destination).trim()&&amount_due&&amount_due>0);
+   return respond({ok:true,available,method,currency:method==="interac"?"CAD":"USD",
+     amount_cad:Number(price.price_cad),amount_due:available?amount_due:null,
+     destination:available?String(destination).trim():null,
+     reason:available?null:!destination?"Receiving details not configured":
+       "USD price for this package has not been configured"});
+  }
+  async function submitBankPayment(params:{member_id:string;request_type:string;renewal_subscription_id:string|null;service_name:string;notes:string;contract_days:number;device_count:number;preferred_payment_method:string}){
+   const sender=typeof input.sender_name==="string"?input.sender_name.trim():"";
+   const reference=typeof input.payment_reference==="string"?input.payment_reference.trim():"";
+   if(sender.length<2||sender.length>120||reference.length<3||reference.length>160||input.ack_sent!==true)
+     return respond({error:"Confirm the payment was sent and enter the sender name and transaction number"},400);
+   const {data:created,error:createError}=await db.rpc("mykioo_submit_fiat_subscription_request",{
+    p_member_id:params.member_id,p_actor_id:user.id,p_request_type:params.request_type,
+    p_renewal_subscription_id:params.renewal_subscription_id,
+    p_service_name:params.service_name,p_contract_days:params.contract_days,
+    p_device_count:params.device_count,p_payment_method:params.preferred_payment_method,
+    p_notes:params.notes,p_sender_name:sender,p_payment_reference:reference
+   });
+   if(createError){
+    const reason=String(createError.message||"");
+    const known=[
+     "Bank payment method not configured for this package","Renewal already pending",
+     "Subscription cannot be renewed","Package not available","Invalid subscription or bank transfer confirmation details",
+     "Account must be approved","Select an existing subscription"
+    ].find(x=>reason.includes(x));
+    if(!known)console.error("MYKIOO bank checkout:",createError.code||"unknown");
+    return respond({error:known||"Unable to submit your subscription and payment confirmation. No new request was recorded."},known?409:500);
+   }
+   const invoiceId=created?.invoice?.id;
+   if(invoiceId){
+    const {data:owners}=await db.from("mykioo_members").select("user_id").eq("role","owner").eq("status","approved");
+    if(owners?.length)await db.from("mykioo_notifications").upsert(owners.map(o=>({
+     user_id:o.user_id,kind:"billing_payment_reported",source_id:invoiceId,destination:"payments",
+     title_en:"Payment reported — verify receipt",title_fr:"Paiement signalé — vérifiez la réception",
+     body_en:"A customer submitted a subscription with "+params.preferred_payment_method+" payment confirmation. Verify bank receipt before activation.",
+     body_fr:"Un client a soumis une demande d’abonnement avec la confirmation de paiement "+params.preferred_payment_method+". Vérifiez la réception avant l’activation."
+    })),{onConflict:"user_id,kind,source_id"});
+   }
+   return respond({ok:true,request:created.request,invoice:created.invoice,payment_submitted:true});
+  }
   if(input.action==="create"){
    if(member.role!=="member")return respond({error:"Member access required"},403);
    const service_name=typeof input.service_name==="string"?input.service_name.trim():"";
@@ -46,6 +104,10 @@ Deno.serve(async req=>{
    if(recentError)return respond({error:"Unable to verify request limits"},503);
    if((recent||[]).length>=5)return respond({error:"Daily request limit reached. Contact support if you need more services."},429);
    if(recent?.[0]&&Date.now()-Date.parse(recent[0].created_at)<60000)return respond({error:"Please wait a minute before sending another request."},429);
+   if(["interac","zelle"].includes(packageSelection.preferred_payment_method))
+    return await submitBankPayment({member_id:user.id,request_type:"new",renewal_subscription_id:null,
+      service_name,notes,contract_days,device_count:packageSelection.device_count,
+      preferred_payment_method:packageSelection.preferred_payment_method});
    const {data:created,error:createError}=await db.from("mykioo_subscription_requests")
      .insert({member_id:user.id,service_name,contract_days,notes,...packageSelection}).select("id,status,created_at").single();
    if(createError)return respond({error:"Could not submit subscription request"},500);
@@ -74,6 +136,10 @@ Deno.serve(async req=>{
    if(recentError)return respond({error:"Could not check request limits"},503);
    if((recent||[]).length>=5)return respond({error:"Daily request limit reached"},429);
    if(recent?.[0]&&Date.now()-Date.parse(recent[0].created_at)<60000)return respond({error:"Please wait a minute before sending another request"},429);
+   if(["interac","zelle"].includes(packageSelection.preferred_payment_method))
+    return await submitBankPayment({member_id:user.id,request_type:"renewal",renewal_subscription_id:sub.id,
+      service_name:sub.service_name||"Subscription renewal",notes,contract_days:days,
+      device_count:packageSelection.device_count,preferred_payment_method:packageSelection.preferred_payment_method});
    const {data:created,error:insertError}=await db.from("mykioo_subscription_requests").insert({
      member_id:user.id,service_name:sub.service_name||"Subscription renewal",contract_days:days,notes,request_type:"renewal",
      renewal_subscription_id:sub.id,...packageSelection
@@ -119,6 +185,9 @@ Deno.serve(async req=>{
      service_name=sub.service_name||"Subscription renewal";
      renewal_subscription_id=sub.id;
    }
+   if(["interac","zelle"].includes(packageSelection.preferred_payment_method))
+    return await submitBankPayment({member_id,request_type,renewal_subscription_id,service_name,notes,contract_days,
+      device_count:packageSelection.device_count,preferred_payment_method:packageSelection.preferred_payment_method});
    const {data:created,error:createError}=await db.from("mykioo_subscription_requests")
      .insert({member_id,service_name,contract_days,notes,request_type,renewal_subscription_id,...packageSelection})
      .select("id,status,created_at,request_type,member_id").single();
