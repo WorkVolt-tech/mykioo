@@ -103,6 +103,13 @@ Deno.serve(async req=>{
     .select("*").single();
    if(insertError)return reply({error:insertError.code==="23505"?"An invoice already exists":"Could not create invoice"},insertError.code==="23505"?409:500);
    await audit("billing_invoice_issued",invoice,{amount_cad,amount_usd,service_name:request.service_name});
+   // In-app notification only. Payment is not collected or activated automatically.
+   await db.from("mykioo_notifications").upsert({
+     user_id:request.member_id,kind:"billing_invoice",source_id:invoice.id,destination:"payments",
+     title_en:"Your MYKIOO invoice was created",title_fr:"Votre facture MYKIOO a été créée",
+     body_en:"An invoice for "+request.service_name+" is available in Payments. Follow the exact instructions when they are ready.",
+     body_fr:"Une facture pour "+request.service_name+" est disponible dans Paiements. Attendez les instructions exactes avant de payer."
+   },{onConflict:"user_id,kind,source_id"});
    return reply({ok:true,invoice});
   }
   if(!uuid(input.invoice_id))return reply({error:"Select a valid invoice"},400);
@@ -197,6 +204,13 @@ Deno.serve(async req=>{
       .eq("id",invoice.id).eq("state","awaiting_payment").select("*").single();
    if(error)return reply({error:error.code==="23505"?"This transaction hash has already been submitted":"Could not submit payment reference"},error.code==="23505"?409:500);
    await audit("billing_payment_submitted",invoice,{method:invoice.method,currency:invoice.currency,amount_due:invoice.amount_due});
+   const {data:owners}=await db.from("mykioo_members").select("user_id").eq("role","owner").eq("status","approved");
+   if(owners?.length)await db.from("mykioo_notifications").upsert(owners.map(o=>({
+    user_id:o.user_id,kind:"billing_payment_reported",source_id:invoice.id,destination:"payments",
+    title_en:"Payment reported — verify receipt",title_fr:"Paiement signalé — vérifiez la réception",
+    body_en:"A customer reported payment for invoice #"+invoice.id.slice(0,8)+". Check the bank or blockchain before marking it paid.",
+    body_fr:"Un client a signalé le paiement de la facture #"+invoice.id.slice(0,8)+". Vérifiez la banque ou la chaîne de blocs avant de confirmer."
+   })),{onConflict:"user_id,kind,source_id"});
    return reply({ok:true,invoice:data});
   }
   if(action==="confirm_paid"){
@@ -212,6 +226,12 @@ Deno.serve(async req=>{
       .eq("id",invoice.id).in("state",["awaiting_payment","payment_submitted"]).select("*").single();
    if(error)return reply({error:error.code==="23505"?"This transaction hash is already used on another invoice":"Could not confirm payment"},error.code==="23505"?409:500);
    await audit("billing_payment_confirmed",invoice,{method:invoice.method,currency:invoice.currency,amount_due:invoice.amount_due});
+   await db.from("mykioo_notifications").upsert({
+    user_id:invoice.member_id,kind:"billing_verified",source_id:invoice.id,destination:"payments",
+    title_en:"Your payment has been verified",title_fr:"Votre paiement a été vérifié",
+    body_en:"MYKIOO verified your payment. Service activation or renewal is completed separately by the owner.",
+    body_fr:"MYKIOO a vérifié votre paiement. L’activation ou le renouvellement est ensuite effectué séparément par le propriétaire."
+   },{onConflict:"user_id,kind,source_id"});
    return reply({ok:true,invoice:data});
   }
   if(action==="reject_submission"){
