@@ -9,7 +9,7 @@ const categories=[
 ];
 const dateMs=value=>{const n=Date.parse(value||'');return Number.isFinite(n)?n:0};
 
-export default function OwnerSubscriptionQueue({requests=[],cancellations=[],members=[],language='en'}){
+export default function OwnerSubscriptionQueue({requests=[],cancellations=[],members=[],language='en',onOpenTarget}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [filter,setFilter]=useState('all'),[search,setSearch]=useState(''),[limit,setLimit]=useState(12);
  const [ageFilter,setAgeFilter]=useState('all'),[sort,setSort]=useState('priority');
@@ -68,6 +68,7 @@ export default function OwnerSubscriptionQueue({requests=[],cancellations=[],mem
  });
  function chooseFilter(category){setFilter(category);setLimit(12)}
  function jumpTo(item){
+  if(onOpenTarget){onOpenTarget(item);return;}
   const target=document.getElementById(item.targetId);
   if(!target)return;
   target.scrollIntoView({behavior:'smooth',block:'center'});
