@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {supabase} from './supabase';
 import SubscriptionHistory from './SubscriptionHistory';
+import {priceCAD,PAYMENT_LABELS} from './PackagePricing';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-subscription-requests';
 const statuses={
@@ -9,7 +10,7 @@ const statuses={
  fulfilled:['Completed','Terminé'],
  declined:['Declined','Refusé']
 };
-const durations=[30,90,183,365,730];
+const durations=[365,730];
 const displayDuration=(days,tr)=>({
  30:tr('1 month (30 days)','1 mois (30 jours)'),
  90:tr('3 months (90 days)','3 mois (90 jours)'),
@@ -23,6 +24,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const [targetId,setTargetId]=useState(userId||'');
  const [requestType,setRequestType]=useState('new');
  const [service,setService]=useState(''),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
+ const [deviceCount,setDeviceCount]=useState(1),[paymentMethod,setPaymentMethod]=useState('interac');
  const [ownRows,setOwnRows]=useState([]),[ownCancellations,setOwnCancellations]=useState([]),[loading,setLoading]=useState(!owner),
   [saving,setSaving]=useState(false),[cancellingId,setCancellingId]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{if(userId&&(!targetId||!owner))setTargetId(userId)},[userId,owner]);
@@ -34,7 +36,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    try{
     const [requestsResult,cancellationsResult]=await Promise.all([
      supabase.from('mykioo_subscription_requests')
-      .select('id,service_name,contract_days,notes,status,created_at,updated_at,completed_at,first_reviewed_at,last_declined_at,service_activated_at,previous_expires_at,renewed_expires_at,subscription_id,request_type,renewal_subscription_id')
+      .select('id,service_name,contract_days,notes,status,created_at,updated_at,completed_at,first_reviewed_at,last_declined_at,service_activated_at,previous_expires_at,renewed_expires_at,subscription_id,request_type,renewal_subscription_id,device_count,preferred_payment_method,quoted_price_cad')
       .eq('member_id',userId).order('created_at',{ascending:false}).limit(50),
      supabase.from('mykioo_subscription_cancellation_requests')
       .select('request_id,status,reason,decision_note,created_at,updated_at,reviewed_at')
@@ -85,6 +87,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  async function submit(e){
   e.preventDefault();if(saving)return;
   const renewal=requestType==='renewal';
+  if(!priceCAD(contractDays,deviceCount)||!PAYMENT_LABELS[paymentMethod]){setError(tr('Choose a valid package and payment method.','Choisissez un forfait et un mode de paiement valides.'));return;}
   if(!owner&&renewal&&(!renewalId||pendingRenewals.has(renewalId)))return;
   if(owner&&!users.some(m=>m.user_id===targetId)){setError(tr('Select an approved account.','Choisissez un compte approuvé.'));return}
   if(renewal&&!eligible.some(s=>s.id===renewalId&&!pendingRenewals.has(s.id))){
@@ -97,10 +100,10 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    const payload=owner?
      {action:'owner_create',member_id:targetId,request_type:requestType,
        service_name:renewal?undefined:service.trim(),subscription_id:renewal?renewalId:undefined,
-       contract_days:contractDays,notes:notes.trim()}:
+       contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim()}:
      renewal?
-      {action:'renew',subscription_id:renewalId,contract_days:contractDays,notes:notes.trim()}:
-      {action:'create',service_name:service.trim(),contract_days:contractDays,notes:notes.trim()};
+      {action:'renew',subscription_id:renewalId,contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim()}:
+      {action:'create',service_name:service.trim(),contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim()};
    const response=await fetch(endpoint,{method:'POST',headers:{
      'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
      'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -112,9 +115,9 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
       ...result.request,request_type:requestType,
       renewal_subscription_id:renewal?renewalId:null,
       service_name:renewal?(selected?.service_name||'Renewal'):service.trim(),
-      contract_days:contractDays,notes:notes.trim(),status:'pending'
+      contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim(),quoted_price_cad:priceCAD(contractDays,deviceCount),status:'pending'
     },...previous.filter(r=>r.id!==result.request.id)]);
-   setService('');setRenewalId('');setNotes('');setContractDays(365);setRequestType('new');
+   setService('');setRenewalId('');setNotes('');setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setRequestType('new');
    setNotice(owner?tr('Request created for the selected account. Complete it in the subscription manager below.','Demande créée pour le compte sélectionné. Terminez-la dans le gestionnaire d’abonnements ci-dessous.'):
      renewal?tr('Renewal requested. Your existing login will be kept.','Renouvellement demandé. Vos identifiants actuels seront conservés.'):
      tr('Your request was sent for review. You can track its status below.','Votre demande a été envoyée pour examen. Vous pouvez suivre son statut ci-dessous.'));
@@ -162,7 +165,24 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
     <select id="mykioo-request-duration" value={contractDays} onChange={e=>setContractDays(Number(e.target.value))}>
      {durations.map(days=><option key={days} value={days}>{displayDuration(days,tr)}</option>)}
     </select>
-    <label htmlFor="mykioo-request-notes">{tr('Additional details (optional)','Détails supplémentaires (facultatif)')}</label>
+    <label htmlFor="mykioo-request-devices">{tr('Number of devices','Nombre d’appareils')}</label>
+     <select id="mykioo-request-devices" required value={deviceCount} onChange={e=>setDeviceCount(Number(e.target.value))}>
+      {[1,2,3,4,5].map(count=><option value={count} key={count}>{count} {count===1?tr('device','appareil'):tr('devices','appareils')}</option>)}
+     </select>
+     <div className="mykioo-package-quote" aria-live="polite">
+      <span>{tr('Subscription price (CAD)','Prix de l’abonnement (CAD)')}</span>
+      <strong>CA$ {priceCAD(contractDays,deviceCount)?.toFixed(2)}</strong>
+      <small>{tr('Total for','Total pour')} {deviceCount} {deviceCount===1?tr('device','appareil'):tr('devices','appareils')} · {contractDays===365?tr('12 months','12 mois'):tr('24 months','24 mois')} · CA$ {(priceCAD(contractDays,deviceCount)/deviceCount).toFixed(2)} {tr('per device','par appareil')}</small>
+     </div>
+     <label htmlFor="mykioo-request-payment-method">{tr('Preferred payment method','Mode de paiement souhaité')}</label>
+     <select id="mykioo-request-payment-method" required value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)}>
+      {Object.entries(PAYMENT_LABELS).map(([value,label])=><option key={value} value={value}>{label}</option>)}
+     </select>
+     {paymentMethod==='zelle'&&<p className="mykioo-request-payment-note">{tr('This package price is in CAD. MYKIOO will confirm the USD amount on your invoice before you send payment.','Ce prix est en CAD. MYKIOO confirmera le montant en USD sur votre facture avant le paiement.')}</p>}
+     {paymentMethod==='btc'&&<p className="mykioo-request-payment-note">{tr('Bitcoin Mainnet only. Never send Bitcoin Cash (BCH). The amount and receiving address will be provided after review.','Bitcoin Mainnet uniquement. N’envoyez jamais de Bitcoin Cash (BCH). Le montant et l’adresse seront communiqués après vérification.')}</p>}
+     {paymentMethod==='shib'&&<p className="mykioo-request-payment-note">{tr('SHIB on Ethereum Mainnet (ERC-20) only — not Shibarium, Base, Polygon or BNB Chain. Wait for your exact invoice instructions.','SHIB uniquement sur Ethereum Mainnet (ERC-20) — pas Shibarium, Base, Polygon ou BNB Chain. Attendez les instructions exactes de votre facture.')}</p>}
+     <p className="mykioo-request-payment-note">{tr('Payment instructions follow owner review. You can change the method on an unpaid invoice. Activation is manual after payment verification.','Les instructions suivent l’examen du propriétaire. Vous pouvez changer le mode sur une facture impayée. L’activation est manuelle après vérification du paiement.')}</p>
+     <label htmlFor="mykioo-request-notes">{tr('Additional details (optional)','Détails supplémentaires (facultatif)')}</label>
     <textarea id="mykioo-request-notes" maxLength={1000} rows={3} value={notes} onChange={e=>setNotes(e.target.value)}
      placeholder={tr('Anything else we should know?','Autres renseignements utiles ?')}/>
     <button type="submit" disabled={saving||(requestType==='renewal'&&(!renewalId||pendingRenewals.has(renewalId)))||(owner&&!targetId)}>
