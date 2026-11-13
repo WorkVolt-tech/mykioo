@@ -322,11 +322,67 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    </div>
   </header>
  {error&&<div className="admin-error" role="alert"><AlertCircle size={18}/>{error}</div>}{notice&&<div className="admin-success" role="status"><CheckCircle2 size={18}/>{notice}</div>}
- {tab==='overview'&&<><OwnerFollowUpBoard compact language={language} followups={followups} tickets={rows.support||[]}/><SupportDashboard compact language={language} onOpenSupport={()=>setTab('support')}/><NotificationCenter compact owner items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>setTab(section)}/><ServiceAlertBanner alerts={serviceAlerts} language={language} onOpen={()=>setTab('support')}/><ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner onOpen={()=>setTab('subscriptions')}/><p className="admin-description">{tr("Welcome to your MYKIOO management space. All information comes from your private Supabase project.","Bienvenue dans votre espace de gestion MYKIOO. Toutes les informations proviennent de votre projet Supabase privé.")}</p><div className="admin-stats">{cards.map(([label,n,Icon])=><div className="admin-stat" key={label}><Icon size={22}/><small>{label}</small><strong>{loading?'…':n}</strong></div>)}</div><div className="admin-info"><CheckCircle2 size={22}/><div><strong>{tr("Owner access is active","Accès propriétaire activé")}</strong><p>{tr("Your account is approved. You can now invite members and manage approval requests from the Members and Invitations sections.","Votre compte est approuvé. Vous pouvez inviter des membres et gérer les demandes d’approbation dans les sections Membres et Invitations.")}</p></div></div></>}
-  {tab==='subscriptions'&&<OwnerSubscriptionQueue requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} members={rows.members||[]} language={language}/>}{tab==='subscriptions'&&<ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner/>}{tab==='subscriptions'&&<ReminderSettings userId={user.id} subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language}/>}{tab==='subscriptions'&&<SubscriptionRequests owner userId={user.id} members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>}
- {tab==='subscriptions'&&<OwnerCancellationRequests requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} members={rows.members||[]} language={language} onSaved={()=>refresh({silent:true})}/>}
- {tab==='subscriptions'&&<SubscriptionManager members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>}
- {tab==='billing'&&<OwnerBilling language={language} requests={rows.subscription_requests||[]} members={rows.members||[]}/>}{tab==='activity'&&<ActivityHistory members={rows.members||[]} language={language}/>}{tab==='notifications'&&<NotificationCenter owner items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>setTab(section)}/>}{tab==='guides'&&<><OwnerFAQEditor language={language}/><OwnerSetupGuideEditor language={language}/></>}
+  {tab==='overview'&&<div className="admin-overview-stack">
+   <section className="admin-overview-block">
+    <div className="admin-section-heading"><div><h2>{tr('At a glance','En un coup d’œil')}</h2><p>{tr('Current membership, subscriptions and support volume.','Membres, abonnements et assistance en cours.')}</p></div></div>
+    <div className="admin-stats">{cards.map(([label,n,Icon])=><div className="admin-stat" key={label}><Icon size={21}/><small>{label}</small><strong>{loading?'…':n}</strong></div>)}</div>
+   </section>
+   <section className="admin-overview-block">
+    <div className="admin-section-heading"><div><h2>{tr('Needs attention','À traiter')}</h2><p>{tr('Follow-ups and subscriptions needing action.','Suivis et abonnements qui demandent une intervention.')}</p></div></div>
+    <OwnerFollowUpBoard compact language={language} followups={followups} tickets={rows.support||[]} onOpenTicket={viewSupportTicket}/>
+    <ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner onOpen={()=>{navigate('subscriptions');setSubscriptionView('services')}}/>
+   </section>
+   <section className="admin-overview-block">
+    <div className="admin-section-heading"><div><h2>{tr('Support snapshot','Aperçu de l’assistance')}</h2><p>{tr('See ticket activity without opening the full support workspace.','Consultez l’activité des demandes sans ouvrir l’espace d’assistance.')}</p></div></div>
+    <SupportDashboard compact language={language} onOpenSupport={()=>{navigate('support');setSupportView('tickets')}}/>
+   </section>
+   <section className="admin-overview-block">
+    <div className="admin-section-heading"><div><h2>{tr('Latest updates','Dernières mises à jour')}</h2></div></div>
+    <NotificationCenter compact owner items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>navigate(section)}/>
+    <ServiceAlertBanner alerts={serviceAlerts} language={language} onOpen={()=>{navigate('support');setSupportView('announcements')}}/>
+   </section>
+  </div>}
+  {tab==='subscriptions'&&<section className="admin-workspace-section">
+   <div className="admin-subnav" role="tablist" aria-label={tr('Subscription management sections','Sections de gestion des abonnements')}>
+    {subscriptionViews.map(view=><button key={view.id} type="button" role="tab" aria-selected={subscriptionView===view.id}
+     onClick={()=>setSubscriptionView(view.id)}><view.Icon size={16}/>{tr(view.en,view.fr)}
+     {view.id==='queue'&&pendingSubscriptionCount>0&&<span className="admin-subnav-count">{pendingSubscriptionCount}</span>}
+     {view.id==='cancellations'&&pendingCancellationCount>0&&<span className="admin-subnav-count">{pendingCancellationCount}</span>}
+    </button>)}
+   </div>
+   {subscriptionView==='queue'&&<div className="admin-panel-content">
+    <div className="admin-panel-header"><h2>{tr('Processing queue','File de traitement')}</h2><p>{tr('Review what needs to be completed next. Open an item to continue in the right section.','Consultez les tâches en attente. Ouvrez une demande pour accéder directement à la bonne section.')}</p></div>
+    <OwnerSubscriptionQueue requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} members={rows.members||[]} language={language} onOpenTarget={jumpToSubscription}/>
+   </div>}
+   {subscriptionView==='services'&&<div className="admin-panel-content">
+    <div className="admin-panel-header"><h2>{tr('Manage customer subscriptions','Gérer les abonnements clients')}</h2><p>{tr('Complete requests, manage logins and dates, and review upcoming expirations.','Finalisez les demandes, gérez les accès et les dates, et consultez les expirations.')}</p></div>
+    <ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner/>
+    <SubscriptionManager members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>
+   </div>}
+   {subscriptionView==='create'&&<div className="admin-panel-content">
+    <div className="admin-panel-header"><h2>{tr('Create a request','Créer une demande')}</h2><p>{tr('Create a new or renewal request on behalf of an approved member.','Créez une demande ou un renouvellement au nom d’un membre approuvé.')}</p></div>
+    <SubscriptionRequests owner userId={user.id} members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>
+   </div>}
+   {subscriptionView==='cancellations'&&<div className="admin-panel-content">
+    <div className="admin-panel-header"><h2>{tr('Cancellation approvals','Approbation des annulations')}</h2><p>{tr('Review cancellation requests before approving or declining them.','Examinez les annulations avant de les approuver ou de les refuser.')}</p></div>
+    <OwnerCancellationRequests requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} members={rows.members||[]} language={language} onSaved={()=>refresh({silent:true})}/>
+   </div>}
+   {subscriptionView==='reminders'&&<div className="admin-panel-content">
+    <div className="admin-panel-header"><h2>{tr('Expiry reminder settings','Paramètres des rappels d’expiration')}</h2><p>{tr('Control the subscription reminder rules in one place.','Gérez les règles de rappel d’abonnement au même endroit.')}</p></div>
+    <ReminderSettings userId={user.id} subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language}/>
+   </div>}
+  </section>}
+  {tab==='billing'&&<OwnerBilling language={language} requests={rows.subscription_requests||[]} members={rows.members||[]}/>}{tab==='activity'&&<ActivityHistory members={rows.members||[]} language={language}/>}{tab==='notifications'&&<NotificationCenter owner items={notifications} language={language} markRead={markNotificationRead} onSelect={section=>setTab(section)}/>}{tab==='guides'&&<section className="admin-workspace-section">
+  <div className="admin-subnav" role="tablist" aria-label={tr('Help content sections','Sections du contenu d’aide')}>
+   {guideViews.map(view=><button type="button" role="tab" key={view.id} aria-selected={guideView===view.id} onClick={()=>setGuideView(view.id)}>
+    <view.Icon size={16}/>{tr(view.en,view.fr)}
+   </button>)}
+  </div>
+  <div className="admin-panel-content">
+   {guideView==='faq'&&<OwnerFAQEditor language={language}/>}
+   {guideView==='devices'&&<OwnerSetupGuideEditor language={language}/>}
+  </div>
+ </section>}
  {tab==='support'&&<section className="admin-support-section">
  <OwnerFollowUpBoard language={language} followups={followups} tickets={rows.support||[]} onOpenTicket={viewSupportTicket}/>
  <SupportDashboard language={language} onViewTicket={viewSupportTicket}/>
