@@ -88,7 +88,7 @@ export default function SubscriptionDirectory({
        aria-expanded={isExpanded} aria-controls={'mykioo-sub-detail-'+sub.id}
        onClick={()=>setExpandedId(isExpanded?null:sub.id)}>
        <span className="mykioo-directory-item-main">
-        <strong>{sub.service_name||tr('Unnamed service','Service sans nom')}</strong>
+        <strong>{sub.service_name||tr('Unnamed service','Service sans nom')}</strong><small>{sub.device_count||1} {tr('device(s)','appareil(s)')}</small>
         {owner&&<small>{name}</small>}
        </span>
        <span className="mykioo-directory-item-meta">
@@ -100,6 +100,7 @@ export default function SubscriptionDirectory({
       {isExpanded&&<div className="mykioo-directory-details" id={'mykioo-sub-detail-'+sub.id}>
        {owner&&<div className="mykioo-directory-detail"><span>{tr('Customer name','Nom du client')}</span><strong>{name}</strong></div>}
        {owner&&customer?.email&&<div className="mykioo-directory-detail"><span>{tr('Customer email','Courriel du client')}</span><strong>{customer.email}</strong></div>}
+       <div className="mykioo-directory-detail"><span>{tr('Devices','Appareils')}</span><strong>{sub.device_count||1}</strong></div>
        <div className="mykioo-directory-detail"><span>{tr('Service login username','Identifiant du service')}</span><strong>{sub.service_username||'—'}</strong></div>
        {owner&&<div className="mykioo-directory-detail"><span>{tr('Provider reference','Référence du fournisseur')}</span><strong>{sub.supplier_reference||'—'}</strong></div>}
        <div className="mykioo-directory-detail"><span>{tr('Start date','Date de début')}</span><strong>{displayDate(sub.starts_at,fr)}</strong></div>
