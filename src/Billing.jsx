@@ -195,6 +195,7 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
  const [cad,setCad]=useState('80'),[usd,setUsd]=useState('');
  const [cryptoAddress,setCryptoAddress]=useState(''),[cryptoAmount,setCryptoAmount]=useState('');
  const [packagePrices,setPackagePrices]=useState([]),[usdDrafts,setUsdDrafts]=useState({});
+ const [ownerPage,setOwnerPage]=useState('payments'),[invoiceFilter,setInvoiceFilter]=useState('review');
  const [form,setForm]=useState({default_cad:'80',default_usd:'60',interac_destination:'',zelle_destination:''});
  const reload=useCallback(async()=>{
   const [s,i,pr]=await Promise.all([
@@ -229,6 +230,12 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
    String(settings?.default_usd??60));
  },[requestId,selectedRequest?.quoted_price_cad,settings?.default_usd]);
  const accounts=new Map(members.map(m=>[m.user_id,m.display_name||m.email||m.user_id]));
+ const reviewCount=invoices.filter(i=>i.state==='payment_submitted').length;
+ const cryptoCount=payable.filter(r=>['btc','shib'].includes(r.preferred_payment_method)).length;
+ const shownInvoices=invoices.filter(i=>invoiceFilter==='all'||
+  invoiceFilter==='review'&&i.state==='payment_submitted'||
+  invoiceFilter==='open'&&['awaiting_method','awaiting_instructions','awaiting_payment'].includes(i.state)||
+  invoiceFilter==='paid'&&i.state==='paid');
  async function action(payload){
   setBusy(true);setError('');setNotice('');
   try{await billingAction(payload);await reload();setNotice(tr('Billing change saved','Modification enregistrée'))}
@@ -251,7 +258,7 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
      ...(cryptoAmount.trim()?{manual_amount:cryptoAmount.trim()}:{})});
    }
    await reload();
-   setRequestId('');setCryptoAddress('');setCryptoAmount('');
+   setRequestId('');setCryptoAddress('');setCryptoAmount('');setOwnerPage('payments');setInvoiceFilter('all');
    setNotice(crypto?tr('Crypto invoice and payment instructions are ready for the customer.','La facture et les instructions crypto sont prêtes pour le client.'):tr('Legacy invoice issued.','Ancienne facture émise.'));
   }catch(err){
    await reload().catch(()=>{});
@@ -269,8 +276,16 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
    <p>{tr('Bank customers submit payment confirmation with their subscription request. You issue invoices only for BTC and SHIB. Verify every payment before activating.','Les clients bancaires soumettent leur confirmation avec la demande. Vous émettez des factures uniquement pour BTC et SHIB. Vérifiez chaque paiement avant activation.')}</p></div>
    <button type="button" onClick={()=>reload().catch(()=>setError(tr('Could not refresh','Actualisation impossible')))}><RefreshCw size={17}/>{tr('Refresh','Actualiser')}</button></div>
   {error&&<p className="mykioo-billing-error" role="alert">{error}</p>}{notice&&<p className="mykioo-billing-notice" role="status">{notice}</p>}
-  {loading?<p className="mykioo-billing-muted">{tr('Loading billing…','Chargement de la facturation…')}</p>:<>
-   <form className="mykioo-billing-box" onSubmit={saveSettings}>
+  
+   <div className="mykioo-owner-billing-tabs" role="tablist" aria-label={tr('Billing sections','Sections de facturation')}>
+    <button type="button" role="tab" aria-selected={ownerPage==='payments'} onClick={()=>setOwnerPage('payments')}>{tr('Verify payments','Vérifier les paiements')}{reviewCount>0&&<span className="mykioo-owner-billing-count">{reviewCount}</span>}</button>
+    <button type="button" role="tab" aria-selected={ownerPage==='crypto'} onClick={()=>setOwnerPage('crypto')}>{tr('Crypto invoices','Factures crypto')}{cryptoCount>0&&<span className="mykioo-owner-billing-count">{cryptoCount}</span>}</button>
+    <button type="button" role="tab" aria-selected={ownerPage==='settings'} onClick={()=>setOwnerPage('settings')}>{tr('Payment settings','Paramètres de paiement')}</button>
+   </div>
+   {loading?<p className="mykioo-billing-muted">{tr('Loading billing…','Chargement de la facturation…')}</p>:<>
+    {ownerPage==='settings'&&<div className="mykioo-owner-billing-pane">
+     <p className="mykioo-billing-muted">{tr('Set receiving contacts and USD prices for future transactions.','Configurez les coordonnées de réception et les prix USD pour les prochaines transactions.')}</p>
+     <form className="mykioo-billing-box" onSubmit={saveSettings}>
     <h3><Settings size={18}/>{tr('Billing defaults & receiving contacts','Tarifs par défaut et coordonnées de réception')}</h3>
     <p className="mykioo-billing-muted">{tr('The package catalog determines new subscription prices in CAD. These amounts are legacy defaults and the USD quote for one device for 12 months.','Le catalogue fixe les prix CAD. Ces montants servent aux anciens dossiers et au devis USD pour 1 appareil sur 12 mois.')}</p>
     <div className="mykioo-billing-form-grid">
@@ -297,7 +312,10 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
      </div>
      <button type="submit" className="mykioo-billing-primary" disabled={busy||packagePrices.length!==10}>{tr('Save USD package prices','Enregistrer les prix USD')}</button>
     </form>
-    <form className="mykioo-billing-box" onSubmit={issue}>
+    
+    </div>}
+    {ownerPage==='crypto'&&<div className="mykioo-owner-billing-pane">
+     <form className="mykioo-billing-box" onSubmit={issue}>
      <h3><FileText size={18}/>{tr('Issue cryptocurrency invoice','Émettre une facture en cryptomonnaie')}</h3>
      <p className="mykioo-billing-muted">{tr('Only BTC and SHIB requests need you to issue an invoice. Interac and Zelle payment confirmations arrive automatically in the verification list below.','Seules les demandes BTC et SHIB nécessitent l’émission d’une facture. Les confirmations Interac et Zelle apparaissent automatiquement dans la liste de vérification ci-dessous.')}</p>
      <label>{tr('Crypto subscription request','Demande d’abonnement crypto')}
@@ -322,12 +340,28 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
      </div>}
      <button type="submit" disabled={busy||!requestId||(['btc','shib'].includes(selectedRequest?.preferred_payment_method)&&!cryptoAddress.trim())} className="mykioo-billing-primary">{busy?tr('Preparing…','Préparation…'):tr('Create crypto invoice and payment instructions','Créer la facture crypto et les instructions de paiement')}</button>
     </form>
-   <div className="mykioo-billing-box">
+   
+    </div>}
+    {ownerPage==='payments'&&<div className="mykioo-owner-billing-pane">
+     <div className="mykioo-owner-billing-filter">
+      <label>{tr('Show payments','Afficher les paiements')}
+       <select value={invoiceFilter} onChange={e=>setInvoiceFilter(e.target.value)}>
+        <option value="review">{tr('Need verification','À vérifier')}</option>
+        <option value="open">{tr('Awaiting payment','En attente de paiement')}</option>
+        <option value="paid">{tr('Verified','Vérifiés')}</option>
+        <option value="all">{tr('All records','Tous les dossiers')}</option>
+       </select>
+      </label>
+      <span>{shownInvoices.length} / {invoices.length} {tr('records','dossiers')}</span>
+     </div>
+     <div className="mykioo-billing-box">
     <h3><Receipt size={18}/>{tr('Payment confirmations & crypto invoices','Confirmations de paiement et factures crypto')}</h3>
     <p className="mykioo-billing-muted">{tr('Only mark a payment verified after checking the actual bank deposit or confirmed Coinbase transaction. Customer submissions alone are not proof.','Confirmez le paiement seulement après vérification du dépôt bancaire ou de la transaction Coinbase confirmée. Une déclaration du client ne constitue pas une preuve.')}</p>
-    {invoices.length===0?<p className="mykioo-billing-empty">{tr('No invoices yet.','Aucune facture pour le moment.')}</p>:
-     <div className="mykioo-billing-list">{invoices.map(inv=><InvoiceCard key={inv.id} invoice={inv} memberName={accounts.get(inv.member_id)} language={language} owner busy={busy} onAction={action}/>)}</div>}
+    {shownInvoices.length===0?<p className="mykioo-billing-empty">{tr('No payments match this filter.','Aucun paiement pour ce filtre.')}</p>:
+     <div className="mykioo-billing-list">{shownInvoices.map(inv=><InvoiceCard key={inv.id} invoice={inv} memberName={accounts.get(inv.member_id)} language={language} owner busy={busy} onAction={action}/>)}</div>}
    </div>
-  </>}
+
+    </div>}
+   </>}
  </section>;
 }
