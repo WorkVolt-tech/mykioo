@@ -1088,3 +1088,9 @@
 .mykioo-checkout-policy{margin-top:13px}
 .mykioo-checkout-policy .mykioo-request-policy-note{font-size:11px!important;margin:0!important}
 @media(max-width:580px){.mykioo-duration-options{gap:8px}.mykioo-support-card form .mykioo-duration-option{padding:12px}.mykioo-support-card form .mykioo-duration-option.selected{padding:11px}.mykioo-nav-secondary-link{max-width:100%;width:100%;box-sizing:border-box;white-space:normal}}
+
+
+/* Renewal form: distinguish the account being extended before payment. */
+.mykioo-renewal-selection{display:grid;gap:7px;min-width:0;width:100%;box-sizing:border-box;padding:14px 15px;border-radius:10px;border:1px solid rgba(221,188,132,.5);background:rgba(221,188,132,.08);color:#e9d8e7}
+.mykioo-renewal-selection strong{color:#f0d5a6;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.mykioo-renewal-selection span{font-size:12px;line-height:1.55;color:#e0d2e4;overflow-wrap:anywhere}
