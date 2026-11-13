@@ -25,6 +25,8 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const [requestType,setRequestType]=useState('new');
  const [service,setService]=useState(''),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
  const [deviceCount,setDeviceCount]=useState(1),[paymentMethod,setPaymentMethod]=useState('interac');
+ const [checkout,setCheckout]=useState(null),[checkoutLoading,setCheckoutLoading]=useState(false);
+ const [senderName,setSenderName]=useState(''),[paymentReference,setPaymentReference]=useState(''),[transferConfirmed,setTransferConfirmed]=useState(false);
  const [ownRows,setOwnRows]=useState([]),[ownCancellations,setOwnCancellations]=useState([]),[loading,setLoading]=useState(!owner),
   [saving,setSaving]=useState(false),[cancellingId,setCancellingId]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{if(userId&&(!targetId||!owner))setTargetId(userId)},[userId,owner]);
@@ -57,6 +59,30 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   window.addEventListener('focus',resume);window.addEventListener('online',resume);document.addEventListener('visibilitychange',resume);
   return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',resume);window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',resume);supabase.removeChannel(channel)};
  },[userId,owner]);
+ useEffect(()=>{
+  if(!supabase)return;
+  let live=true;const controller=new AbortController();
+  setCheckout(null);setCheckoutLoading(true);
+  async function loadCheckout(){
+   try{
+    const {data:{session},error:authError}=await supabase.auth.getSession();
+    if(authError||!session)throw Error('Sign in again to view payment instructions');
+    const response=await fetch(endpoint,{method:'POST',signal:controller.signal,headers:{
+      'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
+      'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+    },body:JSON.stringify({action:'get_checkout',contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod})});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result.ok)throw Error(result.error||'Payment information unavailable');
+    if(live)setCheckout(result);
+   }catch(err){
+    if(live&&!controller.signal.aborted)setCheckout({available:false,reason:err.message||'Payment information unavailable'});
+   }finally{if(live)setCheckoutLoading(false)}
+  }
+  loadCheckout();
+  return()=>{live=false;controller.abort()};
+ },[contractDays,deviceCount,paymentMethod]);
+ const isBankPayment=paymentMethod==='interac'||paymentMethod==='zelle';
+ const bankReady=isBankPayment&&checkout?.available===true&&!!checkout?.destination&&Number(checkout?.amount_due)>0;
  const users=useMemo(()=>members.filter(m=>m.status==='approved'&&(m.role==='member'||(m.role==='owner'&&m.user_id===userId))),[members,userId]);
  const rows=owner?requests.filter(r=>r.member_id===targetId):ownRows;
  const cancellationRows=owner?cancellations.filter(c=>c.member_id===targetId):ownCancellations;
@@ -88,6 +114,12 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   e.preventDefault();if(saving)return;
   const renewal=requestType==='renewal';
   if(!priceCAD(contractDays,deviceCount)||!PAYMENT_LABELS[paymentMethod]){setError(tr('Choose a valid package and payment method.','Choisissez un forfait et un mode de paiement valides.'));return;}
+  if(isBankPayment&&(!bankReady||checkoutLoading)){
+   setError(tr('Bank payment instructions are not ready. Select a configured method or contact MYKIOO.','Les instructions de paiement bancaire ne sont pas prêtes. Choisissez un autre mode configuré ou contactez MYKIOO.'));return;
+  }
+  if(isBankPayment&&(senderName.trim().length<2||paymentReference.trim().length<3||!transferConfirmed)){
+   setError(tr('Send your bank transfer first, then enter the sender name, transfer confirmation number and check the confirmation box.','Effectuez le virement, puis indiquez le nom de l’expéditeur, le numéro de confirmation et cochez la case.'));return;
+  }
   if(!owner&&renewal&&(!renewalId||pendingRenewals.has(renewalId)))return;
   if(owner&&!users.some(m=>m.user_id===targetId)){setError(tr('Select an approved account.','Choisissez un compte approuvé.'));return}
   if(renewal&&!eligible.some(s=>s.id===renewalId&&!pendingRenewals.has(s.id))){
@@ -104,6 +136,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
      renewal?
       {action:'renew',subscription_id:renewalId,contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim()}:
       {action:'create',service_name:service.trim(),contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim()};
+   if(isBankPayment)Object.assign(payload,{sender_name:senderName.trim(),payment_reference:paymentReference.trim(),ack_sent:transferConfirmed});
    const response=await fetch(endpoint,{method:'POST',headers:{
      'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
      'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -117,8 +150,10 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
       service_name:renewal?(selected?.service_name||'Renewal'):service.trim(),
       contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim(),quoted_price_cad:priceCAD(contractDays,deviceCount),status:'pending'
     },...previous.filter(r=>r.id!==result.request.id)]);
-   setService('');setRenewalId('');setNotes('');setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setRequestType('new');
-   setNotice(owner?tr('Request created for the selected account. Complete it in the subscription manager below.','Demande créée pour le compte sélectionné. Terminez-la dans le gestionnaire d’abonnements ci-dessous.'):
+   setService('');setRenewalId('');setNotes('');setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setSenderName('');setPaymentReference('');setTransferConfirmed(false);setRequestType('new');
+   setNotice(isBankPayment?
+      tr('Your subscription request and bank payment confirmation were submitted together. MYKIOO will verify receipt before activating service.','Votre demande d’abonnement et votre confirmation bancaire ont été envoyées ensemble. MYKIOO vérifiera le paiement avant l’activation.'):
+      owner?tr('Crypto request created. Issue the crypto invoice from Billing.','Demande crypto créée. Émettez la facture crypto dans Facturation.'):
      renewal?tr('Renewal requested. Your existing login will be kept.','Renouvellement demandé. Vos identifiants actuels seront conservés.'):
      tr('Your request was sent for review. You can track its status below.','Votre demande a été envoyée pour examen. Vous pouvez suivre son statut ci-dessous.'));
    if(owner)await onSaved?.();
