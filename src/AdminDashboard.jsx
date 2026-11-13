@@ -396,8 +396,9 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      <h2>{tr('Ticket inbox','Boîte de réception des demandes')}</h2>
      <p>{tr('Search, open a ticket, then reply or update its status. Only expanded tickets show detailed controls.','Recherchez et ouvrez une demande pour répondre ou mettre à jour son statut. Les détails restent masqués jusqu’à l’ouverture.')}</p>
     </div>
-    <div id="mykioo-support-ticket-results" className="mykioo-ticket-filters">
-  <label>{tr('Search tickets or members','Rechercher des demandes ou des membres')}
+    <div id="mykioo-support-ticket-results" className="admin-support-inbox">
+  <div className="admin-filter-primary">
+     <label>{tr('Search tickets or members','Rechercher des demandes ou des membres')}
    <input type="search" value={supportSearch} onChange={e=>setSupportSearch(e.target.value)} placeholder={tr('Subject, message, name, or email','Sujet, message, nom ou courriel')}/>
   </label>
   <label>{tr('Ticket status','Statut de la demande')}
@@ -409,7 +410,12 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     <option value="closed">{tr('Closed','Fermé')}</option>
    </select>
   </label>
-  <label>{tr('Main issue association','Association à un problème principal')}
+
+     <button type="button" onClick={()=>{setSupportSearch('');setSupportStatusFilter('all');setSupportIssueFilter('all');setSupportPriorityFilter('all');setSupportCategoryFilter('all');setSupportSort('priority');setFocusedTicket(null)}}>{tr('Clear filters','Effacer les filtres')}</button>
+  </div>
+  <div className="admin-filter-meta">
+   <details><summary>{tr('Advanced filters and sorting','Filtres avancés et tri')}</summary>
+    <div className="admin-filter-advanced">  <label>{tr('Main issue association','Association à un problème principal')}
    <select value={supportIssueFilter} onChange={e=>setSupportIssueFilter(e.target.value)}>
     <option value="all">{tr('All tickets','Toutes les demandes')}</option>
     <option value="linked">{tr('Linked to a main issue','Associées à un problème principal')}</option>
@@ -443,8 +449,14 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     <option value="oldest">{tr('Oldest first','Plus anciennes en premier')}</option>
    </select>
   </label>
-  <span className="mykioo-filter-count">{filteredTickets.length} / {allVisibleTickets.length} {tr('tickets shown','demandes affichées')}</span>
-  <button type="button" onClick={()=>{setSupportSearch('');setSupportStatusFilter('all');setSupportIssueFilter('all');setSupportPriorityFilter('all');setSupportCategoryFilter('all');setSupportSort('priority');setFocusedTicket(null)}}>{tr('Clear filters','Effacer les filtres')}</button>
+</div>
+   </details>
+     <span className="mykioo-filter-count">{filteredTickets.length} / {allVisibleTickets.length} {tr('tickets shown','demandes affichées')}</span>
+
+   {selectedTicketIds.length>0&&<button type="button" className="admin-ticket-expand" onClick={()=>setSupportView('tools')}>
+    {selectedTicketIds.length} {tr('selected — bulk actions','sélectionnées — actions groupées')}
+   </button>}
+  </div>
  </div>
  {loading?<div className="admin-empty">{tr('Loading requests…','Chargement des demandes…')}</div>:
  (rows.support||[]).length===0?<div className="admin-empty"><Headphones size={28}/><strong>{tr('No support requests yet','Aucune demande d’assistance')}</strong></div>:
