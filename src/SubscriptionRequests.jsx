@@ -136,11 +136,11 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    setError(tr('Choose an eligible subscription without a pending renewal.','Choisissez un abonnement admissible sans renouvellement en attente.'));return;
   }
   setSaving(true);setError('');setNotice('');
+  let invitationSent=false;
   try{
    const {data:{session},error:authError}=await supabase.auth.getSession();
    if(authError||!session)throw Error(tr('Your session expired. Sign in again.','Votre session a expiré. Reconnectez-vous.'));
    let resolvedTargetId=targetId;
-   let invitationSent=false;
    if(owner){
     const email=ownerEmail.trim().toLowerCase();
     const matching=users.find(m=>m.email?.trim().toLowerCase()===email);
@@ -190,7 +190,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
     renewal?tr('Renewal requested. Your existing login will be kept.','Renouvellement demandé. Vos identifiants actuels seront conservés.'):
     tr('Your request was sent for review.','Votre demande a été envoyée pour examen.'));
    if(owner)await onSaved?.();
-  }catch(err){setError(err.message||tr('Request could not be submitted.','Impossible d’envoyer la demande.'))}
+  }catch(err){setError((invitationSent||createdInvite?tr('A site invitation may already have been issued. ','Une invitation a peut-être déjà été envoyée. '):'')+(err.message||tr('Request could not be submitted.','Impossible d’envoyer la demande.')))}
   finally{setSaving(false)}
  }
  if(view==='history')return <section className="mykioo-request-history-page">
