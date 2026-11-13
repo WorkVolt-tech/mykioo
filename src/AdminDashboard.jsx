@@ -381,16 +381,6 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     <OwnerSubscriptionQueue requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} members={rows.members||[]} language={language} onOpenTarget={jumpToSubscription}/>
    </div>}
    {['requests','directory','editor'].includes(subscriptionView)&&<div className="admin-panel-content">
-    <div className="admin-panel-header">
-     <h2>{subscriptionView==='requests'?tr('Subscription requests','Demandes d’abonnement'):
-       subscriptionView==='directory'?tr('Customer subscriptions','Abonnements des clients'):
-       tr('Subscription editor','Éditeur d’abonnement')}</h2>
-     <p>{subscriptionView==='requests'?
-       tr('Process new orders and renewals without the subscription editor taking up space.','Traitez les commandes et les renouvellements sans afficher le formulaire de modification.'):
-       subscriptionView==='directory'?
-       tr('Find existing subscriptions, inspect their status, and select Edit when needed.','Recherchez les abonnements, consultez leur statut et choisissez Modifier au besoin.'):
-       tr('Edit the selected subscription, complete a request, or add a service.','Modifiez l’abonnement sélectionné, finalisez une demande ou ajoutez un service.')}</p>
-    </div>
     {subscriptionView==='directory'&&<ExpiryAlerts subscriptions={rows.subscriptions||[]} members={rows.members||[]} language={language} owner/>}
     <SubscriptionManager view={subscriptionView} onViewChange={setSubscriptionView}
      members={rows.members||[]} subscriptions={rows.subscriptions||[]}
