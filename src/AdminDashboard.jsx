@@ -383,15 +383,20 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    {guideView==='devices'&&<OwnerSetupGuideEditor language={language}/>}
   </div>
  </section>}
- {tab==='support'&&<section className="admin-support-section">
- <OwnerFollowUpBoard language={language} followups={followups} tickets={rows.support||[]} onOpenTicket={viewSupportTicket}/>
- <SupportDashboard language={language} onViewTicket={viewSupportTicket}/>
- <ReplyTemplateEditor language={language}/>
- <OwnerIssuePanel tickets={rows.support||[]} language={language} selected={selectedTicketIds} setSelected={setSelectedTicketIds} onRefresh={()=>refresh({silent:true})}/>
- <ServiceAlertEditor alerts={serviceAlerts} subscriptions={rows.subscriptions||[]} language={language} onRefresh={async()=>{const {data,error}=await supabase.from('mykioo_service_alerts').select('*').order('created_at',{ascending:false}).limit(100);if(!error)setServiceAlerts(data||[])}}/>
- <ServiceAlertHistory alerts={serviceAlerts} language={language}/>
- <p className="admin-description">{tr('Review support requests and update their status.','Consultez les demandes d’assistance et modifiez leur statut.')}</p>
- <div id="mykioo-support-ticket-results" className="mykioo-ticket-filters">
+ {tab==='support'&&<section className="admin-support-section admin-workspace-section">
+   <div className="admin-subnav" role="tablist" aria-label={tr('Support workspace sections','Sections de l’espace d’assistance')}>
+    {supportViews.map(view=><button type="button" role="tab" key={view.id} aria-selected={supportView===view.id}
+     onClick={()=>setSupportView(view.id)}>
+     <view.Icon size={16}/>{tr(view.en,view.fr)}
+     {view.id==='tickets'&&openSupportCount>0&&<span className="admin-subnav-count">{openSupportCount}</span>}
+    </button>)}
+   </div>
+   {supportView==='tickets'&&<div className="admin-panel-content">
+    <div className="admin-panel-header">
+     <h2>{tr('Ticket inbox','Boîte de réception des demandes')}</h2>
+     <p>{tr('Search, open a ticket, then reply or update its status. Only expanded tickets show detailed controls.','Recherchez et ouvrez une demande pour répondre ou mettre à jour son statut. Les détails restent masqués jusqu’à l’ouverture.')}</p>
+    </div>
+    <div id="mykioo-support-ticket-results" className="mykioo-ticket-filters">
   <label>{tr('Search tickets or members','Rechercher des demandes ou des membres')}
    <input type="search" value={supportSearch} onChange={e=>setSupportSearch(e.target.value)} placeholder={tr('Subject, message, name, or email','Sujet, message, nom ou courriel')}/>
   </label>
@@ -477,8 +482,28 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     </select></div>{ticket.main_issue_id&&<p className="mykioo-owner-linked-indicator">{tr('Linked to main issue','Associé au problème principal')} · {ticket.main_issue_id.slice(0,8)}</p>}<SupportThread ticket={ticket} userId={user.id} language={language} recipientLanguage={requester?.preferred_language||"en"} owner unread={unreadCounts[ticket.id]||0} onRead={syncUnread}/><OwnerPrivateTicketPanel key={ticket.id} ticket={ticket} language={language} followup={followups.find(item=>item.ticket_id===ticket.id)} onChanged={refreshFollowups}/>
    </article>
  })}</div>}
- </section>}
- {tab==='invitations'&&<form className="admin-invite" onSubmit={invite}><div><strong>{tr("Invite a new member","Inviter un nouveau membre")}</strong><p>{tr("An invitation email will be sent in the website language. The member remains pending until you approve them.","Une invitation sera envoyée dans la langue du site. Le membre restera en attente jusqu’à votre approbation.")}</p></div><div className="admin-invite-row"><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="customer@example.com" required maxLength={254} aria-label={tr("Invitee email","Courriel du destinataire")}/><button className="admin-action primary" type="submit" disabled={saving}>{saving?tr('Sending…','Envoi…'):tr('Send invitation','Envoyer l’invitation')}</button></div><small>{tr("Email language follows the EN/FR selection above. Supabase controls invitation expiry.","La langue du courriel suit le choix EN/FR ci-dessus. Supabase gère l’expiration de l’invitation.")}</small></form>}
+ 
+   </div>}
+   {supportView==='followups'&&<div className="admin-panel-content">
+    <div className="admin-panel-header"><h2>{tr('Follow-up tasks','Tâches de suivi')}</h2><p>{tr('Keep private reminders separate from incoming support tickets.','Gardez les rappels privés séparés des nouvelles demandes.')}</p></div>
+    <OwnerFollowUpBoard language={language} followups={followups} tickets={rows.support||[]} onOpenTicket={viewSupportTicket}/>
+   </div>}
+   {supportView==='insights'&&<div className="admin-panel-content">
+    <div className="admin-panel-header"><h2>{tr('Support statistics','Statistiques de l’assistance')}</h2><p>{tr('Monitor outstanding tickets and response times.','Suivez les demandes en cours et les délais de réponse.')}</p></div>
+    <SupportDashboard language={language} onViewTicket={viewSupportTicket}/>
+   </div>}
+   {supportView==='tools'&&<div className="admin-panel-content">
+    <div className="admin-panel-header"><h2>{tr('Saved replies and known issues','Réponses enregistrées et problèmes connus')}</h2><p>{tr('Manage reusable replies, group related tickets and share issue updates. Select tickets in the inbox to use bulk actions here.','Gérez les réponses réutilisables et regroupez les demandes similaires. Sélectionnez des demandes dans la boîte de réception pour les actions groupées.')}</p></div>
+    <ReplyTemplateEditor language={language}/>
+    <OwnerIssuePanel tickets={rows.support||[]} language={language} selected={selectedTicketIds} setSelected={setSelectedTicketIds} onRefresh={()=>refresh({silent:true})}/>
+   </div>}
+   {supportView==='announcements'&&<div className="admin-panel-content">
+    <div className="admin-panel-header"><h2>{tr('Service announcements','Annonces de service')}</h2><p>{tr('Publish service notices and review previous announcements.','Publiez des avis de service et consultez les annonces précédentes.')}</p></div>
+    <ServiceAlertEditor alerts={serviceAlerts} subscriptions={rows.subscriptions||[]} language={language} onRefresh={async()=>{const {data,error}=await supabase.from('mykioo_service_alerts').select('*').order('created_at',{ascending:false}).limit(100);if(!error)setServiceAlerts(data||[])}}/>
+    <ServiceAlertHistory alerts={serviceAlerts} language={language}/>
+   </div>}
+  </section>}
+  {tab==='invitations'&&<form className="admin-invite" onSubmit={invite}><div><strong>{tr("Invite a new member","Inviter un nouveau membre")}</strong><p>{tr("An invitation email will be sent in the website language. The member remains pending until you approve them.","Une invitation sera envoyée dans la langue du site. Le membre restera en attente jusqu’à votre approbation.")}</p></div><div className="admin-invite-row"><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="customer@example.com" required maxLength={254} aria-label={tr("Invitee email","Courriel du destinataire")}/><button className="admin-action primary" type="submit" disabled={saving}>{saving?tr('Sending…','Envoi…'):tr('Send invitation','Envoyer l’invitation')}</button></div><small>{tr("Email language follows the EN/FR selection above. Supabase controls invitation expiry.","La langue du courriel suit le choix EN/FR ci-dessus. Supabase gère l’expiration de l’invitation.")}</small></form>}
  {tab!=='overview'&&tab!=='support'&&tab!=='subscriptions'&&tab!=='notifications'&&tab!=='billing'&&tab!=='guides'&&<><p className="admin-description">{tab==='invitations'?tr('View invitations sent through MYKIOO.','Consultez les invitations envoyées depuis MYKIOO.'):tab==='members'?tr('Approve, reject or suspend customer memberships. Owner accounts are protected.','Approuvez, refusez ou suspendez les membres. Les comptes propriétaires sont protégés.'):tr('View your current MYKIOO records.','Consultez les données MYKIOO.')}</p>{loading?<div className="admin-empty">{tr("Loading records…","Chargement…")}</div>:list.length===0?<div className="admin-empty"><LockKeyhole size={28}/><strong>{tr("No records yet","Aucune donnée")}</strong><span>{tr("Information will appear here when available.","Les informations apparaîtront ici dès qu’elles seront disponibles.")}</span></div>:<div className="admin-table-wrap"><table className="admin-table"><thead><tr>{columns[tab].map(c=><th key={c}>{c.replaceAll('_',' ')}</th>)}{tab==='members'&&<th>{tr("Actions","Actions")}</th>}</tr></thead><tbody>{list.map(row=><tr key={row.id||row.user_id}>{columns[tab].map(c=><td key={c}>{row[c]===null||row[c]===undefined?'—':c.includes('_at')&&row[c]?new Date(row[c]).toLocaleDateString():String(row[c])}</td>)}{tab==='members'&&<td><div className="admin-controls">{row.role==='member'?<>{row.status!=='approved'&&<button disabled={saving} className="admin-mini positive" onClick={()=>changeStatus(row,'approved')}>{tr("Approve","Approuver")}</button>}{row.status!=='rejected'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'rejected')}>{tr("Reject","Refuser")}</button>}{row.status==='approved'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'suspended')}>{tr("Suspend","Suspendre")}</button>}</>:<span>{tr("Owner","Propriétaire")}</span>}</div></td>}</tr>)}</tbody></table></div>}</>}
  </main> {pendingChange&&<div className="mykioo-modal-overlay" onMouseDown={e=>{if(e.target===e.currentTarget&&!saving)setPendingChange(null)}}><div className="mykioo-modal" role="alertdialog" aria-modal="true" aria-labelledby="mykioo-confirm-title" aria-describedby="mykioo-confirm-description"><div className="mykioo-modal-icon"><ShieldCheck size={27}/></div><div className="admin-tag">MYKIOO</div><h2 id="mykioo-confirm-title">{tr(({approved:'Approve membership',rejected:'Reject membership',suspended:'Suspend membership',deactivated:'Deactivate membership'})[pendingChange.status]||'Change membership',({approved:'Approuver l’adhésion',rejected:'Refuser l’adhésion',suspended:'Suspendre l’adhésion',deactivated:'Désactiver l’adhésion'})[pendingChange.status]||'Modifier l’adhésion')}</h2><p id="mykioo-confirm-description">{tr('Are you sure you want to change the status of this member?','Voulez-vous vraiment modifier le statut de ce membre?')}</p><div className="mykioo-modal-member"><span>{pendingChange.member.email}</span><div><span className="mykioo-status-chip">{tr(pendingChange.member.status,({pending:'en attente',approved:'approuvé',rejected:'refusé',suspended:'suspendu',deactivated:'désactivé'})[pendingChange.member.status]||pendingChange.member.status)}</span><span className="mykioo-modal-arrow">→</span><span className="mykioo-status-chip target">{tr(pendingChange.status,({pending:'en attente',approved:'approuvé',rejected:'refusé',suspended:'suspendu',deactivated:'désactivé'})[pendingChange.status]||pendingChange.status)}</span></div></div><div className="mykioo-modal-buttons"><button type="button" className="mykioo-modal-cancel" onClick={()=>setPendingChange(null)}>{tr('Cancel','Annuler')}</button><button type="button" className="mykioo-modal-confirm" autoFocus onClick={confirmChange}>{tr('Confirm change','Confirmer')}</button></div></div></div>}
 </div>
