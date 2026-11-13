@@ -1,5 +1,5 @@
 import React,{useEffect,useState,useCallback} from 'react';
-import {Bell,CheckCheck,LifeBuoy,CalendarDays,AlertTriangle,ClipboardList,MessageSquarePlus,Receipt,Wallet,MailPlus} from 'lucide-react';
+import {Bell,CheckCheck,LifeBuoy,CalendarDays,AlertTriangle,ClipboardList,MessageSquarePlus,Receipt,Wallet,MailPlus,Trash2} from 'lucide-react';
 import {supabase} from './supabase';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-notifications';
@@ -40,12 +40,28 @@ export function useNotifications(userId){
    return true;
   }catch(err){console.warn('MYKIOO notification read error',err);return false}
  },[sync]);
- return {notifications:items,unread:items.filter(x=>!x.read_at).length,markRead};
+ const clearNotifications=useCallback(async(id='all')=>{
+  if(!supabase||!userId)return false;
+  if(id!=='all'&&typeof id!=='string')return false;
+  try{
+   const {data:{session},error:authError}=await supabase.auth.getSession();
+   if(authError||!session)return false;
+   const response=await fetch(endpoint,{method:'POST',headers:{
+    'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
+    'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+   },body:JSON.stringify(id==='all'?{action:'clear_all'}:{action:'delete',id})});
+   if(!response.ok)return false;
+   setItems(prev=>id==='all'?[]:prev.filter(item=>item.id!==id));
+   await sync();
+   return true;
+  }catch(err){console.warn('MYKIOO notification deletion error',err);return false}
+ },[sync,userId]);
+ return {notifications:items,unread:items.filter(x=>!x.read_at).length,markRead,clearNotifications};
 }
 const icons={support_reply:LifeBuoy,support_ticket:MessageSquarePlus,support_attachment:MessageSquarePlus,support_completed:LifeBuoy,support_reopened:AlertTriangle,support_confirmed:CheckCheck,support_issue_update:AlertTriangle,subscription_update:CalendarDays,subscription_expiry_reminder:CalendarDays,subscription_request:ClipboardList,subscription_activation_recorded:CalendarDays,billing_invoice:Receipt,billing_verified:CheckCheck,billing_payment_reported:Wallet,membership_invitation_requested:MailPlus,membership_invitation_approved:CheckCheck,membership_invitation_rejected:AlertTriangle,service_alert:AlertTriangle};
-export function NotificationCenter({items=[],language='en',owner=false,onSelect,markRead,compact=false}){
+export function NotificationCenter({items=[],language='en',owner=false,onSelect,markRead,clearNotifications,compact=false}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
- const [error,setError]=useState('');
+ const [error,setError]=useState(''),[clearing,setClearing]=useState(false);
  const unread=items.filter(n=>!n.read_at).length;
  async function select(n){
   setError('');
@@ -56,17 +72,36 @@ export function NotificationCenter({items=[],language='en',owner=false,onSelect,
   <div className="mykioo-notification-header">
    <div><h2><Bell size={19}/>{tr('Notifications','Notifications')}{unread>0&&<span className="mykioo-unread-dot">{unread>99?'99+':unread}</span>}</h2>
     <p>{tr('Updates to your subscriptions, support, and service announcements.','Nouvelles de vos abonnements, de l’assistance et des annonces de service.')}</p></div>
-   {unread>0&&<button type="button" className="mykioo-mark-all" onClick={async()=>{const ok=await markRead('all');if(!ok)setError(tr('Could not mark notifications as read.','Impossible de marquer les notifications comme lues.'))}}><CheckCheck size={16}/>{tr('Mark all read','Tout marquer comme lu')}</button>}
+   <div className="mykioo-notification-header-actions">
+    {unread>0&&<button type="button" className="mykioo-mark-all" disabled={clearing} onClick={async()=>{const ok=await markRead('all');if(!ok)setError(tr('Could not mark notifications as read.','Impossible de marquer les notifications comme lues.'))}}><CheckCheck size={16}/>{tr('Mark all read','Tout marquer comme lu')}</button>}
+    {!compact&&items.length>0&&<button type="button" className="mykioo-clear-all" disabled={clearing} onClick={async()=>{
+     if(!window.confirm(tr('Permanently clear all your notifications? This will not delete your subscriptions, payments, or support requests.','Supprimer définitivement toutes vos notifications ? Vos abonnements, paiements et demandes d’assistance seront conservés.')))return;
+     setClearing(true);setError('');
+     const ok=await clearNotifications?.('all');
+     if(!ok)setError(tr('Could not clear notifications. Please try again.','Impossible de supprimer les notifications. Veuillez réessayer.'));
+     setClearing(false);
+    }}><Trash2 size={15}/>{tr('Clear all','Tout effacer')}</button>}
+   </div>
   </div>
   {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
   {!items.length?<p className="mykioo-notifications-empty">{tr('No notifications yet.','Aucune notification pour le moment.')}</p>:
    <div className="mykioo-notification-list">{items.slice(0,compact?6:60).map(n=>{
     const Icon=icons[n.kind]||Bell;
-    return <button key={n.id} type="button" className={'mykioo-notification-item '+(!n.read_at?'unread':'')} onClick={()=>select(n)}>
-     <Icon size={18}/><span><strong>{fr?n.title_fr:n.title_en}</strong><small>{fr?n.body_fr:n.body_en}</small>
-     <small>{new Date(n.created_at).toLocaleString(fr?'fr-CA':'en-CA',{dateStyle:'medium',timeStyle:'short'})}</small></span>
-     {!n.read_at&&<span className="mykioo-notification-indicator" aria-label={tr('Unread','Non lue')}/>}
-    </button>
+    return <div key={n.id} className="mykioo-notification-row">
+     <button type="button" className={'mykioo-notification-item '+(!n.read_at?'unread':'')} onClick={()=>select(n)}>
+      <Icon size={18}/><span><strong>{fr?n.title_fr:n.title_en}</strong><small>{fr?n.body_fr:n.body_en}</small>
+      <small>{new Date(n.created_at).toLocaleString(fr?'fr-CA':'en-CA',{dateStyle:'medium',timeStyle:'short'})}</small></span>
+      {!n.read_at&&<span className="mykioo-notification-indicator" aria-label={tr('Unread','Non lue')}/>}
+     </button>
+     {!compact&&<button type="button" className="mykioo-clear-one" disabled={clearing}
+      aria-label={tr('Delete notification','Supprimer la notification')} title={tr('Delete notification','Supprimer la notification')}
+      onClick={async()=>{
+       setClearing(true);setError('');
+       const ok=await clearNotifications?.(n.id);
+       if(!ok)setError(tr('Could not delete notification.','Impossible de supprimer la notification.'));
+       setClearing(false);
+      }}><Trash2 size={17}/></button>}
+    </div>
    })}</div>}
  </section>;
 }
