@@ -1134,3 +1134,23 @@
  .mykioo-notification-row>.mykioo-notification-item{padding:12px}
  .mykioo-clear-one{width:38px;min-width:38px}
 }
+
+
+/* StreamSky APK cards inside MYKIOO Setup Guides; public content remains in the private member area. */
+.mykioo-guide-app-download{display:grid;gap:10px;padding:16px;margin:0 0 19px;border:1px solid #826848;border-radius:11px;background:linear-gradient(130deg,#2e2636,#211b2c)}
+.mykioo-guide-app-heading{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:#f4d69c}
+.mykioo-guide-app-download>p{margin:0;color:#d9cadd;font-size:12px;line-height:1.65}
+.mykioo-guide-app-download>label{color:#e1c393;font-size:11px;font-weight:800}
+.mykioo-guide-apk-url{display:block;max-width:100%;overflow-wrap:anywhere;white-space:pre-wrap;padding:11px 12px;border:1px solid #5b4b63;border-radius:8px;background:#191522;color:#f1e6f4;font-size:12px;line-height:1.5}
+.mykioo-guide-download-actions{display:flex;gap:9px;flex-wrap:wrap}
+.mykioo-guide-download-actions>a,.mykioo-guide-download-actions>button,.mykioo-guide-downloader-code>button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:0;padding:9px 11px;border:1px solid #ad855a;border-radius:8px;background:#3d3046;color:#f2d6aa;text-decoration:none;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.mykioo-guide-download-actions>a{background:#e4bd84;color:#261d2e;border-color:#e4bd84}
+.mykioo-guide-download-actions>a:hover,.mykioo-guide-download-actions>button:hover,.mykioo-guide-downloader-code>button:hover{filter:brightness(1.13)}
+.mykioo-guide-download-actions>a:focus-visible,.mykioo-guide-download-actions>button:focus-visible,.mykioo-guide-downloader-code>button:focus-visible{outline:2px solid #f5deae;outline-offset:3px}
+.mykioo-guide-downloader-code{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#dbc7e4;font-size:12px}
+.mykioo-guide-downloader-code strong{color:#f8dcab;font-size:15px;letter-spacing:.06em}
+.mykioo-guide-app-download>small{font-size:11px;color:#c1b2cc;line-height:1.6;margin:0}
+@media(max-width:530px){
+ .mykioo-guide-app-download{padding:12px}
+ .mykioo-guide-download-actions>a,.mykioo-guide-download-actions>button{flex:1 1 150px}
+}
