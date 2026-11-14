@@ -7,7 +7,7 @@ export default function InvitationAcceptance({tokenHash,tokenType='invite',langu
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
- const validToken=typeof tokenHash==='string'&&/^[0-9a-f]{64}$/i.test(tokenHash);
+ const validToken=typeof tokenHash==='string'&&/^[A-Za-z0-9_-]{16,512}$/.test(tokenHash);
  const kind=tokenType==='recovery'?'recovery':'invite';
  async function accept(){
   if(busy||!validToken||!configured)return;
