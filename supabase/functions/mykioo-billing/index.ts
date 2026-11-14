@@ -79,9 +79,10 @@ Deno.serve(async req=>{
   if(action==="issue_invoice"){
    if(!owner||!uuid(input.request_id))return reply({error:"Owner and subscription request required"},403);
    const {data:request,error:requestError}=await db.from("mykioo_subscription_requests")
-    .select("id,member_id,status,service_name,contract_days,device_count,preferred_payment_method,quoted_price_cad").eq("id",input.request_id).maybeSingle();
+    .select("id,member_id,status,request_type,service_name,contract_days,device_count,preferred_payment_method,quoted_price_cad").eq("id",input.request_id).maybeSingle();
    if(requestError||!request)return reply({error:"Subscription request not found"},404);
    if(!["pending","in_review"].includes(request.status))return reply({error:"Only active pending requests can be invoiced"},409);
+   if(request.request_type==="trial")return reply({error:"Free trials cannot be invoiced. Review and activate the trial in Subscriptions."},409);
    const {data:cancel,error:cancelError}=await db.from("mykioo_subscription_cancellation_requests")
     .select("status").eq("request_id",request.id).maybeSingle();
    if(cancelError)return reply({error:"Could not check cancellation status"},503);
