@@ -50,6 +50,12 @@ export default function OwnerInvitationReviews({requests=[],invitations=[],membe
       <button type="button" className="approve" disabled={saving} onClick={()=>onAction?.({action:'review_invite',request_id:item.id,decision:'approve'})}><CheckCircle2 size={16}/>{tr('Approve & email invite','Approuver et envoyer l’invitation')}</button>
       <button type="button" className="reject" disabled={saving} onClick={()=>onAction?.({action:'review_invite',request_id:item.id,decision:'reject'})}><XCircle size={16}/>{tr('Reject','Refuser')}</button>
      </div>}
+     {item.status==='approved'&&item.invited_user_id&&<div className="mykioo-owner-invitation-actions">
+      <button type="button" className="approve" disabled={saving}
+       onClick={()=>onAction?.({action:'resend_invite_setup',request_id:item.id})}>
+       <MailPlus size={16}/>{tr('Resend account-setup email','Renvoyer le courriel de création de compte')}
+      </button>
+     </div>}
     </article>
    })}</div>}
   <details className="mykioo-owner-past-invitations">
