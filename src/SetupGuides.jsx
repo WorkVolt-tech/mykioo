@@ -102,6 +102,8 @@ function GuideCard({guide,language='en',owner=false}){
    {expanded?<ChevronUp size={19}/>:<ChevronDown size={19}/>}
   </button>
   {expanded&&<div className="mykioo-guide-detail">
+   <h4>{tr('Step-by-step instructions','Instructions étape par étape')}</h4>
+   <ol>{steps.map((step,i)=><li key={i}>{step.replace(/^\d+[.)]\s*/, '')}</li>)}</ol>
    {protonLink&&<div className="mykioo-guide-app-download">
     <strong className="mykioo-guide-app-heading"><Download size={17}/>{tr('Official Proton VPN website','Site officiel de Proton VPN')}</strong>
     <p>{tr('Choose the app for your device from Proton’s official website or app store. A free Proton account is separate from your MYKIOO login.','Choisissez l’application correspondant à votre appareil depuis le site officiel ou sa boutique d’applications. Le compte Proton gratuit est distinct de votre compte MYKIOO.')}</p>
@@ -128,8 +130,6 @@ function GuideCard({guide,language='en',owner=false}){
     </div>}
     <small>{tr('Third-party APK provided by your service panel. Links use HTTP, not encrypted HTTPS. Install only if you trust the source and your device permits it.','APK tiers fourni par votre panneau de service. Les liens utilisent HTTP et non HTTPS chiffré. Installez uniquement si vous faites confiance à la source et si votre appareil le permet.')}</small>
    </div>}
-   <h4>{tr('Step-by-step instructions','Instructions étape par étape')}</h4>
-   <ol>{steps.map((step,i)=><li key={i}>{step.replace(/^\d+[.)]\s*/, '')}</li>)}</ol>
    {owner&&<small>{tr('Only published guides are visible to members.','Seuls les guides publiés sont visibles aux membres.')}</small>}
   </div>}
  </article>;
