@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useState} from 'react';
-import {BookOpen,Search,Monitor,Smartphone,HelpCircle,ChevronDown,ChevronUp,CheckCircle2,Pencil,Eye,EyeOff} from 'lucide-react';
+import {BookOpen,Search,Monitor,Smartphone,HelpCircle,ChevronDown,ChevronUp,CheckCircle2,Pencil,Eye,EyeOff,Copy,ExternalLink,Download} from 'lucide-react';
 import {supabase} from './supabase';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-setup-guides';
@@ -20,6 +20,23 @@ const platformOptions=[
  {id:'other',en:'Other',fr:'Autre'}
 ];
 const titleFor=(options,id,fr)=>options.find(o=>o.id===id)?.[fr?'fr':'en']||id;
+
+// These download URLs, compatible platforms and login types are transcribed from
+// the owner's reseller-panel screenshot. They are third-party APKs, not hosted by MYKIOO.
+// The URL must appear in a published guide's steps for its download controls to appear.
+const apkDownloads=[
+ {url:'http://apk.streamsky.online/yestream.apk',platforms:['android','android_tv'],login:'credentials',downloaderCode:'2940403'},
+ {url:'http://apk.streamsky.online/v12mate.apk',platforms:['android','android_tv','fire_tv'],login:'credentials'},
+ {url:'http://apk.streamsky.online/v12.apk',platforms:['android','android_tv'],login:'credentials'},
+ {url:'http://apk.streamsky.online/max-ott.apk',platforms:['android','android_tv'],login:'activation'},
+ {url:'http://apk.streamsky.online/max-ott-firestick.apk',platforms:['fire_tv'],login:'activation'}
+];
+const downloadFor=guide=>apkDownloads.find(app=>(guide.steps_en||'').includes(app.url)||(guide.steps_fr||'').includes(app.url));
+const guidePlatformLabel=(guide,fr)=>{
+ const app=downloadFor(guide);
+ return app?app.platforms.map(id=>titleFor(platformOptions,id,fr)).join(' · '):titleFor(platformOptions,guide.platform,fr);
+};
+
 const fresh=()=>({id:'',title_en:'',title_fr:'',summary_en:'',summary_fr:'',steps_en:'',steps_fr:'',category:'setup',platform:'general',published:false,sort_order:0});
 const orderGuides=(a,b)=>a.sort_order-b.sort_order||new Date(b.updated_at)-new Date(a.updated_at);
 
@@ -61,21 +78,44 @@ async function ownerAction(payload){
 }
 
 function GuideCard({guide,language='en',owner=false}){
- const [expanded,setExpanded]=useState(false);
+ const [expanded,setExpanded]=useState(false),[copied,setCopied]=useState('');
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
+ const app=downloadFor(guide);
  const instructions=(fr?guide.steps_fr:guide.steps_en)||'';
- const steps=instructions.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+ const steps=instructions.split(/\r?\n/).map(s=>s.trim()).filter(Boolean)
+  .filter(step=>!(app&&step.endsWith(app.url)&&/^(download url|lien de téléchargement)\s*:/i.test(step)));
+ async function copyValue(value,kind){
+  try{await navigator.clipboard.writeText(value);setCopied(kind)}
+  catch(_error){setCopied('')}
+ }
  return <article className="mykioo-guide-card">
   <button type="button" className="mykioo-guide-summary-button" onClick={()=>setExpanded(v=>!v)} aria-expanded={expanded}>
    <span className="mykioo-guide-card-icon">{guide.platform==='ios'||guide.platform==='android'?<Smartphone size={20}/>:guide.platform==='account'?<HelpCircle size={20}/>:<Monitor size={20}/>}</span>
    <span className="mykioo-guide-description">
     <strong>{fr?guide.title_fr:guide.title_en}</strong>
-    <small>{titleFor(categoryOptions,guide.category,fr)} · {titleFor(platformOptions,guide.platform,fr)}</small>
+    <small>{titleFor(categoryOptions,guide.category,fr)} · {guidePlatformLabel(guide,fr)}</small>
     <span>{fr?guide.summary_fr:guide.summary_en}</span>
    </span>
    {expanded?<ChevronUp size={19}/>:<ChevronDown size={19}/>}
   </button>
   {expanded&&<div className="mykioo-guide-detail">
+   {app&&<div className="mykioo-guide-app-download">
+    <strong className="mykioo-guide-app-heading"><Download size={17}/>{tr('App download','Téléchargement de l’application')}</strong>
+    <p>{app.login==='credentials'?
+      tr('Sign in with the server address, username and password supplied for your subscription.','Connectez-vous avec l’adresse du serveur, le nom d’utilisateur et le mot de passe fournis pour votre abonnement.'):
+      tr('This app signs in with an activation code provided for your subscription.','Cette application utilise un code d’activation fourni pour votre abonnement.')}</p>
+    <label>{tr('APK link','Lien APK')}</label>
+    <code className="mykioo-guide-apk-url">{app.url}</code>
+    <div className="mykioo-guide-download-actions">
+     <a href={app.url} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/>{tr('Open download link','Ouvrir le lien de téléchargement')}</a>
+     <button type="button" onClick={()=>copyValue(app.url,'url')}><Copy size={15}/>{copied==='url'?tr('Copied!','Copié !'):tr('Copy link','Copier le lien')}</button>
+    </div>
+    {app.downloaderCode&&<div className="mykioo-guide-downloader-code">
+     <span>{tr('Downloader code','Code Downloader')}: <strong>{app.downloaderCode}</strong></span>
+     <button type="button" onClick={()=>copyValue(app.downloaderCode,'code')}><Copy size={15}/>{copied==='code'?tr('Copied!','Copié !'):tr('Copy code','Copier le code')}</button>
+    </div>}
+    <small>{tr('Third-party APK provided by your service panel. Links use HTTP, not encrypted HTTPS. Install only if you trust the source and your device permits it.','APK tiers fourni par votre panneau de service. Les liens utilisent HTTP et non HTTPS chiffré. Installez uniquement si vous faites confiance à la source et si votre appareil le permet.')}</small>
+   </div>}
    <h4>{tr('Step-by-step instructions','Instructions étape par étape')}</h4>
    <ol>{steps.map((step,i)=><li key={i}>{step.replace(/^\d+[.)]\s*/, '')}</li>)}</ol>
    {owner&&<small>{tr('Only published guides are visible to members.','Seuls les guides publiés sont visibles aux membres.')}</small>}
@@ -91,7 +131,7 @@ export function MemberSetupGuides({language='en',onOpenSupport}){
   const term=search.trim().toLocaleLowerCase();
   return (!term||[g.title_en,g.title_fr,g.summary_en,g.summary_fr,g.steps_en,g.steps_fr].some(x=>(x||'').toLocaleLowerCase().includes(term)))
     &&(category==='all'||g.category===category)
-    &&(platform==='all'||g.platform===platform||g.platform==='general');
+    &&(platform==='all'||g.platform==='general'||(downloadFor(g)?.platforms||[g.platform]).includes(platform));
  }).sort(orderGuides);
  return <section className="mykioo-guide-page">
   <div className="mykioo-guide-intro">
@@ -177,7 +217,7 @@ export function OwnerSetupGuideEditor({language='en'}){
    </div>
    {loading?<p>{tr('Loading…','Chargement…')}</p>:guides.length===0?<p>{tr('No guides created yet. Start with a frequently asked question.','Aucun guide créé. Commencez par une question fréquente.')}</p>:
     guides.filter(g=>filter==='all'||(filter==='published'?g.published:!g.published)).sort(orderGuides).map(g=><article className="mykioo-guide-owner-row" key={g.id}>
-     <span><strong>{fr?g.title_fr:g.title_en}</strong><small>{titleFor(categoryOptions,g.category,fr)} · {titleFor(platformOptions,g.platform,fr)}</small>
+     <span><strong>{fr?g.title_fr:g.title_en}</strong><small>{titleFor(categoryOptions,g.category,fr)} · {guidePlatformLabel(g,fr)}</small>
       <small className={g.published?'mykioo-guide-published':'mykioo-guide-draft'}>{g.published?tr('Published','Publié'):tr('Draft / private','Brouillon / privé')}</small></span>
      <button type="button" onClick={()=>{setForm({id:g.id,title_en:g.title_en,title_fr:g.title_fr,summary_en:g.summary_en,summary_fr:g.summary_fr,steps_en:g.steps_en,steps_fr:g.steps_fr,category:g.category,platform:g.platform,published:g.published,sort_order:g.sort_order});setNotice('');setError('');}}><Pencil size={14}/>{tr('Edit','Modifier')}</button>
      <button type="button" disabled={saving} onClick={()=>toggle(g)}>{g.published?<EyeOff size={14}/>:<Eye size={14}/>}
