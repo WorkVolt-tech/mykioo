@@ -17,6 +17,7 @@ const serviceStatuses={
  cancelled:['Cancelled','Annulé']
 };
 const dayLabels={
+  1:['24-hour free trial','Essai gratuit de 24 heures'],
  30:['1 month','1 mois'],
  90:['3 months','3 mois'],
  183:['6 months','6 mois'],
@@ -33,16 +34,16 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
  const cancellationByRequest=useMemo(()=>new Map(cancellations.map(c=>[c.request_id,c])),[cancellations]);
  const history=useMemo(()=>{
   const requestRecords=requests.map(r=>{
-   const renewal=r.request_type==='renewal';
+   const renewal=r.request_type==='renewal',trial=r.request_type==='trial';
    const linked=relatedSubscriptions.get(r.subscription_id||r.renewal_subscription_id);
    const lastChanged=r.status!=='pending'&&(r.updated_at||r.created_at);
-   return {key:'r:'+r.id,kind:'request',group:renewal?'renewals':'new',date:lastChanged||r.created_at,record:r,linked,
+   return {key:'r:'+r.id,kind:'request',group:renewal?'renewals':trial?'trials':'new',date:lastChanged||r.created_at,record:r,linked,
     name:r.service_name||linked?.service_name||'Subscription',
-    status:r.status,renewal};
+    status:r.status,renewal,trial};
   });
   const serviceRecords=subscriptions.map(s=>({
-   key:'s:'+s.id,kind:'service',group:'services',date:s.created_at||s.starts_at||s.updated_at,
-   record:s,name:s.service_name||'Subscription',status:s.status,renewal:false
+   key:'s:'+s.id,kind:'service',group:s.contract_days===1?'trials':'services',date:s.created_at||s.starts_at||s.updated_at,
+   record:s,name:s.service_name||'Subscription',status:s.status,renewal:false,trial:s.contract_days===1
   }));
   return [...requestRecords,...serviceRecords].sort((a,b)=>asTime(b.date)-asTime(a.date));
  },[requests,subscriptions,relatedSubscriptions]);
@@ -53,6 +54,7 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
  const list=history.filter(item=>{
   if(filter==='requests'&&item.kind!=='request')return false;
   if(filter==='renewals'&&item.group!=='renewals')return false;
+   if(filter==='trials'&&!item.trial)return false;
   if(filter==='services'&&item.kind!=='service')return false;
   const query=term.trim().toLocaleLowerCase();
   return !query||[item.name,item.status,item.record?.notes,
@@ -63,7 +65,7 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
   <div className="mykioo-history-heading">
    <History size={23}/>
    <div><h2>{owner?tr('Selected account history','Historique du compte sélectionné'):tr('Subscription history','Historique des abonnements')}</h2>
-    <p>{tr('Track new requests, renewals, and current or past service records in one place.','Suivez les nouvelles demandes, les renouvellements et les services actuels ou passés au même endroit.')}</p>
+    <p>{tr('Track subscriptions, renewals, free trials and current or past service records in one place.','Suivez les abonnements, les renouvellements, les essais gratuits et les services actuels ou passés au même endroit.')}</p>
    </div>
   </div>
   <div className="mykioo-history-stats">
@@ -83,8 +85,9 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
     <select value={filter} onChange={e=>setFilter(e.target.value)}
      aria-label={tr('Filter subscription history','Filtrer l’historique des abonnements')}>
      <option value="all">{tr('All activity','Toute l’activité')}</option>
-     <option value="requests">{tr('New & renewal requests','Demandes nouvelles et renouvellements')}</option>
+     <option value="requests">{tr('Requests (including trials)','Demandes (y compris les essais)')}</option>
      <option value="renewals">{tr('Renewals only','Renouvellements seulement')}</option>
+      <option value="trials">{tr('Free trials only','Essais gratuits seulement')}</option>
      <option value="services">{tr('Service records','Dossiers de service')}</option>
     </select>
    </label>
@@ -101,7 +104,7 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
     const r=item.record;
     const cancellation=item.kind==='request'?cancellationByRequest.get(r.id):null;
     const status=item.kind==='service'?serviceStatuses[item.status]:requestStatuses[item.status];
-    const renew=item.group==='renewals';
+    const renew=item.group==='renewals',trial=item.trial;
     return <article key={item.key} className="mykioo-history-item">
      <div className={'mykioo-history-symbol '+(renew?'renewal':item.kind==='service'?'service':'new')}>
       {renew?<RotateCcw size={18}/>:item.kind==='service'?<Layers3 size={18}/>:<CalendarClock size={18}/>}
@@ -110,7 +113,7 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
       <div className="mykioo-history-title-line">
        <strong>{item.kind==='service'?tr('Service record','Dossier de service'):
           renew?tr('Renewal request','Demande de renouvellement'):
-          tr('New subscription request','Demande de nouvel abonnement')}</strong>
+          trial?tr('Free trial request','Demande d’essai gratuit'):tr('New subscription request','Demande de nouvel abonnement')}</strong>
        <span className={'mykioo-history-status '+(item.status||'')}>{status?.[fr?1:0]||item.status||'—'}</span>
       </div>
       <span className="mykioo-history-service-name">{item.name}</span>
@@ -120,7 +123,8 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
       <div className="mykioo-history-details">
        {item.kind==='request'?<>
         <span><b>{tr('Duration requested','Durée demandée')}:</b> {duration(r.contract_days)}</span>
-         {r.preferred_payment_method&&<span><b>{tr('Devices','Appareils')}:</b> {r.device_count||1}</span>}
+         {trial&&<span><b>{tr('Trial price','Prix de l’essai')}:</b> {tr('FREE — no payment','GRATUIT — aucun paiement')}</span>}
+          {r.preferred_payment_method&&<span><b>{tr('Devices','Appareils')}:</b> {r.device_count||1}</span>}
          {r.quoted_price_cad!=null&&<span><b>{tr('Package price','Prix du forfait')}:</b> CA$ {Number(r.quoted_price_cad).toFixed(2)}</span>}
          {r.preferred_payment_method&&<span><b>{tr('Preferred payment','Paiement souhaité')}:</b> {({interac:'Interac e-Transfer',zelle:'Zelle',btc:'Bitcoin (BTC)',shib:'SHIB (ERC-20)'})[r.preferred_payment_method]||r.preferred_payment_method}</span>}
         {r.status==='fulfilled'&&(r.completed_at||r.updated_at)&&<span><b>{tr('Completed','Terminée')}:</b> {dateText(r.completed_at||r.updated_at)}</span>}
