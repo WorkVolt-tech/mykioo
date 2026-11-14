@@ -32,6 +32,8 @@ const apkDownloads=[
  {url:'http://apk.streamsky.online/max-ott-firestick.apk',platforms:['fire_tv'],login:'activation'}
 ];
 const downloadFor=guide=>apkDownloads.find(app=>(guide.steps_en||'').includes(app.url)||(guide.steps_fr||'').includes(app.url));
+const officialProtonLink=guide=>([guide.steps_en,guide.steps_fr].some(s=>(s||'').includes('https://protonvpn.com/free-vpn'))
+ ?'https://protonvpn.com/free-vpn':null);
 const guidePlatformLabel=(guide,fr)=>{
  const app=downloadFor(guide);
  return app?app.platforms.map(id=>titleFor(platformOptions,id,fr)).join(' · '):titleFor(platformOptions,guide.platform,fr);
@@ -81,6 +83,7 @@ function GuideCard({guide,language='en',owner=false}){
  const [expanded,setExpanded]=useState(false),[copied,setCopied]=useState('');
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const app=downloadFor(guide);
+ const protonLink=officialProtonLink(guide);
  const instructions=(fr?guide.steps_fr:guide.steps_en)||'';
  const steps=instructions.split(/\r?\n/).map(s=>s.trim()).filter(Boolean)
   .filter(step=>!(app&&step.endsWith(app.url)&&/^(download url|lien de téléchargement)\s*:/i.test(step)));
@@ -99,6 +102,15 @@ function GuideCard({guide,language='en',owner=false}){
    {expanded?<ChevronUp size={19}/>:<ChevronDown size={19}/>}
   </button>
   {expanded&&<div className="mykioo-guide-detail">
+   {protonLink&&<div className="mykioo-guide-app-download">
+    <strong className="mykioo-guide-app-heading"><Download size={17}/>{tr('Official Proton VPN website','Site officiel de Proton VPN')}</strong>
+    <p>{tr('Choose the app for your device from Proton’s official website or app store. A free Proton account is separate from your MYKIOO login.','Choisissez l’application correspondant à votre appareil depuis le site officiel ou sa boutique d’applications. Le compte Proton gratuit est distinct de votre compte MYKIOO.')}</p>
+    <code className="mykioo-guide-apk-url">{protonLink}</code>
+    <div className="mykioo-guide-download-actions">
+     <a href={protonLink} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/>{tr('Open official download page','Ouvrir la page de téléchargement')}</a>
+     <button type="button" onClick={()=>copyValue(protonLink,'proton')}><Copy size={15}/>{copied==='proton'?tr('Copied!','Copié !'):tr('Copy link','Copier le lien')}</button>
+    </div>
+   </div>}
    {app&&<div className="mykioo-guide-app-download">
     <strong className="mykioo-guide-app-heading"><Download size={17}/>{tr('App download','Téléchargement de l’application')}</strong>
     <p>{app.login==='credentials'?
