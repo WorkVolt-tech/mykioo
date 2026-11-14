@@ -14,6 +14,40 @@ async function encryptionKey(){
  return await crypto.subtle.importKey("raw",material,{name:"AES-GCM"},false,["encrypt","decrypt"]);
  }catch{return null;}
 }
+
+const serviceHost="http://6af5bd6ba0648.stream-sky.online";
+async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionId:string,memberId:string){
+ try{
+  const {data:member,error:memberError}=await db.from("mykioo_members").select("email,preferred_language").eq("user_id",memberId).single();
+  const {data:subscription,error:subscriptionError}=await db.from("mykioo_subscriptions").select("service_username").eq("id",subscriptionId).eq("member_id",memberId).single();
+  const {data:credential,error:credentialError}=await db.from("mykioo_subscription_credentials").select("iv,cipher_text").eq("subscription_id",subscriptionId).single();
+  const key=await encryptionKey(),apiKey=Deno.env.get("BREVO_API_KEY");
+  if(memberError||subscriptionError||credentialError||!member?.email||!subscription?.service_username||!credential||!key||!apiKey)throw Error("Email prerequisites unavailable");
+  const password=new TextDecoder().decode(await crypto.subtle.decrypt(
+   {name:"AES-GCM",iv:fromB64(credential.iv),additionalData:new TextEncoder().encode(subscriptionId)},key,fromB64(credential.cipher_text)));
+  const fr=member.preferred_language==="fr";
+  const templateResponse=await fetch("https://api.brevo.com/v3/smtp/templates/"+(fr?2:1),{headers:{"api-key":apiKey}});
+  const template=await templateResponse.json();
+  if(!templateResponse.ok||!template?.sender?.email)throw Error("Sender unavailable");
+  const title=fr?"Votre commande est terminée":"Your order is complete";
+  const intro=fr?"Voici vos identifiants de connexion Xtream Codes pour votre service MYKIOO.":"Here are your Xtream Codes login details for your MYKIOO service.";
+  const rows=[[fr?"Nom d’utilisateur":"Username",subscription.service_username],[fr?"Mot de passe":"Password",password],[fr?"Adresse du serveur":"Host URL",serviceHost]];
+  const escape=(value:string)=>value.replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]||char));
+  const htmlContent=`<!doctype html><html lang="${fr?"fr":"en"}"><body style="background:#090b13;padding:24px;font-family:Arial,sans-serif;color:#f5ecf7"><table role="presentation" style="max-width:560px;width:100%;margin:auto;background:#171422;border:1px solid #574563;border-top:3px solid #dab77c;border-radius:16px"><tr><td style="padding:28px"><img src="${origin}/MYKIOO-Email-Logo.png" width="90" alt="MYKIOO"><h1 style="color:#e6c38d;font-size:26px">${title}</h1><p>${intro}</p><table style="width:100%;background:#211b2d">${rows.map(([label,value])=>`<tr><td style="padding:12px;vertical-align:top">${label}</td><td style="padding:12px;word-break:break-all;white-space:pre-wrap">${escape(value)}</td></tr>`).join("")}</table><p><a href="${origin}" style="color:#e6c38d">${fr?"Ouvrir MYKIOO et les guides d’installation":"Open MYKIOO and the setup guides"}</a></p></td></tr></table></body></html>`;
+  const sent=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{"api-key":apiKey,"Content-Type":"application/json"},body:JSON.stringify({
+   sender:{email:template.sender.email,name:"MYKIOO"},to:[{email:member.email}],subject:"MYKIOO | "+title,
+   htmlContent,textContent:[title,intro,...rows.map(([label,value])=>label+": "+value),origin].join("\n"),
+   tags:["mykioo","order-completed"]
+  })});
+  const result=await sent.json();
+  if(!sent.ok||!result.messageId)throw Error("Email provider rejected message");
+  return "accepted";
+ }catch{
+  console.error("MYKIOO order credential email failed",subscriptionId);
+  return "failed";
+ }
+}
+
 Deno.serve(async req=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
  if(req.method!=="POST")return response({error:"Method not allowed"},405);
@@ -129,7 +163,8 @@ Deno.serve(async req=>{
          known?409:500);
      }
      if(!renewed?.subscription)return response({error:"Renewal result was unavailable. Please refresh before retrying."},500);
-     return response({ok:true,subscription:renewed.subscription});
+     const notification=await emailCredentials(db,id,member_id);
+     return response({ok:true,subscription:renewed.subscription,notification});
    }
    // Complete new requests atomically with the same row lock used for cancellation
    // approval. Encrypt credentials before starting the database transaction.
@@ -156,7 +191,8 @@ Deno.serve(async req=>{
        console.error("MYKIOO atomic new subscription completion failed",completeError.code||"unknown");
        return response({error:"Could not complete the request. No subscription was created."},500);
      }
-     return response({ok:true,subscription:completed?.subscription});
+     const notification=await emailCredentials(db,subscriptionId,member_id);
+     return response({ok:true,subscription:completed?.subscription,notification});
    }
    const payload={member_id,service_name,contract_days,device_count,device_label:null,service_username:service_username||null,
       supplier_reference:supplier_reference||null,status,starts_at:subscriptionStart,expires_at:finalExpiry,updated_at:new Date().toISOString()};
