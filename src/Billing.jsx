@@ -220,7 +220,7 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
   const timer=setInterval(()=>{if(document.visibilityState==='visible')reload().catch(()=>{})},30000);return()=>{active=false;clearInterval(timer)}
  },[reload]);
  useEffect(()=>{if(settings)setForm({default_cad:String(settings.default_cad),default_usd:String(settings.default_usd),interac_destination:settings.interac_destination||'',zelle_destination:settings.zelle_destination||''})},[settings?.updated_at]);
- const payable=requests.filter(r=>['pending','in_review'].includes(r.status)&&
+ const payable=requests.filter(r=>r.request_type!=='trial'&&['pending','in_review'].includes(r.status)&&
    (!r.preferred_payment_method||['btc','shib'].includes(r.preferred_payment_method))&&
    !invoices.some(inv=>inv.request_id===r.id));
  const selectedRequest=payable.find(r=>r.id===requestId);
