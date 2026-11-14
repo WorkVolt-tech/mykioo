@@ -19,7 +19,7 @@ const serviceHost="http://6af5bd6ba0648.stream-sky.online";
 async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionId:string,memberId:string){
  try{
   const {data:member,error:memberError}=await db.from("mykioo_members").select("email,preferred_language").eq("user_id",memberId).single();
-  const {data:subscription,error:subscriptionError}=await db.from("mykioo_subscriptions").select("service_username").eq("id",subscriptionId).eq("member_id",memberId).single();
+  const {data:subscription,error:subscriptionError}=await db.from("mykioo_subscriptions").select("service_username,service_host").eq("id",subscriptionId).eq("member_id",memberId).single();
   const {data:credential,error:credentialError}=await db.from("mykioo_subscription_credentials").select("iv,cipher_text").eq("subscription_id",subscriptionId).single();
   const key=await encryptionKey(),apiKey=Deno.env.get("BREVO_API_KEY");
   if(memberError||subscriptionError||credentialError||!member?.email||!subscription?.service_username||!credential||!key||!apiKey)throw Error("Email prerequisites unavailable");
@@ -31,7 +31,10 @@ async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionI
   if(!templateResponse.ok||!template?.sender?.email)throw Error("Sender unavailable");
   const title=fr?"Votre commande est terminée":"Your order is complete";
   const intro=fr?"Voici vos identifiants de connexion Xtream Codes pour votre service MYKIOO.":"Here are your Xtream Codes login details for your MYKIOO service.";
-  const rows=[[fr?"Nom d’utilisateur":"Username",subscription.service_username],[fr?"Mot de passe":"Password",password],[fr?"Adresse du serveur":"Host URL",serviceHost]];
+  const {data:request}=await db.from("mykioo_subscription_requests").select("id").eq("subscription_id",subscriptionId).eq("request_type","trial").maybeSingle();
+  const {data:panel}=request?await db.from("mykioo_panel_trials").select("host").eq("request_id",request.id).maybeSingle():{data:null};
+  const accountHost=panel?.host||subscription.service_host||serviceHost;
+  const rows=[[fr?"Nom d’utilisateur":"Username",subscription.service_username],[fr?"Mot de passe":"Password",password],[fr?"Adresse du serveur":"Host URL",accountHost]];
   const escape=(value:string)=>value.replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]||char));
   const htmlContent=`<!doctype html><html lang="${fr?"fr":"en"}"><body style="background:#090b13;padding:24px;font-family:Arial,sans-serif;color:#f5ecf7"><table role="presentation" style="max-width:560px;width:100%;margin:auto;background:#171422;border:1px solid #574563;border-top:3px solid #dab77c;border-radius:16px"><tr><td style="padding:28px"><img src="${origin}/MYKIOO-Email-Logo.png" width="90" alt="MYKIOO"><h1 style="color:#e6c38d;font-size:26px">${title}</h1><p>${intro}</p><table style="width:100%;background:#211b2d">${rows.map(([label,value])=>`<tr><td style="padding:12px;vertical-align:top">${label}</td><td style="padding:12px;word-break:break-all;white-space:pre-wrap">${escape(value)}</td></tr>`).join("")}</table><p><a href="${origin}" style="color:#e6c38d">${fr?"Ouvrir MYKIOO et les guides d’installation":"Open MYKIOO and the setup guides"}</a></p></td></tr></table></body></html>`;
   const sent=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{"api-key":apiKey,"Content-Type":"application/json"},body:JSON.stringify({
@@ -69,6 +72,10 @@ Deno.serve(async req=>{
    const member_id=data.member_id, id=data.id;
    if(!uuid(member_id)||id&&!uuid(id))return response({error:"Invalid member or subscription ID"},400);
    const requestId=data.request_id||null;
+   let requestedHost;
+   if(data.service_host){
+    try{const host=new URL(data.service_host);if(!["http:","https:"].includes(host.protocol)||host.username||host.password)throw Error();requestedHost=host.origin}catch{return response({error:"Enter a valid HTTP or HTTPS service host."},400)}
+   }
    if(requestId&&!uuid(requestId))return response({error:"Invalid request ID"},400);
    let pendingRequest=null;
    if(requestId){
@@ -101,6 +108,39 @@ Deno.serve(async req=>{
    if(memberError||!member||(member.role!=="member"&&!(member.role==="owner"&&member.user_id===user.id)))return response({error:"Member not found or not eligible"},404);
    if(pendingRequest?.request_type==="trial"&&member.status!=="approved")
      return response({error:"Approve the member account before activating the free trial."},409);
+   if(pendingRequest?.request_type==="trial"&&data.generate_trial===true){
+    const token=Deno.env.get("MYPANEL_API_TOKEN"),panelKey=await encryptionKey();
+    if(!token||!panelKey)return response({error:"Panel token or credential encryption is not configured."},503);
+    const {data:existing,error:lookupError}=await db.from("mykioo_panel_trials").select("*").eq("request_id",requestId).maybeSingle();
+    if(lookupError)return response({error:"Unable to check trial creation status."},503);
+    let generated;
+    if(existing){
+     if(existing.state!=="ready")return response({error:"Trial creation is pending or needs panel review. Check the panel before retrying to avoid a duplicate trial."},409);
+     generated=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:fromB64(existing.iv),additionalData:new TextEncoder().encode(requestId)},panelKey,fromB64(existing.cipher_text))));
+    }else{
+     const {error:claimError}=await db.from("mykioo_panel_trials").insert({request_id:requestId});
+     if(claimError)return response({error:"Trial creation has already started. Refresh before retrying."},409);
+     try{
+      const panelUrl=new URL("https://api.mypanel.cx/api/auto/create");
+      panelUrl.search=new URLSearchParams({api_token:token,template:"100003981663766",device_type:"m3u",period:"0",note:"MYKIOO "+requestId}).toString();
+      const panelResponse=await fetch(panelUrl,{headers:{"X-Requested-With":"XMLHttpRequest"},signal:AbortSignal.timeout(20000)});
+      const result=await panelResponse.json();
+      if(!panelResponse.ok||result.success!==true||!result.data?.m3u_link)throw Error("Panel creation was not confirmed");
+      const playlist=new URL(result.data.m3u_link);
+      const username=playlist.searchParams.get("username"),password=playlist.searchParams.get("password");
+      if(!username||!password||!["http:","https:"].includes(playlist.protocol))throw Error("Panel credentials missing");
+      generated={username,password,host:playlist.origin,reference:String(result.data.user_id),starts_at:new Date().toISOString(),expires_at:new Date(Date.now()+86400000).toISOString()};
+      const nonce=crypto.getRandomValues(new Uint8Array(12));
+      const cipher=await crypto.subtle.encrypt({name:"AES-GCM",iv:nonce,additionalData:new TextEncoder().encode(requestId)},panelKey,new TextEncoder().encode(JSON.stringify(generated)));
+      const {error:storeError}=await db.from("mykioo_panel_trials").update({state:"ready",host:generated.host,iv:b64(nonce),cipher_text:b64(new Uint8Array(cipher))}).eq("request_id",requestId);
+      if(storeError)throw Error("Panel result could not be saved");
+     }catch{
+      return response({error:"Trial creation needs panel review. A line may have been created. Check the panel before retrying."},409);
+     }
+    }
+    if(Date.parse(generated.expires_at)<=Date.now())return response({error:"This generated trial has expired. Review it in the panel."},409);
+    Object.assign(data,{service_username:generated.username,service_password:generated.password,service_host:generated.host,supplier_reference:generated.reference,starts_at:generated.starts_at,expires_at:generated.expires_at});
+   }
    const service_name=limitText(data.service_name,80),
          service_username=limitText(data.service_username,160),supplier_reference=limitText(data.supplier_reference,160);
    const password=typeof data.service_password==="string"?data.service_password:"";
@@ -191,10 +231,11 @@ Deno.serve(async req=>{
        console.error("MYKIOO atomic new subscription completion failed",completeError.code||"unknown");
        return response({error:"Could not complete the request. No subscription was created."},500);
      }
+     if(data.service_host)await db.from("mykioo_subscriptions").update({service_host:data.service_host}).eq("id",subscriptionId);
      const notification=await emailCredentials(db,subscriptionId,member_id);
      return response({ok:true,subscription:completed?.subscription,notification});
    }
-   const payload={member_id,service_name,contract_days,device_count,device_label:null,service_username:service_username||null,
+   const payload={...(requestedHost?{service_host:requestedHost}:{}),member_id,service_name,contract_days,device_count,device_label:null,service_username:service_username||null,
       supplier_reference:supplier_reference||null,status,starts_at:subscriptionStart,expires_at:finalExpiry,updated_at:new Date().toISOString()};
    let query=id?db.from("mykioo_subscriptions").update(payload).eq("id",id).eq("member_id",member_id):
      db.from("mykioo_subscriptions").insert(payload);
