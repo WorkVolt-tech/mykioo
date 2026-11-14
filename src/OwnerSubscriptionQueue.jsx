@@ -4,6 +4,7 @@ import {AlertTriangle,ArrowDownRight,CheckCheck,Clock3,ClipboardList,RotateCcw,S
 const categories=[
  {id:'cancellations',en:'Cancellation approvals',fr:'Annulations à approuver',Icon:AlertTriangle},
  {id:'activated',en:'Activated — paperwork pending',fr:'Activés — dossier à terminer',Icon:ShieldCheck},
+ {id:'trials',en:'Free trials to review',fr:'Essais gratuits à examiner',Icon:ShieldCheck},
  {id:'renewals',en:'Renewals to process',fr:'Renouvellements à traiter',Icon:RotateCcw},
  {id:'new',en:'New requests to process',fr:'Nouvelles demandes à traiter',Icon:ClipboardList}
 ];
@@ -41,7 +42,7 @@ export default function OwnerSubscriptionQueue({requests=[],cancellations=[],mem
   });
   for(const r of requests){
    if(!['pending','in_review'].includes(r.status)||cancellationIds.has(r.id))continue;
-   const category=r.service_activated_at?'activated':r.request_type==='renewal'?'renewals':'new';
+   const category=r.service_activated_at?'activated':r.request_type==='renewal'?'renewals':r.request_type==='trial'?'trials':'new';
    queue.push({id:'request:'+r.id,requestId:r.id,category,
     memberId:r.member_id,service:r.service_name||tr('Subscription request','Demande d’abonnement'),
     requestStatus:r.status,date:r.service_activated_at||r.created_at,
@@ -81,6 +82,7 @@ export default function OwnerSubscriptionQueue({requests=[],cancellations=[],mem
  const actionText=id=>({
   cancellations:tr('Review cancellation','Examiner l’annulation'),
   activated:tr('Finish subscription','Terminer l’abonnement'),
+  trials:tr('Review free trial','Examiner l’essai gratuit'),
   renewals:tr('Process renewal','Traiter le renouvellement'),
   new:tr('Process request','Traiter la demande')
  })[id];
@@ -89,7 +91,7 @@ export default function OwnerSubscriptionQueue({requests=[],cancellations=[],mem
    <div className="mykioo-owner-sub-queue-icon"><CheckCheck size={21}/></div>
    <div>
     <h2 id="mykioo-owner-sub-queue-heading">{tr('Subscription processing queue','File de traitement des abonnements')}</h2>
-    <p>{tr('Prioritized work awaiting your action. Cancellation approvals come first, followed by activated services needing paperwork, renewals and new requests.','Travail priorisé en attente de votre intervention. Les annulations à approuver passent d’abord, puis les services activés dont le dossier reste à terminer, les renouvellements et les nouvelles demandes.')}</p>
+    <p>{tr('Prioritized work awaiting your action. Cancellation approvals come first, followed by activated services needing paperwork, free trials, renewals and new requests.','Travail priorisé en attente de votre intervention. Les annulations à approuver passent d’abord, puis les services activés dont le dossier reste à terminer, les essais gratuits, les renouvellements et les nouvelles demandes.')}</p>
    </div>
   </div>
   <div className="mykioo-owner-sub-queue-counts" role="group" aria-label={tr('Filter by priority','Filtrer selon la priorité')}>
