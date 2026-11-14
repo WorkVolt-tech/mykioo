@@ -43,6 +43,11 @@ Deno.serve(async req=>{
     if(requestError||!requested||requested.member_id!==member_id||!["pending","in_review"].includes(requested.status))
       return response({error:"This request cannot be completed for the selected member."},409);
     pendingRequest=requested;
+    if(requested.request_type==="trial"&&(
+      requested.contract_days!==1||requested.device_count!==1||
+      requested.preferred_payment_method!==null||Number(data.contract_days)!==1||
+      Number(data.device_count)!==1||data.status!=="active"))
+      return response({error:"Free trials must be activated for one device and exactly 24 hours, without payment."},409);
     if(requested.preferred_payment_method){
      const {data:paidInvoice,error:paymentError}=await db.from("mykioo_billing_invoices")
        .select("id").eq("request_id",requestId).eq("member_id",member_id).eq("state","paid").maybeSingle();
@@ -58,8 +63,10 @@ Deno.serve(async req=>{
    }
    if(id&&!uuid(id))return response({error:"Invalid subscription ID"},400);
    const isRenewal=Boolean(pendingRequest?.request_type==="renewal");
-   const {data:member,error:memberError}=await db.from("mykioo_members").select("user_id,role").eq("user_id",member_id).maybeSingle();
+   const {data:member,error:memberError}=await db.from("mykioo_members").select("user_id,role,status").eq("user_id",member_id).maybeSingle();
    if(memberError||!member||(member.role!=="member"&&!(member.role==="owner"&&member.user_id===user.id)))return response({error:"Member not found or not eligible"},404);
+   if(pendingRequest?.request_type==="trial"&&member.status!=="approved")
+     return response({error:"Approve the member account before activating the free trial."},409);
    const service_name=limitText(data.service_name,80),
          service_username=limitText(data.service_username,160),supplier_reference=limitText(data.supplier_reference,160);
    const password=typeof data.service_password==="string"?data.service_password:"";
@@ -76,7 +83,7 @@ Deno.serve(async req=>{
      return response({error:"Choose between 1 and 5 devices."},400);
    if(pendingRequest?.preferred_payment_method&&device_count!==Number(pendingRequest.device_count))
      return response({error:"Device count must match the paid request."},409);
-   if(contract_days!==null&&![30,90,183,365,730].includes(contract_days))return response({error:"Invalid contract duration"},400);
+   if(contract_days!==null&&![1,30,90,183,365,730].includes(contract_days))return response({error:"Invalid contract duration"},400);
    const status=data.status;
    if(!service_name||service_name.length>80||service_username.length>160||supplier_reference.length>160||
       !["pending","active","expired","suspended","cancelled"].includes(status))
