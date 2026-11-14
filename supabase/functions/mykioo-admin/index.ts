@@ -245,7 +245,7 @@ Deno.serve(async (request) => {
       const html=fr?
         '<div style="background:#17131f;color:#f5edf7;font-family:Arial,sans-serif;padding:28px"><h2 style="color:#e7c58b">MYKIOO</h2><p>Vous avez ete invite a rejoindre MYKIOO.</p><p><a style="color:#e7c58b" href="'+safeLink+'">Accepter mon invitation et choisir mon mot de passe</a></p><p>Ce lien est personnel et expire automatiquement.</p></div>':
         '<div style="background:#17131f;color:#f5edf7;font-family:Arial,sans-serif;padding:28px"><h2 style="color:#e7c58b">MYKIOO</h2><p>You have been invited to join MYKIOO.</p><p><a style="color:#e7c58b" href="'+safeLink+'">Accept my invitation and set my password</a></p><p>This personal link expires automatically.</p></div>';
-      let emailOk=false;
+      let emailOk=false,emailMessageId="";
       try{
         const response=await fetch("https://api.brevo.com/v3/smtp/email",{
           method:"POST",headers:{"api-key":brevoKey,"Content-Type":"application/json","Accept":"application/json"},
@@ -255,6 +255,7 @@ Deno.serve(async (request) => {
         });
         const result=await response.json().catch(()=>({}));
         emailOk=response.ok&&Boolean(result.messageId);
+        if(emailOk)emailMessageId=String(result.messageId);
         if(!emailOk)console.error("MYKIOO invite rejected by Brevo",response.status);
       }catch(_error){console.error("MYKIOO invite Brevo connection failed")}
       if(!emailOk){
@@ -279,7 +280,7 @@ Deno.serve(async (request) => {
         },{onConflict:"user_id,kind,source_id"});
       }
       await server.from("mykioo_audit_logs").insert({actor_id:actor.id,action:"member_invited",
-        entity_type:"member",entity_id:uid,details:{email,language,invited_by:inviterId,review_request_id:pendingReferral?.id||null}});
+        entity_type:"member",entity_id:uid,details:{email,language,invited_by:inviterId,review_request_id:pendingReferral?.id||null,email_provider:"brevo",email_message_id:emailMessageId}});
       return reply({ok:true,member_id:uid,invitation_id:inviteLog.id,notification:"accepted",
         message:pendingReferral?"Invitation approved; Brevo accepted the setup email (inbox delivery not yet verified).":"Brevo accepted the account-setup email (delivery not yet verified)."});
     }
