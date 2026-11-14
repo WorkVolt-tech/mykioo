@@ -1,3 +1,4 @@
+import {hashInvitationToken,newInvitationLink} from "./invitation-link.ts";
 import {makeInvitationEmail} from "./email-template.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.0";
 
@@ -40,12 +41,46 @@ Deno.serve(async (request) => {
   if (request.method !== "POST") return reply({ error: "Method not allowed" }, 405);
   if (request.headers.get("Origin") !== origin) return reply({ error: "Origin not allowed" }, 403);
   const bearer = request.headers.get("Authorization") || "";
-  if (!bearer.startsWith("Bearer ")) return reply({ error: "Authentication required" }, 401);
+
   const url = Deno.env.get("SUPABASE_URL");
   const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !secret) return reply({ error: "Server configuration unavailable" }, 503);
   const server = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
   try {
+    const input = await request.json();
+    if (!input || typeof input !== "object") return reply({ error: "Invalid request" }, 400);
+    // The random, hashed invitation secret authenticates this one operation.
+    // Auth tokens are generated only when the invitee deliberately accepts.
+    if(input.action==="accept_invitation"){
+      if(typeof input.token!=="string"||!/^[a-f0-9]{64}$/.test(input.token))
+        return reply({error:"Invalid invitation"},400);
+      const now=new Date().toISOString();
+      const {data:invitation,error:lookupError}=await server.from("mykioo_invitations")
+        .select("id,email,accepted_by,accepted_at,status,expires_at")
+        .eq("token_hash",await hashInvitationToken(input.token)).eq("managed_link",true).maybeSingle();
+      if(lookupError)return reply({error:"Invitation service unavailable"},503);
+      if(!invitation||invitation.status==="revoked"||invitation.accepted_at||invitation.expires_at<=now)
+        return reply({error:"Invitation expired or already used"},410);
+      const {data:profile}=await server.from("mykioo_members").select("status,email")
+        .eq("user_id",invitation.accepted_by).maybeSingle();
+      if(!profile||!["pending","approved"].includes(profile.status)||profile.email.toLowerCase()!==invitation.email.toLowerCase())
+        return reply({error:"Invitation unavailable"},410);
+      // Serialize exchanges so repeated taps cannot invalidate a token in flight.
+      const {data:locked,error:lockError}=await server.from("mykioo_invitations")
+        .update({exchange_started_at:now}).eq("id",invitation.id).is("accepted_at",null)
+        .or("exchange_started_at.is.null,exchange_started_at.lt."+new Date(Date.now()-60000).toISOString())
+        .select("id").maybeSingle();
+      if(lockError)return reply({error:"Invitation service unavailable"},503);
+      if(!locked)return reply({error:"Please wait one minute before trying again"},429);
+      const {data:generated,error:generateError}=await server.auth.admin.generateLink({type:"recovery",email:invitation.email});
+      const token=extractVerificationToken(generated?.properties,"recovery");
+      if(generateError||!token){
+        await server.from("mykioo_invitations").update({exchange_started_at:null}).eq("id",invitation.id).eq("exchange_started_at",now);
+        return reply({error:"Unable to prepare invitation. Please try again."},503);
+      }
+      return reply({token,type:"recovery"});
+    }
+    if (!bearer.startsWith("Bearer ")) return reply({ error: "Authentication required" }, 401);
     // Verify the current access token against Supabase Auth, then check a separate
     // DB-backed owner authorization. Never trust an email or role from the request.
     const { data: session, error: authError } = await server.auth.getUser(bearer.slice(7));
@@ -57,8 +92,6 @@ Deno.serve(async (request) => {
       return reply({ error: "An approved membership is required" }, 403);
     }
     const owner = member.role==="owner" && actor.app_metadata?.mykioo_role==="owner";
-    const input = await request.json();
-    if (!input || typeof input !== "object") return reply({ error: "Invalid request" }, 400);
     const action = input.action;
 
     const validUUID=(value:unknown)=>typeof value==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -114,22 +147,27 @@ Deno.serve(async (request) => {
     if(action==="resend_invite_setup"){
       // An already-invited Supabase Auth user cannot be invited a second time.
       // Send a one-time recovery/setup link using the existing user, via MYKIOO's verified Brevo sender.
-      if(!validUUID(input.request_id))return reply({error:"Select an approved invitation"},400);
-      const {data:requestRow,error:requestError}=await server.from("mykioo_invitation_requests")
-        .select("id,email,status,language,invited_user_id,requested_by")
-        .eq("id",input.request_id).maybeSingle();
-      if(requestError||!requestRow)return reply({error:"Invitation not found"},404);
-      if(requestRow.status!=="approved"||!requestRow.invited_user_id)
-        return reply({error:"Only approved invitations can be resent"},409);
+      let invitationId=input.invitation_id;
+      if(!validUUID(invitationId)&&validUUID(input.request_id)){
+        const {data:referral}=await server.from("mykioo_invitation_requests").select("invitation_id")
+          .eq("id",input.request_id).eq("status","approved").maybeSingle();
+        invitationId=referral?.invitation_id;
+      }
+      if(!validUUID(invitationId))return reply({error:"Select an invitation"},400);
+      const {data:invitation,error:invitationError}=await server.from("mykioo_invitations")
+        .select("id,email,status,accepted_by,invited_by").eq("id",invitationId).maybeSingle();
+      if(invitationError||!invitation||invitation.status==="revoked"||!invitation.accepted_by)
+        return reply({error:"Invitation unavailable"},404);
+      const requestRow={id:invitation.id,email:invitation.email,invited_user_id:invitation.accepted_by,requested_by:invitation.invited_by};
       const {data:invitedMember,error:memberLookupError}=await server.from("mykioo_members")
-        .select("user_id,email,status,invited_by").eq("user_id",requestRow.invited_user_id).maybeSingle();
+        .select("user_id,email,status,invited_by,display_name,preferred_language").eq("user_id",requestRow.invited_user_id).maybeSingle();
       if(memberLookupError||!invitedMember||invitedMember.email.toLowerCase()!==requestRow.email.toLowerCase()
          ||!["pending","approved"].includes(invitedMember.status))
         return reply({error:"Invitation account needs owner review before resending"},409);
       const {data:authUser,error:authLookupError}=await server.auth.admin.getUserById(requestRow.invited_user_id);
       if(authLookupError||!authUser?.user||authUser.user.email?.toLowerCase()!==requestRow.email.toLowerCase())
         return reply({error:"Unable to verify invited account"},409);
-      if(authUser.user.email_confirmed_at||authUser.user.last_sign_in_at)
+      if(authUser.user.email_confirmed_at&&invitedMember.display_name?.trim())
         return reply({error:"Account setup is already complete. The member can use Forgot password."},409);
       const brevoKey=Deno.env.get("BREVO_API_KEY");
       if(!brevoKey)return reply({error:"MYKIOO email service is not configured. Connect a verified Brevo sender."},503);
@@ -140,7 +178,7 @@ Deno.serve(async (request) => {
         .gte("created_at",new Date(Date.now()-24*60*60*1000).toISOString());
       if(countError)return reply({error:"Unable to check resend limits"},503);
       if((count||0)>=3)return reply({error:"This address has received the maximum of three setup emails in 24 hours"},429);
-      const language=requestRow.language==="fr"?"fr":"en";
+      const language=invitedMember.preferred_language==="fr"?"fr":"en";
       const templateId=language==="fr"?2:1;
       let sender:{email:string;name:string};
       try{
@@ -152,20 +190,10 @@ Deno.serve(async (request) => {
           return reply({error:"The verified MYKIOO email sender is unavailable. Check Brevo transactional sender settings."},503);
         sender={email:template.sender.email,name:"MYKIOO"};
       }catch(_e){return reply({error:"Unable to check MYKIOO's email sender right now"},503)}
-      const {data:linkData,error:linkError}=await server.auth.admin.generateLink({
-        type:"recovery",email:requestRow.email,
-        options:{redirectTo:origin+"/?reset_password=1"}
-      });
-      const setupToken=extractVerificationToken(linkData?.properties,"recovery");
-      if(linkError||!setupToken){
-        console.error("MYKIOO invite resend: unable to extract verification token",{
-          errorCode:linkError?.code||null,
-          hasActionLink:typeof linkData?.properties?.action_link==="string",
-          tokenLength:typeof linkData?.properties?.hashed_token==="string"?linkData.properties.hashed_token.length:0
-        });
-        return reply({error:"Could not create a secure account-setup link"},503);
-      }
-      const actionLink=origin+"/?invite_token="+encodeURIComponent(setupToken)+"&invite_type=recovery";
+      const {actionLink,...linkRecord}=await newInvitationLink(origin);
+      const {error:trackingError}=await server.from("mykioo_invitations")
+        .update({...linkRecord,status:"pending",accepted_at:null}).eq("id",invitation.id);
+      if(trackingError)return reply({error:"Could not prepare invitation tracking"},503);
       const inviter=await inviterDetails(requestRow.requested_by||invitedMember.invited_by||actor.id);
       const {subject,htmlContent:html,textContent}=makeInvitationEmail({
         language,actionLink,resend:true,...inviter
@@ -263,7 +291,8 @@ Deno.serve(async (request) => {
           "Unable to prepare invitation link; account cleanup needs attention.":
           "Unable to prepare invitation link. No email was sent and no account remains."},503);
       }
-      const uid=invited.user.id,actionLink=origin+"/?invite_token="+encodeURIComponent(token);
+      const uid=invited.user.id;
+      const {actionLink,...linkRecord}=await newInvitationLink(origin);
       const { error: memberError } = await server.from("mykioo_members").insert({
         user_id: uid, email, status: "pending", role: "member", invited_by: inviterId, preferred_language: language
       });
@@ -274,12 +303,8 @@ Deno.serve(async (request) => {
           "Account creation failed and cleanup needs owner attention. No email was sent.":
           "Account creation failed. Nothing was emailed; please retry."},500);
       }
-      // This hash is only an internal tracking identifier. The actual invite token
-      // is created, sent and expired by Supabase Auth.
-      const bytes = crypto.getRandomValues(new Uint8Array(32));
-      const tokenHash = Array.from(bytes).map(n => n.toString(16).padStart(2, "0")).join("");
       const {data:inviteLog,error:logError}=await server.from("mykioo_invitations").insert({
-        email,token_hash:tokenHash,status:"pending",invited_by:inviterId,accepted_by:uid
+        email,...linkRecord,status:"pending",invited_by:inviterId,accepted_by:uid
       }).select("id").single();
       if(logError||!inviteLog){
         await server.from("mykioo_members").delete().eq("user_id",uid).eq("status","pending");

@@ -1,3 +1,4 @@
+import InvitationRenewal from './InvitationRenewal';
 import React,{useState} from 'react';
 import {ArrowRight,CheckCircle2,KeyRound,LockKeyhole,Mail,ShieldCheck} from 'lucide-react';
 import {supabase,configured} from './supabase';
@@ -13,14 +14,25 @@ export default function InvitationAcceptance({tokenHash,tokenType='invite',langu
   if(busy||!validToken||!configured)return;
   setBusy(true);setError('');
   try{
-   const {data,error:verifyError}=await supabase.auth.verifyOtp({token_hash:tokenHash,type:kind});
+   let verificationToken=tokenHash,verificationType=kind;
+   if(tokenType==='managed'){
+    const {data:exchange,error:exchangeError}=await supabase.functions.invoke('mykioo-admin',{body:{action:'accept_invitation',token:tokenHash}});
+    if(exchangeError){
+     const details=await exchangeError.context?.json?.().catch(()=>null);
+     throw Error(details?.error||'Unable to verify invitation right now');
+    }
+    if(!exchange?.token)throw Error('Invalid invitation');
+    verificationToken=exchange.token;verificationType='recovery';
+   }
+   const {data,error:verifyError}=await supabase.auth.verifyOtp({token_hash:verificationToken,type:verificationType});
    if(verifyError)throw verifyError;
    if(!data?.user||!data?.session)throw Error('Unable to establish your invited session.');
    await onAccepted?.(data.user);
   }catch(err){
    const original=String(err?.message||'');
+   if(/one minute/i.test(original)){setError(tr('Please wait one minute before trying again.','Veuillez patienter une minute avant de réessayer.'));return;}
    setError(/expired|invalid|already.used|token|otp/i.test(original)?
-    tr('This invitation link is invalid, expired, or has already been used. Contact the owner for a new invitation email.','Ce lien est invalide, expiré ou déjà utilisé. Communiquez avec le propriétaire pour obtenir une nouvelle invitation.'):
+    tr('This invitation link is invalid, expired, or has already been used. Request a new invitation below, or sign in if you already created your account.','Ce lien est invalide, expiré ou déjà utilisé. Demandez une nouvelle invitation ci-dessous, ou connectez-vous si votre compte est déjà créé.'):
     tr('Unable to accept this invitation right now. Please try again or contact the owner.','Impossible d’accepter cette invitation actuellement. Réessayez ou communiquez avec le propriétaire.'));
   }finally{setBusy(false)}
  }
@@ -41,6 +53,7 @@ export default function InvitationAcceptance({tokenHash,tokenType='invite',langu
     {busy?tr('Verifying invitation…','Vérification…'):tr('Accept invitation and continue','Accepter et continuer')}
     {!busy&&<ArrowRight size={17}/>}
    </button>
+   <InvitationRenewal language={language}/>
    <button type="button" className="mykioo-invite-accept-back" onClick={()=>onCancel?.()} disabled={busy}>{tr('Back to sign in','Retour à la connexion')}</button>
    <p className="mykioo-invite-accept-foot">{tr('Only invitees with a valid private link can create an account. Do not share this link.','Seules les personnes disposant d’un lien privé valide peuvent créer un compte. Ne partagez pas ce lien.')}</p>
   </div>

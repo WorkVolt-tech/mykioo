@@ -38,8 +38,8 @@ export function makeInvitationEmail({language,actionLink,resend=false,inviterNam
   ["03","Wait for approval","The owner approves your membership before your private dashboard is unlocked."]
  ];
  const finePrint=fr?
-  "Ce lien est personnel et expire automatiquement. Ne le partagez pas. Si vous n’avez pas demandé cet accès, ignorez ce courriel.":
-  "This personal link expires automatically. Do not share it. If you weren't expecting this invitation, you can ignore this email.";
+  "Ce lien est personnel et expire après 48 heures. Ne le partagez pas. Si vous n’avez pas demandé cet accès, ignorez ce courriel.":
+  "This personal link expires after 48 hours. Do not share it. If you weren't expecting this invitation, you can ignore this email.";
  const linkHelp=fr?"Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :":"If the button doesn't work, copy this link into your browser:";
  const footer=fr?"UNE EXPÉRIENCE PRIVÉE, SUR INVITATION UNIQUEMENT":"A PRIVATE EXPERIENCE, BY INVITATION ONLY";
  const subject=fr?(resend?"MYKIOO | Votre invitation vous attend":"MYKIOO | Vous êtes invité(e)"):

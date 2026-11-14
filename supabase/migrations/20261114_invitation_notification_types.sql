@@ -1,0 +1,4 @@
+alter table public.mykioo_notifications drop constraint mykioo_notifications_destination_check;
+alter table public.mykioo_notifications add constraint mykioo_notifications_destination_check check(destination in ('support','subscription','invitations','Invitations'));
+alter table public.mykioo_notifications drop constraint mykioo_notifications_kind_check;
+alter table public.mykioo_notifications add constraint mykioo_notifications_kind_check check(kind in ('support_reply','support_ticket','subscription_update','subscription_request','service_alert','support_issue_update','support_completed','support_attachment','support_reopened','support_confirmed','subscription_cancelled','subscription_cancellation_requested','subscription_cancellation_result','subscription_activation_recorded','subscription_expiry_reminder','membership_invitation_requested','membership_invitation_approved','membership_invitation_rejected','invitation_renewal_requested'));

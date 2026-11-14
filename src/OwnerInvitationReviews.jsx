@@ -1,3 +1,4 @@
+import {invitationStatus} from './invitationStatus';
 import React,{useMemo,useState} from 'react';
 import {MailPlus,CheckCircle2,XCircle,Clock3,RefreshCw} from 'lucide-react';
 import './Invitations.css';
@@ -7,11 +8,13 @@ const dateText=(date,fr)=>date?new Date(date).toLocaleDateString(fr?'fr-CA':'en-
 export default function OwnerInvitationReviews({requests=[],invitations=[],members=[],language='en',saving=false,onAction,onRefresh}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [filter,setFilter]=useState('pending');
+ const [deliveryFilter,setDeliveryFilter]=useState('all');
  const byId=useMemo(()=>new Map(members.map(m=>[m.user_id,m])),[members]);
  const labelFor=id=>{if(!id)return tr('System / unknown','Système / inconnu');const m=byId.get(id);return m?(m.display_name?m.display_name+' · ':'')+(m.email||m.user_id):tr('Former member','Ancien membre')};
  const pending=requests.filter(item=>item.status==='pending');
  const shown=filter==='all'?requests:requests.filter(item=>item.status===filter);
- const ownerInvites=invitations.filter(inv=>!requests.some(request=>request.invitation_id===inv.id));
+ const tracked=invitations.filter(inv=>deliveryFilter==='all'||invitationStatus(inv)===deliveryFilter);
+ const statusLabel=status=>({pending:tr('Awaiting acceptance','En attente d’acceptation'),accepted:tr('Accepted','Acceptée'),expired:tr('Expired','Expirée'),requested:tr('New link requested','Nouveau lien demandé'),revoked:tr('Revoked','Révoquée')})[status];
  return <section className="mykioo-owner-invitation-center">
   <div className="mykioo-invitation-intro">
    <MailPlus size={24}/>
@@ -58,12 +61,30 @@ export default function OwnerInvitationReviews({requests=[],invitations=[],membe
      </div>}
     </article>
    })}</div>}
-  <details className="mykioo-owner-past-invitations">
-   <summary>{tr('Previous direct invitations','Invitations directes précédentes')} ({ownerInvites.length})</summary>
-   <div className="mykioo-invitations-list">{ownerInvites.slice(0,100).map(inv=><div className="mykioo-invitation-item" key={inv.id}>
-    <div><strong>{inv.email}</strong><small>{tr('Invited by','Invité par')}: {labelFor(inv.invited_by)}</small><small>{dateText(inv.created_at,fr)}</small></div>
-    <span className={'mykioo-invitation-status '+inv.status}>{inv.status}</span>
-   </div>)}</div>
-  </details>
+  <div className="mykioo-invitations-list-title" style={{marginTop:28}}>
+   <h3>{tr('Sent invitations — acceptance & expiry','Invitations envoyées — acceptation et expiration')}</h3>
+   <label>{tr('Show','Afficher')} <select value={deliveryFilter} onChange={e=>setDeliveryFilter(e.target.value)}>
+    <option value="all">{tr('All invitations','Toutes les invitations')}</option>
+    {['requested','pending','accepted','expired','revoked'].map(status=><option key={status} value={status}>{statusLabel(status)} ({invitations.filter(inv=>invitationStatus(inv)===status).length})</option>)}
+   </select></label>
+  </div>
+  <p>{tr('Approval and acceptance are separate. Older links may expire before their recorded expiry; resend to issue a fresh 48-hour link.','L’approbation et l’acceptation sont distinctes. Les anciens liens peuvent expirer avant la date enregistrée; renvoyez une invitation pour fournir un nouveau lien de 48 heures.')}</p>
+  <div className="mykioo-owner-invitation-list">{tracked.map(inv=>{
+   const status=invitationStatus(inv),profile=byId.get(inv.accepted_by);
+   const complete=Boolean(inv.accepted_at&&profile?.display_name?.trim());
+   return <article className="mykioo-owner-invitation-item" key={inv.id}>
+    <div className="mykioo-owner-invitation-info"><strong>{inv.email}</strong><div>
+     <span>{tr('Invited by','Invité par')}: {labelFor(inv.invited_by)}</span>
+     <span>{tr('Sent','Envoyée')}: {dateText(inv.sent_at||inv.created_at,fr)}</span>
+     {inv.accepted_at&&<span>{tr('Accepted','Acceptée')}: {dateText(inv.accepted_at,fr)} · {complete?tr('Account created','Compte créé'):tr('Setup incomplete','Création à terminer')}</span>}
+     {!inv.accepted_at&&<span>{tr('Link expires','Expiration du lien')}: {new Date(inv.expires_at).toLocaleString(fr?'fr-CA':'en-CA')}</span>}
+     {inv.renewal_requested_at&&<span>{tr('New link requested','Nouveau lien demandé')}: {new Date(inv.renewal_requested_at).toLocaleString(fr?'fr-CA':'en-CA')}</span>}
+    </div></div>
+    <span className={'mykioo-invitation-status '+(status==='accepted'?'approved':status==='expired'?'rejected':'pending')}>{statusLabel(status)}</span>
+    {status!=='revoked'&&!complete&&<div className="mykioo-owner-invitation-actions"><button type="button" className="approve" disabled={saving}
+     onClick={()=>onAction?.({action:'resend_invite_setup',invitation_id:inv.id})}><MailPlus size={16}/>{tr('Send fresh invitation','Envoyer une nouvelle invitation')}</button></div>}
+   </article>;
+  })}</div>
+  {!tracked.length&&<p>{tr('No invitations match this filter.','Aucune invitation pour ce filtre.')}</p>}
  </section>;
 }
