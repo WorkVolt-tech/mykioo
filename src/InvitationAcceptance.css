@@ -1,0 +1,21 @@
+/* First-party invitation acceptance deliberately verifies the one-time token only on click. */
+.mykioo-invite-accept-screen{min-height:100dvh;display:grid;place-items:center;padding:28px 15px;background:radial-gradient(ellipse at 15% 2%,#392841 0,#191522 46%,#100e18 100%);color:#f6eafa}
+.mykioo-invite-accept-box{width:min(100%,530px);display:grid;gap:16px;padding:30px;border:1px solid #665370;border-radius:18px;background:linear-gradient(150deg,#241f31,#1a1725);box-shadow:0 16px 60px #0004;box-sizing:border-box}
+.mykioo-invite-accept-icon{width:55px;height:55px;display:grid;place-items:center;color:#e8c48b;border-radius:15px;background:#3a2e43;border:1px solid #755e76}
+.mykioo-invite-accept-eyebrow{display:flex;align-items:center;gap:6px;color:#eccd9b;font-size:11px;letter-spacing:.13em;font-weight:750}
+.mykioo-invite-accept-box h1{font-size:29px;line-height:1.2;color:#f7edf9;margin:0}
+.mykioo-invite-accept-lead{color:#d8cbdc;font-size:14px;line-height:1.6;margin:0}
+.mykioo-invite-accept-steps{display:grid;gap:0;padding:5px 14px;border:1px solid #53455f;border-radius:12px;background:#211c2c}
+.mykioo-invite-accept-steps>div{display:flex;gap:12px;align-items:flex-start;padding:13px 0}
+.mykioo-invite-accept-steps>div+div{border-top:1px solid #44384d}
+.mykioo-invite-accept-steps>div>span{width:32px;height:32px;display:grid;place-items:center;flex-shrink:0;border-radius:9px;background:#352a40;color:#e3c190}
+.mykioo-invite-accept-steps p{display:grid;gap:4px;margin:0;min-width:0}
+.mykioo-invite-accept-steps strong{font-size:13px;color:#f5e9f5}
+.mykioo-invite-accept-steps small{font-size:12px;color:#baadca;line-height:1.5}
+.mykioo-invite-accept-button{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border:0;background:linear-gradient(120deg,#f2d6a3,#c69c5e);color:#221927;border-radius:10px;padding:14px 18px;font-size:14px;font-weight:800;cursor:pointer}
+.mykioo-invite-accept-button:disabled{opacity:.55;cursor:not-allowed}
+.mykioo-invite-accept-back{justify-self:center;border:0;background:transparent;color:#e5c699;font-size:12px;text-decoration:underline;text-underline-offset:3px;padding:5px;cursor:pointer}
+.mykioo-invite-accept-back:disabled{opacity:.5}
+.mykioo-invite-accept-error{background:#3e2732;color:#ffced8;border:1px solid #945f72;border-radius:9px;font-size:12px;line-height:1.6;padding:12px;margin:0}
+.mykioo-invite-accept-foot{color:#ad9cbb;font-size:11px;line-height:1.65;text-align:center;margin:0}
+@media(max-width:560px){.mykioo-invite-accept-box{padding:21px 17px;gap:14px}.mykioo-invite-accept-box h1{font-size:25px}.mykioo-invite-accept-steps{padding:3px 12px}}
