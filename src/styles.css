@@ -1154,3 +1154,10 @@
  .mykioo-guide-app-download{padding:12px}
  .mykioo-guide-download-actions>a,.mykioo-guide-download-actions>button{flex:1 1 150px}
 }
+
+
+/* MYKIOO free trial request */
+.mykioo-free-trial-callout{display:grid;gap:9px;padding:16px 18px;margin:12px 0 18px;border:1px solid #8c714b;border-radius:12px;background:linear-gradient(115deg,#30283b,#211c2f);color:#f7e9f5;line-height:1.6}
+.mykioo-free-trial-callout strong{font-size:14px;color:#efd39f;font-weight:800}
+.mykioo-free-trial-callout p{font-size:13px;line-height:1.65;color:#ded0e5;margin:0}
+.mykioo-free-trial-callout small{color:#f2c7a1;font-size:12px}
