@@ -13,6 +13,27 @@ const reply = (data: unknown, status = 200) => new Response(JSON.stringify(data)
 function validEmail(email: unknown): email is string {
   return typeof email === "string" && email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
+// Supabase Auth's action_link is the canonical verify URL. A strict 64-hex
+// check incorrectly rejected usable links from the current Auth response.
+// Only the verification token is extracted; never send the Supabase Auth URL
+// itself to members. VerifyOtp enforces the one-time token's validity.
+function extractVerificationToken(properties:unknown,expectedType:"invite"|"recovery"):string|null {
+  if(!properties||typeof properties!=="object")return null;
+  const p=properties as {action_link?:string;hashed_token?:string;verification_type?:string};
+  if(p.verification_type&&p.verification_type!==expectedType)return null;
+  let token="";
+  if(typeof p.action_link==="string"){
+    try{
+      const link=new URL(p.action_link);
+      const authOrigin=new URL(Deno.env.get("SUPABASE_URL")||"https://invalid.example").origin;
+      if(link.origin===authOrigin&&link.pathname.endsWith("/auth/v1/verify")&&link.searchParams.get("type")===expectedType){
+        token=link.searchParams.get("token")||"";
+      }
+    }catch(_error){/* use the documented hashed_token property below */}
+  }
+  if(!token&&typeof p.hashed_token==="string")token=p.hashed_token;
+  return /^[A-Za-z0-9_-]{16,512}$/.test(token)?token:null;
+}
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (request.method !== "POST") return reply({ error: "Method not allowed" }, 405);
@@ -124,9 +145,15 @@ Deno.serve(async (request) => {
         type:"recovery",email:requestRow.email,
         options:{redirectTo:origin+"/?reset_password=1"}
       });
-      const setupToken=linkData?.properties?.hashed_token;
-      if(linkError||typeof setupToken!=="string"||!/^[0-9a-f]{64}$/i.test(setupToken))
+      const setupToken=extractVerificationToken(linkData?.properties,"recovery");
+      if(linkError||!setupToken){
+        console.error("MYKIOO invite resend: unable to extract verification token",{
+          errorCode:linkError?.code||null,
+          hasActionLink:typeof linkData?.properties?.action_link==="string",
+          tokenLength:typeof linkData?.properties?.hashed_token==="string"?linkData.properties.hashed_token.length:0
+        });
         return reply({error:"Could not create a secure account-setup link"},503);
+      }
       const actionLink=origin+"/?invite_token="+encodeURIComponent(setupToken)+"&invite_type=recovery";
       const safeLink=actionLink.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
       const fr=language==="fr";
@@ -216,11 +243,19 @@ Deno.serve(async (request) => {
       });
       if(inviteError||!invited?.user?.id)
         return reply({error:inviteError?.message||"Unable to create a secure invitation link."},409);
-      const token=invited.properties?.hashed_token;
-      if(typeof token!=="string"||!/^[0-9a-f]{64}$/i.test(token)){
+      const token=extractVerificationToken(invited.properties,"invite");
+      if(!token){
+        // Only log the non-secret response shape for troubleshooting, never the token or action link.
+        console.error("MYKIOO invitation: unable to extract verification token",{
+          hasActionLink:typeof invited.properties?.action_link==="string",
+          tokenLength:typeof invited.properties?.hashed_token==="string"?invited.properties.hashed_token.length:0,
+          verificationType:invited.properties?.verification_type||null
+        });
         const {error:cleanupError}=await server.auth.admin.deleteUser(invited.user.id);
         if(cleanupError)console.error("MYKIOO missing invitation token cleanup failed",invited.user.id);
-        return reply({error:"Unable to generate a usable invitation link. No email was sent."},503);
+        return reply({error:cleanupError?
+          "Unable to prepare invitation link; account cleanup needs attention.":
+          "Unable to prepare invitation link. No email was sent and no account remains."},503);
       }
       const uid=invited.user.id,actionLink=origin+"/?invite_token="+encodeURIComponent(token);
       const { error: memberError } = await server.from("mykioo_members").insert({
