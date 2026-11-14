@@ -124,8 +124,10 @@ Deno.serve(async (request) => {
         type:"recovery",email:requestRow.email,
         options:{redirectTo:origin+"/?reset_password=1"}
       });
-      const actionLink=linkData?.properties?.action_link;
-      if(linkError||!actionLink)return reply({error:"Could not create a secure account-setup link"},503);
+      const setupToken=linkData?.properties?.hashed_token;
+      if(linkError||typeof setupToken!=="string"||!/^[0-9a-f]{64}$/i.test(setupToken))
+        return reply({error:"Could not create a secure account-setup link"},503);
+      const actionLink=origin+"/?invite_token="+encodeURIComponent(setupToken)+"&invite_type=recovery";
       const safeLink=actionLink.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
       const fr=language==="fr";
       const subject=fr?"MYKIOO — votre invitation et création de mot de passe":
@@ -210,11 +212,17 @@ Deno.serve(async (request) => {
         sender={name:"MYKIOO",email:template.sender.email};
       }catch(_error){return reply({error:"Could not reach MYKIOO Brevo sender. No account was created."},503)}
       const {data:invited,error:inviteError}=await server.auth.admin.generateLink({
-        type:"invite",email,options:{redirectTo:origin+"/?reset_password=1"}
+        type:"invite",email,options:{redirectTo:origin+"/?invite=1"}
       });
-      if(inviteError||!invited?.user?.id||!invited?.properties?.action_link)
+      if(inviteError||!invited?.user?.id)
         return reply({error:inviteError?.message||"Unable to create a secure invitation link."},409);
-      const uid=invited.user.id,actionLink=invited.properties.action_link;
+      const token=invited.properties?.hashed_token;
+      if(typeof token!=="string"||!/^[0-9a-f]{64}$/i.test(token)){
+        const {error:cleanupError}=await server.auth.admin.deleteUser(invited.user.id);
+        if(cleanupError)console.error("MYKIOO missing invitation token cleanup failed",invited.user.id);
+        return reply({error:"Unable to generate a usable invitation link. No email was sent."},503);
+      }
+      const uid=invited.user.id,actionLink=origin+"/?invite_token="+encodeURIComponent(token);
       const { error: memberError } = await server.from("mykioo_members").insert({
         user_id: uid, email, status: "pending", role: "member", invited_by: inviterId, preferred_language: language
       });
@@ -238,13 +246,15 @@ Deno.serve(async (request) => {
         if(cleanupError)console.error("MYKIOO invite tracking cleanup failed",uid);
         return reply({error:"Could not track the new account. No email was sent. Please retry or contact support if the address remains registered."},500);
       }
-      // Deliver the one-time setup link using the same Brevo provider as other MYKIOO emails.
+      // Deliver a first-party acceptance URL. MYKIOO verifies the token only after
+      // a deliberate click, avoiding accidental consumption by email link scanners.
+      // Send with the existing Brevo provider.
       const safeLink=actionLink.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
       const fr=language==="fr";
       const subject=fr?"MYKIOO | Invitation et creation de compte":"MYKIOO | Account invitation";
       const html=fr?
-        '<div style="background:#17131f;color:#f5edf7;font-family:Arial,sans-serif;padding:28px"><h2 style="color:#e7c58b">MYKIOO</h2><p>Vous avez ete invite a rejoindre MYKIOO.</p><p><a style="color:#e7c58b" href="'+safeLink+'">Accepter mon invitation et choisir mon mot de passe</a></p><p>Ce lien est personnel et expire automatiquement.</p></div>':
-        '<div style="background:#17131f;color:#f5edf7;font-family:Arial,sans-serif;padding:28px"><h2 style="color:#e7c58b">MYKIOO</h2><p>You have been invited to join MYKIOO.</p><p><a style="color:#e7c58b" href="'+safeLink+'">Accept my invitation and set my password</a></p><p>This personal link expires automatically.</p></div>';
+        '<div style="background:#17131f;color:#f5edf7;font-family:Arial,sans-serif;padding:28px"><h2 style="color:#e7c58b">MYKIOO</h2><p>Vous avez ete invite a rejoindre MYKIOO.</p><p>Acceptez cette invitation, choisissez votre nom et mot de passe, puis attendez la validation du proprietaire.</p><p><a style="color:#e7c58b" href="'+safeLink+'">Accepter cette invitation et creer mon compte</a></p><p>Ce lien est personnel et expire automatiquement.</p></div>':
+        '<div style="background:#17131f;color:#f5edf7;font-family:Arial,sans-serif;padding:28px"><h2 style="color:#e7c58b">MYKIOO</h2><p>You have been invited to join MYKIOO.</p><p>Accept the invitation, choose a display name and password, then wait for the owner to approve your membership.</p><p><a style="color:#e7c58b" href="'+safeLink+'">Accept invitation and create my account</a></p><p>This personal link expires automatically.</p></div>';
       let emailOk=false,emailMessageId="";
       try{
         const response=await fetch("https://api.brevo.com/v3/smtp/email",{
