@@ -89,6 +89,10 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
   {!owner&&invoice.state==='awaiting_instructions'&&<p className="mykioo-billing-muted"><Clock3 size={16}/>{tr('Your payment method was saved. The owner must provide your payment address or contact. Do not send money yet.','Votre mode de paiement est enregistré. Le propriétaire doit fournir l’adresse ou les coordonnées. N’envoyez rien pour le moment.')}</p>}
   {!owner&&invoice.state==='awaiting_payment'&&!isCrypto(invoice.method)&&isReady&&<div className="mykioo-billing-payment-details">
    <p><strong>{tr('Send to','Envoyer à')}:</strong> <span className="mykioo-billing-address">{invoice.destination}</span> <button type="button" onClick={()=>copyValue(invoice.destination)}><Copy size={14}/>{tr('Copy','Copier')}</button></p>
+   {invoice.method==='interac'&&<p>
+    {tr('For the security question, enter your name exactly as it appears on your MYKIOO account. Always use','Dans le champ de la question de sécurité, entrez votre nom exactement comme il apparaît dans votre compte MYKIOO. Utilisez toujours')}{' '}
+    <strong>mykiootv</strong>{' '}{tr('as the answer.','comme réponse.')}
+   </p>}
    <p>{tr('If your banking app has a message field, include this invoice reference to help us match the transfer:','Si votre application bancaire permet d’ajouter un message, indiquez cette référence pour faciliter le rapprochement :')} <strong>{invoice.id.slice(0,8).toUpperCase()}</strong></p>
   </div>}
   {!owner&&isCrypto(invoice.method)&&['awaiting_payment','payment_submitted','paid'].includes(invoice.state)&&networkWarning(invoice.method,language)}
