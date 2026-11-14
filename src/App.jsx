@@ -228,6 +228,7 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
  const tr=(en,fr)=>language==='fr'?fr:en;
  const pending=(member?.status||'pending')==='pending';
  const setupDone=Boolean(member?.display_name?.trim());
+ const needsSetup=(pending||member?.status==='approved')&&!setupDone;
  const [password,setPassword]=useState('');
  const [passwordConfirmation,setPasswordConfirmation]=useState('');
  const [displayName,setDisplayName]=useState(member?.display_name||'');
@@ -292,13 +293,14 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
  return <div className="holding"><Brand/><div className="hold-card">
   <div className="hold-icon">{pending?<Clock3 size={34}/>:<LockKeyhole size={34}/>}</div>
   <div className="eyebrow">{tr('MYKIOO MEMBERSHIP','ADHÉSION MYKIOO')}</div>
-  <h1>{pending?(setupDone?tr('Awaiting approval','En attente d’approbation'):tr('Complete your invitation','Complétez votre invitation')):tr('Access restricted','Accès restreint')}</h1>
-  <p>{pending?(setupDone?
+  <h1>{needsSetup?tr('Complete your invitation','Complétez votre invitation'):pending?tr('Awaiting approval','En attente d’approbation'):tr('Access restricted','Accès restreint')}</h1>
+  <p>{needsSetup?(pending?
+  tr('Choose your name and password. Once saved, your membership will wait for owner approval.','Choisissez votre nom et votre mot de passe. Après l’enregistrement, votre adhésion sera en attente de l’approbation du propriétaire.'):
+  tr('Your membership is approved. Choose your name and password to enter MYKIOO.','Votre adhésion est approuvée. Choisissez votre nom et votre mot de passe pour accéder à MYKIOO.')):pending?
   tr('Your account setup is complete. The owner must approve your membership before you can enter the private dashboard.','Votre compte est créé. Le propriétaire doit approuver votre adhésion avant que vous puissiez accéder à votre espace privé.'):
-  tr('Create your name and password below. After saving, your membership will wait for owner approval.','Choisissez votre nom et votre mot de passe ci-dessous. Après enregistrement, votre adhésion attendra la validation du propriétaire.')):
   tr('Your account currently does not have permission to enter the member space. Please contact the administrator.','Votre compte n’a pas actuellement accès à l’espace membre. Veuillez communiquer avec l’administrateur.')}</p>
-  {pending&&!setupDone&&<div className="hold-user"><Mail size={17}/>{user.email}</div>}
-  {pending&&!setupDone&&<form className="pending-password mykioo-setup-form" onSubmit={saveSetup}>
+  {needsSetup&&<div className="hold-user"><Mail size={17}/>{user.email}</div>}
+  {needsSetup&&<form className="pending-password mykioo-setup-form" onSubmit={saveSetup}>
    <label htmlFor="member-display-name">{tr('What should we call you?','Comment pouvons-nous vous appeler ?')}</label>
    <p className="member-name-hint">{tr('It does not have to be your real name. Choose a nickname or any name you would like us to use.','Il n’est pas nécessaire d’utiliser votre vrai nom. Choisissez un surnom ou le nom par lequel vous souhaitez être appelé(e).')}</p>
    <input id="member-display-name" type="text" value={displayName} onChange={e=>{setDisplayName(e.target.value);setComplete(false)}} placeholder={tr('Your preferred name or nickname','Votre nom ou surnom préféré')} maxLength={40} minLength={2} autoComplete="nickname" disabled={working} required/>
@@ -377,7 +379,10 @@ useEffect(()=>{
    setPasswordRecovery(true);
    if(session?.user){setUser(session.user);setLoading(false)}
   }
-  if(['SIGNED_IN','SIGNED_OUT','USER_UPDATED'].includes(evt)){
+  if(evt==='USER_UPDATED'&&session?.user){
+   setUser(current=>current?.id===session.user.id?session.user:current);
+  }
+  if(['SIGNED_IN','SIGNED_OUT'].includes(evt)){
    setTimeout(()=>{if(live)load(session?.user||null)},0);
   }
  });
@@ -407,4 +412,4 @@ if(passwordRecovery&&user)return <div className="mykioo-recovery-screen"><Brand/
  <PasswordSettings mode="recovery" language={language} onComplete={completeRecovery}/>
  <p className="mykioo-recovery-footer">{language==='fr'?'Après la modification, reconnectez-vous avec votre nouveau mot de passe.':'After updating, sign in again with your new password.'}</p>
 </div>;
-if(!user)return <Login onLogin={()=>{}} language={language} onLanguageChange={changeLanguage} recoveryComplete={recoveryComplete}/>;if(error)return <div className="holding"><Brand/><div className="hold-card"><AlertCircle size={32}/><h2>Temporarily unavailable</h2><p>{error}</p><button className="outline-button" onClick={logout}>Sign out</button></div></div>;if(member?.status==='approved' && member.role==='owner')return <AdminDashboard user={user} logout={logout} language={language} onLanguageChange={changeLanguage} logo={LOGO_WEBP} fallbackLogo={LOGO_FALLBACK}/>;if(member?.status==='approved')return <Shell user={user} member={member} subscriptions={subscriptions} logout={logout} language={language} onLanguageChange={changeLanguage} onNameSaved={name=>setMember(current=>({...current,display_name:name}))}/>;return <Holding user={user} member={member} logout={logout} language={language} onLanguageChange={changeLanguage} onProfileSaved={name=>setMember(current=>current?{...current,display_name:name}:current)}/>}
+if(!user)return <Login onLogin={()=>{}} language={language} onLanguageChange={changeLanguage} recoveryComplete={recoveryComplete}/>;if(error)return <div className="holding"><Brand/><div className="hold-card"><AlertCircle size={32}/><h2>Temporarily unavailable</h2><p>{error}</p><button className="outline-button" onClick={logout}>Sign out</button></div></div>;if(member?.status==='approved' && member.role==='owner')return <AdminDashboard user={user} logout={logout} language={language} onLanguageChange={changeLanguage} logo={LOGO_WEBP} fallbackLogo={LOGO_FALLBACK}/>;if(member?.status==='approved'&&(member.role!=='member'||member.display_name?.trim()))return <Shell user={user} member={member} subscriptions={subscriptions} logout={logout} language={language} onLanguageChange={changeLanguage} onNameSaved={name=>setMember(current=>({...current,display_name:name}))}/>;return <Holding user={user} member={member} logout={logout} language={language} onLanguageChange={changeLanguage} onProfileSaved={name=>setMember(current=>current?{...current,display_name:name}:current)}/>}
