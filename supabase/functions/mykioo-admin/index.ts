@@ -63,6 +63,16 @@ Deno.serve(async (request) => {
 
     const validUUID=(value:unknown)=>typeof value==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
     const emailFor=(value:unknown)=>validEmail(value)?value.trim().toLowerCase():"";
+    // Read the inviter's own MYKIOO display name, not a name supplied by the recipient.
+    // Do not disclose the inviter's private email address in the invitation.
+    const inviterDetails=async(id:string)=>{
+      const {data:profile,error:profileError}=id===actor.id?
+        {data:member,error:null}:
+        await server.from("mykioo_members").select("display_name,role").eq("user_id",id).maybeSingle();
+      if(profileError)console.error("MYKIOO inviter profile lookup failed",profileError.code);
+      const inviterName=typeof profile?.display_name==="string"?profile.display_name.trim().slice(0,80):"";
+      return {inviterName,inviterIsOwner:profile?.role==="owner"};
+    };
     if(action==="request_invite"){
       if(member.role!=="member")return reply({error:"Member access required"},403);
       const email=emailFor(input.email);
@@ -106,13 +116,13 @@ Deno.serve(async (request) => {
       // Send a one-time recovery/setup link using the existing user, via MYKIOO's verified Brevo sender.
       if(!validUUID(input.request_id))return reply({error:"Select an approved invitation"},400);
       const {data:requestRow,error:requestError}=await server.from("mykioo_invitation_requests")
-        .select("id,email,status,language,invited_user_id")
+        .select("id,email,status,language,invited_user_id,requested_by")
         .eq("id",input.request_id).maybeSingle();
       if(requestError||!requestRow)return reply({error:"Invitation not found"},404);
       if(requestRow.status!=="approved"||!requestRow.invited_user_id)
         return reply({error:"Only approved invitations can be resent"},409);
       const {data:invitedMember,error:memberLookupError}=await server.from("mykioo_members")
-        .select("user_id,email,status").eq("user_id",requestRow.invited_user_id).maybeSingle();
+        .select("user_id,email,status,invited_by").eq("user_id",requestRow.invited_user_id).maybeSingle();
       if(memberLookupError||!invitedMember||invitedMember.email.toLowerCase()!==requestRow.email.toLowerCase()
          ||!["pending","approved"].includes(invitedMember.status))
         return reply({error:"Invitation account needs owner review before resending"},409);
@@ -156,8 +166,9 @@ Deno.serve(async (request) => {
         return reply({error:"Could not create a secure account-setup link"},503);
       }
       const actionLink=origin+"/?invite_token="+encodeURIComponent(setupToken)+"&invite_type=recovery";
+      const inviter=await inviterDetails(requestRow.requested_by||invitedMember.invited_by||actor.id);
       const {subject,htmlContent:html,textContent}=makeInvitationEmail({
-        language,actionLink,resend:true
+        language,actionLink,resend:true,...inviter
       });
       let mailResponse:Response;
       try{
@@ -279,8 +290,9 @@ Deno.serve(async (request) => {
       // Deliver a first-party acceptance URL. MYKIOO verifies the token only after
       // a deliberate click, avoiding accidental consumption by email link scanners.
       // Send with the existing Brevo provider.
+      const inviter=await inviterDetails(inviterId);
       const {subject,htmlContent:html,textContent}=makeInvitationEmail({
-        language,actionLink
+        language,actionLink,...inviter
       });
       let emailOk=false,emailMessageId="";
       try{
