@@ -5,18 +5,24 @@ type InvitationEmailOptions={
  language:"en"|"fr";
  actionLink:string;
  resend?:boolean;
+ inviterName?:string;
+ inviterIsOwner?:boolean;
 };
 function htmlEscape(value:string){
  return value.replace(/[&<>"']/g,(ch)=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
  }[ch]||ch));
 }
-export function makeInvitationEmail({language,actionLink,resend=false}:InvitationEmailOptions){
+export function makeInvitationEmail({language,actionLink,resend=false,inviterName,inviterIsOwner=false}:InvitationEmailOptions){
  const fr=language==="fr";
  const title=fr?
   (resend?"Votre invitation vous attend":"Vous êtes invité(e)"):
   (resend?"Your invitation is waiting":"You're invited");
  const eyebrow=fr?"INVITATION PRIVÉE":"PRIVATE INVITATION";
+ // Display the referring member's public profile name, never their email.
+ const name=typeof inviterName==="string"?inviterName.trim().slice(0,80):"";
+ const inviter=name||(inviterIsOwner?"MYKIOO":(fr?"un membre MYKIOO":"a MYKIOO member"));
+ const inviterLine=fr?"Invité(e) par "+inviter:"Invited by "+inviter;
  const subtitle=fr?
   (resend?"Votre lien d’invitation a été renouvelé. Reprenez votre inscription à MYKIOO.":"Bienvenue dans MYKIOO, votre espace de divertissement privé. Votre invitation est prête."):
   (resend?"We've renewed your invitation link. Continue setting up your MYKIOO account.":"Welcome to MYKIOO, your private entertainment experience. Your invitation is ready.");
@@ -63,6 +69,7 @@ export function makeInvitationEmail({language,actionLink,resend=false}:Invitatio
     <span style="display:inline-block;padding:8px 14px;border:1px solid #6b5275;border-radius:20px;background:#2b2237;color:#e8c889;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;line-height:14px">${eyebrow}</span>
     <h1 style="font-family:Arial,Helvetica,sans-serif;font-size:32px;line-height:39px;letter-spacing:-1px;color:#fff7fc;margin:23px 0 12px;font-weight:700">${htmlEscape(title)}</h1>
     <p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:25px;color:#d1c4d8;margin:0;max-width:440px">${htmlEscape(subtitle)}</p>
+    <p style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:21px;color:#eacb91;margin:17px 0 0;font-weight:700">${htmlEscape(inviterLine)}</p>
    </td></tr>
    <tr><td align="center" style="padding:25px 25px 29px">
     <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" bgcolor="#e6c38d" style="background:#e6c38d;border-radius:10px">
@@ -95,7 +102,7 @@ export function makeInvitationEmail({language,actionLink,resend=false}:Invitatio
 </td></tr>
 </table></body></html>`;
  const textContent=fr?
- `${title}\n\n${subtitle}\n\n${cta}: ${actionLink}\n\nET ENSUITE ?\n1. Acceptez votre invitation.\n2. Créez votre compte : choisissez un nom et un mot de passe.\n3. Attendez l’approbation du propriétaire avant d’accéder à l’espace membre.\n\n${finePrint}\n\nMYKIOO | https://mykioo.pages.dev/`:
- `${title}\n\n${subtitle}\n\n${cta}: ${actionLink}\n\nWHAT HAPPENS NEXT?\n1. Accept your invitation.\n2. Create your account: choose your name and password.\n3. Wait for owner approval before entering the member dashboard.\n\n${finePrint}\n\nMYKIOO | https://mykioo.pages.dev/`;
+ `${title}\n\n${subtitle}\n\n${inviterLine}\n\n${cta}: ${actionLink}\n\nET ENSUITE ?\n1. Acceptez votre invitation.\n2. Créez votre compte : choisissez un nom et un mot de passe.\n3. Attendez l’approbation du propriétaire avant d’accéder à l’espace membre.\n\n${finePrint}\n\nMYKIOO | https://mykioo.pages.dev/`:
+ `${title}\n\n${subtitle}\n\n${inviterLine}\n\n${cta}: ${actionLink}\n\nWHAT HAPPENS NEXT?\n1. Accept your invitation.\n2. Create your account: choose your name and password.\n3. Wait for owner approval before entering the member dashboard.\n\n${finePrint}\n\nMYKIOO | https://mykioo.pages.dev/`;
  return {subject,htmlContent,textContent};
 }
