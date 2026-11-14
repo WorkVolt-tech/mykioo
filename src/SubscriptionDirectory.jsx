@@ -12,10 +12,10 @@ const statusLabels={
 };
 const priority={active:0,pending:1,suspended:2,expired:3,cancelled:4};
 const normalized=value=>String(value??'').trim().toLocaleLowerCase();
-const displayDate=(value,fr)=>{
+const displayDate=(value,fr,withTime=false)=>{
  if(!value)return '—';
  const date=new Date(value);
- return Number.isNaN(date.getTime())?'—':date.toLocaleDateString(fr?'fr-CA':'en-CA');
+ return Number.isNaN(date.getTime())?'—':withTime?date.toLocaleString(fr?'fr-CA':'en-CA',{dateStyle:'medium',timeStyle:'short'}):date.toLocaleDateString(fr?'fr-CA':'en-CA');
 };
 
 export default function SubscriptionDirectory({
@@ -88,12 +88,12 @@ export default function SubscriptionDirectory({
        aria-expanded={isExpanded} aria-controls={'mykioo-sub-detail-'+sub.id}
        onClick={()=>setExpandedId(isExpanded?null:sub.id)}>
        <span className="mykioo-directory-item-main">
-        <strong>{sub.service_name||tr('Unnamed service','Service sans nom')}</strong><small>{sub.device_count||1} {tr('device(s)','appareil(s)')}</small>
+        <strong>{sub.service_name||tr('Unnamed service','Service sans nom')}</strong><small>{sub.contract_days===1?tr('FREE TRIAL · 24 HOURS','ESSAI GRATUIT · 24 HEURES'):(sub.device_count||1)+' '+tr('device(s)','appareil(s)')}</small>
         {owner&&<small>{name}</small>}
        </span>
        <span className="mykioo-directory-item-meta">
         <span className={'mykioo-directory-status status-'+sub.status}>{status}</span>
-        <span className="mykioo-directory-expiry"><CalendarDays size={14}/>{tr('Expires','Expire')} {displayDate(sub.expires_at,fr)}</span>
+        <span className="mykioo-directory-expiry"><CalendarDays size={14}/>{tr('Expires','Expire')} {displayDate(sub.expires_at,fr,sub.contract_days===1)}</span>
        </span>
        {isExpanded?<ChevronUp className="mykioo-directory-chevron" size={19}/>:<ChevronDown className="mykioo-directory-chevron" size={19}/>}
       </button>
@@ -103,9 +103,9 @@ export default function SubscriptionDirectory({
        <div className="mykioo-directory-detail"><span>{tr('Devices','Appareils')}</span><strong>{sub.device_count||1}</strong></div>
        <div className="mykioo-directory-detail"><span>{tr('Service login username','Identifiant du service')}</span><strong>{sub.service_username||'—'}</strong></div>
        {owner&&<div className="mykioo-directory-detail"><span>{tr('Provider reference','Référence du fournisseur')}</span><strong>{sub.supplier_reference||'—'}</strong></div>}
-       <div className="mykioo-directory-detail"><span>{tr('Start date','Date de début')}</span><strong>{displayDate(sub.starts_at,fr)}</strong></div>
-       <div className="mykioo-directory-detail"><span>{tr('Expiry date','Date d’expiration')}</span><strong>{displayDate(sub.expires_at,fr)}</strong></div>
-       {sub.contract_days&&<div className="mykioo-directory-detail"><span>{tr('Contract duration','Durée du contrat')}</span><strong>{sub.contract_days} {tr('days','jours')}</strong></div>}
+       <div className="mykioo-directory-detail"><span>{tr('Start date','Date de début')}</span><strong>{displayDate(sub.starts_at,fr,sub.contract_days===1)}</strong></div>
+       <div className="mykioo-directory-detail"><span>{tr('Expiry date','Date d’expiration')}</span><strong>{displayDate(sub.expires_at,fr,sub.contract_days===1)}</strong></div>
+       {sub.contract_days&&<div className="mykioo-directory-detail"><span>{tr('Contract duration','Durée du contrat')}</span><strong>{sub.contract_days===1?tr('24 hours · Free trial','24 heures · Essai gratuit'):sub.contract_days+' '+tr('days','jours')}</strong></div>}
        {owner?<>
         <div className="mykioo-directory-detail"><span>{tr('Saved password','Mot de passe enregistré')}</span><strong>{sub.has_password?tr('Yes','Oui'):tr('No','Non')}</strong></div>
         {onEdit&&<button className="mykioo-directory-edit" type="button" onClick={()=>onEdit(sub)}>{tr('Edit subscription','Modifier l’abonnement')}</button>}
