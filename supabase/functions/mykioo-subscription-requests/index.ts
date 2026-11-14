@@ -196,7 +196,7 @@ Deno.serve(async req=>{
    const contract_days=Number(input.contract_days);
    const notes=typeof input.notes==="string"?input.notes.trim():"";
    if(request_type==="trial"){
-     if(target.role!=="member")return respond({error:"Free trials are only available to member accounts"},403);
+     if(target.role!=="member"&&!(target.role==="owner"&&member_id===user.id))return respond({error:"Free trials are only available to members or the owner's own account"},403);
      const serviceName=typeof input.service_name==="string"?input.service_name.trim():"";
      return await createTrial(member_id,serviceName,notes,true);
    }
