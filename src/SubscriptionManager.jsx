@@ -26,6 +26,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
  const clients=members.filter(m=>m.role==='member'||m.role==='owner');
  const pendingCancellationIds=new Set(cancellations.filter(c=>c.status==='pending').map(c=>c.request_id));
  const pendingRequests=requests.filter(r=>['pending','in_review'].includes(r.status));
+ const trialEditor=requests.some(r=>r.id===form.request_id&&r.request_type==='trial');
  const displayedRequests=requestFilter==='open'?pendingRequests:requests;
  function openEditor(){
   onViewChange?.('editor');
@@ -152,7 +153,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
    setForm(newForm());setCustomerEmail('');setCreatedInvite(null);
    setNotice(invitationSent?
     tr('Subscription saved. MYKIOO issued the new customer a site invitation. The account must be approved before access is granted.','Abonnement enregistré. MYKIOO a envoyé une invitation au nouveau client. Le compte doit être approuvé avant l’accès.'):
-    tr('Subscription saved for this customer.','Abonnement enregistré pour ce client.'));
+    trialEditor?tr('Free trial activated for 24 hours. Disable the external service when it expires.','Essai gratuit activé pour 24 heures. Désactivez le service externe à son expiration.'):tr('Subscription saved for this customer.','Abonnement enregistré pour ce client.'));
    onSaved?.();
   }catch(err){
    setError(((createdInvite||invitationSent)?tr('A site invitation may already have been issued. ','Une invitation a peut-être déjà été envoyée. '):'')+
@@ -179,18 +180,19 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
       const client=clients.find(m=>m.user_id===r.member_id);
       const status=fr?({pending:'En attente',in_review:'En cours',fulfilled:'Terminé',declined:'Refusé',cancelled:'Annulé avant activation'})[r.status]:({pending:'Pending',in_review:'In review',fulfilled:'Completed',declined:'Declined',cancelled:'Cancelled before activation'})[r.status];
       return <article key={r.id} id={"mykioo-process-request-"+r.id} tabIndex={-1} className="mykioo-sub-request-row">
-       <div className="mykioo-sub-request-content"><strong>{r.request_type==='renewal'?tr('Renewal: ','Renouvellement : '):''}{r.service_name}</strong><span>{client?.display_name||client?.email||tr('Member','Membre')} · {({30:tr('1 month','1 mois'),90:tr('3 months','3 mois'),183:tr('6 months','6 mois'),365:tr('1 year','1 an'),730:tr('2 years','2 ans')})[r.contract_days]||tr('Custom duration','Durée personnalisée')}</span>
+       <div className="mykioo-sub-request-content"><strong>{r.request_type==='renewal'?tr('Renewal: ','Renouvellement : '):r.request_type==='trial'?tr('Free trial: ','Essai gratuit : '):''}{r.service_name}</strong><span>{client?.display_name||client?.email||tr('Member','Membre')} · {({1:tr('24-hour free trial','Essai gratuit de 24 heures'),30:tr('1 month','1 mois'),90:tr('3 months','3 mois'),183:tr('6 months','6 mois'),365:tr('1 year','1 an'),730:tr('2 years','2 ans')})[r.contract_days]||tr('Custom duration','Durée personnalisée')}</span>
        {r.notes&&<p>{r.notes}</p>}{r.first_reviewed_at&&<small>{tr('Review started','Traitement commencé')}: {new Date(r.first_reviewed_at).toLocaleString(fr?'fr-CA':'en-CA')}</small>}{r.service_activated_at&&<p className="mykioo-external-activation-flag">{tr('Service activated externally','Service activé à l’extérieur')} · {new Date(r.service_activated_at).toLocaleString(fr?'fr-CA':'en-CA')} · {tr('Complete the MYKIOO record next.','Terminez ensuite le dossier MYKIOO.')}</p>}{pendingCancellationIds.has(r.id)&&<p className="mykioo-cancellation-inline-warning">{tr('Cancellation approval requested — completing will automatically deny it.','Demande d’annulation en attente — la finalisation la refusera automatiquement.')}</p>}{r.preferred_payment_method&&<p className="mykioo-package-request-summary">
        {r.device_count||1} {tr('device(s)','appareil(s)')} · {r.contract_days===365?tr('12 months','12 mois'):tr('24 months','24 mois')} · CA$ {Number(r.quoted_price_cad||0).toFixed(2)} · {r.preferred_payment_method.toUpperCase()}
       </p>}
-      {r.preferred_payment_method&&<span className={'mykioo-payment-ready '+(paidRequests.has(r.id)?'verified':'pending')}>
+      {r.request_type==='trial'&&<span className="mykioo-payment-ready verified">{tr('Free trial — no payment required; awaiting approval and activation','Essai gratuit — aucun paiement; approbation et activation nécessaires')}</span>}
+       {r.preferred_payment_method&&<span className={'mykioo-payment-ready '+(paidRequests.has(r.id)?'verified':'pending')}>
        {paidRequests.has(r.id)?tr('Payment verified — ready to complete','Paiement vérifié — prêt à finaliser'):tr('Awaiting verified payment','En attente de vérification du paiement')}
       </span>}
       <small>{new Date(r.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>
        <span className="mykioo-ticket-status">{status||r.status}</span>
        {['pending','in_review'].includes(r.status)&&<div className="mykioo-sub-request-actions">
-         <button type="button" disabled={saving} onClick={()=>completeRequest(r)}>{r.request_type==='renewal'?tr('Approve / extend contract','Approuver / prolonger le contrat'):tr('Complete / add login','Terminer / ajouter les accès')}</button>
-         {!r.service_activated_at&&<button type="button" disabled={saving} className="mykioo-record-external-activation" onClick={()=>markActivated(r)}>{tr('Mark already activated','Marquer comme déjà activé')}</button>}
+         <button type="button" disabled={saving} onClick={()=>completeRequest(r)}>{r.request_type==='renewal'?tr('Approve / extend contract','Approuver / prolonger le contrat'):r.request_type==='trial'?tr('Review / set up trial','Examiner / préparer l’essai'):tr('Complete / add login','Terminer / ajouter les accès')}</button>
+         {!r.service_activated_at&&r.request_type!=='trial'&&<button type="button" disabled={saving} className="mykioo-record-external-activation" onClick={()=>markActivated(r)}>{tr('Mark already activated','Marquer comme déjà activé')}</button>}
          {r.status==='pending'&&<button type="button" disabled={saving} onClick={()=>changeRequest(r,'in_review')}>{tr('Mark reviewing','Marquer en cours')}</button>}
          {!r.service_activated_at&&<button type="button" disabled={saving} onClick={()=>changeRequest(r,'declined')}>{tr('Decline','Refuser')}</button>}
        </div>}
@@ -212,7 +214,8 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     {view!=='all'&&<button type="button" className="admin-action" onClick={()=>onViewChange?.(form.request_id?'requests':'directory')}>{tr('Back to list','Retour à la liste')}</button>}
    </div>
    <p>{form.request_id&&form.id?tr("This extends the existing subscription and keeps the same login and encrypted password. The expiry date is prefilled and may be adjusted.","Cette opération prolonge l’abonnement existant et conserve ses identifiants et son mot de passe chiffré. La date d’expiration est préremplie et modifiable."):form.request_id?tr("Add the service credentials and dates to complete this request. The member will then see the subscription in their account.","Ajoutez les identifiants et les dates pour terminer cette demande. Le membre verra alors l’abonnement dans son compte."):tr("Each service login can have its own subscription, contract and status.","Chaque identifiant de service peut avoir son propre abonnement, sa durée et son statut.")}</p>
-   <form className="mykioo-sub-form" onSubmit={save}>
+   {trialEditor&&<p className="mykioo-free-trial-callout">{tr('Free trial: no payment needed. Enter the service credentials below. Saving activates exactly 24 hours from activation. MYKIOO tracks expiry, but you must disable access with the external provider afterward.','Essai gratuit : aucun paiement requis. Saisissez les identifiants du service. L’enregistrement active exactement 24 heures à compter de l’activation. MYKIOO suit l’expiration, mais vous devez ensuite désactiver l’accès chez le fournisseur externe.')}</p>}
+    <form className="mykioo-sub-form" onSubmit={save}>
     <div className="mykioo-owner-customer-email">
      <label htmlFor="mykioo-owner-subscription-email">{tr('Customer email address','Adresse courriel du client')} *</label>
      <input id="mykioo-owner-subscription-email" type="email" autoComplete="email" list="mykioo-owner-member-email-options"
@@ -232,24 +235,25 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
       <input type="password" required={Boolean(form.request_id&&!form.id)} autoComplete="new-password" maxLength={256} value={form.service_password} onChange={e=>update('service_password',e.target.value)}
        placeholder={tr('Encrypted when saved','Chiffré lors de l’enregistrement')}/></label>
     <label>{tr('Provider reference (optional)','Référence du fournisseur (facultatif)')}<input maxLength={160} value={form.supplier_reference} onChange={e=>update('supplier_reference',e.target.value)}/></label>
-    <label>{tr('Status','Statut')}<select value={form.status} onChange={e=>update('status',e.target.value)}>
+    <label>{tr('Status','Statut')}<select value={form.status} disabled={trialEditor} onChange={e=>update('status',e.target.value)}>
      {['pending','active','expired','suspended','cancelled'].map(status=><option key={status} value={status}>{tr(({pending:'Pending',active:'Active',expired:'Expired',suspended:'Suspended',cancelled:'Cancelled'})[status],({pending:'En attente',active:'Actif',expired:'Expiré',suspended:'Suspendu',cancelled:'Annulé'})[status])}</option>)}
     </select></label>
     <label>{tr('Number of devices','Nombre d’appareils')}
-      <select value={form.device_count} onChange={e=>update('device_count',Number(e.target.value))}>
+      <select value={form.device_count} disabled={trialEditor} onChange={e=>update('device_count',Number(e.target.value))}>
        {[1,2,3,4,5].map(count=><option key={count} value={count}>{count} {count===1?tr('device','appareil'):tr('devices','appareils')}</option>)}
       </select></label>
      <label>{tr('Service contract','Durée du contrat')}
-     <select value={form.contract_days} onChange={e=>update('contract_days',e.target.value?Number(e.target.value):'')}>
+     <select value={form.contract_days} disabled={trialEditor} onChange={e=>update('contract_days',e.target.value?Number(e.target.value):'')}>
+       {trialEditor&&<option value={1}>{tr('24-hour free trial','Essai gratuit de 24 heures')}</option>}
       {[30,90,183].includes(Number(form.contract_days))&&<option value={form.contract_days}>{tr('Legacy contract','Ancien contrat')} · {form.contract_days} {tr('days','jours')}</option>}
       <option value={365}>{tr('1 year (365 days)','1 an (365 jours)')}</option>
       <option value={730}>{tr('2 years (730 days)','2 ans (730 jours)')}</option>
       <option value="">{tr('Custom / no preset','Personnalisé / sans durée prédéfinie')}</option>
      </select></label>
-    <label>{tr('Start date','Date de début')}<input type="date" value={form.starts_at} onChange={e=>update('starts_at',e.target.value)}/></label>
-    <label>{tr('Expiry date — automatically calculated; editable','Date d’expiration — calculée automatiquement, modifiable')}<input type="date" value={form.expires_at} onChange={e=>update('expires_at',e.target.value)}/></label>
+    <label>{tr('Start date','Date de début')}<input type="date" value={form.starts_at} disabled={trialEditor} onChange={e=>update('starts_at',e.target.value)}/></label>
+    <label>{tr('Expiry date — automatically calculated; editable','Date d’expiration — calculée automatiquement, modifiable')}<input type="date" value={form.expires_at} disabled={trialEditor} onChange={e=>update('expires_at',e.target.value)}/></label>
     <p className="mykioo-sub-note">{tr('Passwords are encrypted on the server. Members must verify their email before viewing them. Encryption must first be configured in Supabase.','Les mots de passe sont chiffrés sur le serveur. Les membres doivent vérifier leur adresse courriel avant de les afficher. Le chiffrement doit d’abord être configuré dans Supabase.')}</p>
-    <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!customerEmail.trim()} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):tr('Save subscription','Enregistrer l’abonnement')}</button>
+    <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!customerEmail.trim()} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):trialEditor?tr('Activate 24-hour free trial','Activer l’essai gratuit de 24 heures'):tr('Save subscription','Enregistrer l’abonnement')}</button>
      {(form.id||form.request_id)&&<button className="admin-action" type="button" onClick={()=>{setForm(newForm());setCustomerEmail('');setCreatedInvite(null);setError('')}}>{tr("Cancel editing","Annuler")}</button>}
     </div>
    </form>
