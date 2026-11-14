@@ -143,7 +143,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
      setForm(previous=>({...previous,member_id:resolvedMemberId}));
     }
    }
-   const payload={action:'save',...form,member_id:resolvedMemberId,contract_days:form.contract_days||null,
+   const payload={action:'save',...form,generate_trial:trialEditor&&!form.service_username&&!form.service_password,member_id:resolvedMemberId,contract_days:form.contract_days||null,
     starts_at:form.starts_at||null,expires_at:form.expires_at||null};
    const response=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-subscriptions',{
     method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
@@ -233,9 +233,11 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     </div>
     <label>{tr('Service / package name','Service / nom du forfait')}<input required maxLength={80} value={form.service_name} onChange={e=>update('service_name',e.target.value)} placeholder={tr('e.g. Premium package','ex. Forfait premium')}/></label>
 
-    <label>{tr('Service login username','Identifiant du service')}<input required={Boolean(form.request_id&&!form.id)} maxLength={160} autoComplete="off" value={form.service_username} onChange={e=>update('service_username',e.target.value)} placeholder={tr('Username / login ID','Nom d’utilisateur / identifiant')}/></label>
+    {trialEditor&&<p>{tr('Leave username and password empty to create a 24-hour trial in the panel automatically when you save. Its credentials and host will be emailed to the customer.','Laissez les identifiants vides pour créer automatiquement un essai de 24 heures lors de l’enregistrement. Les identifiants et le serveur seront envoyés au client.')}</p>}
+    <label>{tr('Service host URL','Adresse du serveur')}<input type="url" value={form.service_host||''} onChange={e=>update('service_host',e.target.value)} placeholder={tr('Filled automatically for panel trials','Rempli automatiquement pour les essais du panneau')}/></label>
+    <label>{tr('Service login username','Identifiant du service')}<input required={Boolean(form.request_id&&!form.id&&!trialEditor)} maxLength={160} autoComplete="off" value={form.service_username} onChange={e=>update('service_username',e.target.value)} placeholder={tr('Username / login ID','Nom d’utilisateur / identifiant')}/></label>
     <label>{form.id?tr('Replace service password (leave blank to keep)','Remplacer le mot de passe du service (laisser vide pour conserver)'):tr('Service password','Mot de passe du service')}
-      <input type="password" required={Boolean(form.request_id&&!form.id)} autoComplete="new-password" maxLength={256} value={form.service_password} onChange={e=>update('service_password',e.target.value)}
+      <input type="password" required={Boolean(form.request_id&&!form.id&&!trialEditor)} autoComplete="new-password" maxLength={256} value={form.service_password} onChange={e=>update('service_password',e.target.value)}
        placeholder={tr('Encrypted when saved','Chiffré lors de l’enregistrement')}/></label>
     <label>{tr('Provider reference (optional)','Référence du fournisseur (facultatif)')}<input maxLength={160} value={form.supplier_reference} onChange={e=>update('supplier_reference',e.target.value)}/></label>
     <label>{tr('Status','Statut')}<select value={form.status} disabled={trialEditor} onChange={e=>update('status',e.target.value)}>
