@@ -32,6 +32,53 @@ Deno.serve(async req=>{
    return {device_count:devices,preferred_payment_method:method,quoted_price_cad:Number(price.price_cad)};
   }
 
+
+  // Free trials are manually provisioned, 24 hours, one device, once per member.
+  // No package quote, payment method or billing invoice is generated.
+  async function createTrial(targetId:string,serviceName:string,notes:string,requestedByOwner=false){
+   if(serviceName.length<3||serviceName.length>80||notes.length>1000)
+     return respond({error:"Enter a valid service name and notes (maximum 1000 characters)"},400);
+   const {data:previous,error:previousError}=await db.from("mykioo_subscription_requests")
+     .select("id").eq("member_id",targetId).eq("request_type","trial").limit(1);
+   if(previousError)return respond({error:"Unable to check free trial eligibility"},503);
+   if(previous?.length)return respond({error:"A free trial has already been requested for this account. One trial per member."},409);
+   const {data:created,error:createError}=await db.from("mykioo_subscription_requests")
+     .insert({member_id:targetId,service_name:serviceName,notes,request_type:"trial",
+       contract_days:1,device_count:1,preferred_payment_method:null,quoted_price_cad:null,
+       renewal_subscription_id:null})
+     .select("id,member_id,service_name,status,request_type,contract_days,device_count,created_at").single();
+   if(createError)return respond({error:createError.code==="23505"?
+     "A free trial has already been requested for this account. One trial per member.":
+     "Could not submit the free trial request. Please try again."},createError.code==="23505"?409:500);
+   await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:requestedByOwner?
+     "owner_free_trial_requested":"free_trial_requested",entity_type:"subscription_request",entity_id:created.id,
+     details:{member_id:targetId,request_type:"trial",service_name:serviceName}});
+   if(!requestedByOwner){
+    const {data:owners}=await db.from("mykioo_members").select("user_id").eq("role","owner").eq("status","approved");
+    if(owners?.length){
+      await db.from("mykioo_notifications").upsert(owners.map(o=>({
+        user_id:o.user_id,kind:"subscription_request",source_id:created.id,destination:"subscription",
+        title_en:"Free trial request needs review",title_fr:"Essai gratuit à examiner",
+        body_en:"A member requested a one-time 24-hour free trial for "+serviceName+".",
+        body_fr:"Un membre demande un essai gratuit unique de 24 heures pour "+serviceName+"."
+      })),{onConflict:"user_id,kind,source_id"});
+    }
+   }
+   return respond({ok:true,request:created,invoice:null});
+  }
+  if(input.action==="trial"){
+   if(member.role!=="member")return respond({error:"Member access required"},403);
+   const serviceName=typeof input.service_name==="string"?input.service_name.trim():"";
+   const notes=typeof input.notes==="string"?input.notes.trim():"";
+   const {data:recent,error:recentError}=await db.from("mykioo_subscription_requests")
+     .select("created_at").eq("member_id",user.id).gte("created_at",new Date(Date.now()-86400000).toISOString())
+     .order("created_at",{ascending:false}).limit(6);
+   if(recentError)return respond({error:"Unable to verify request limits"},503);
+   if((recent||[]).length>=5)return respond({error:"Daily request limit reached. Contact support if you need more services."},429);
+   if(recent?.[0]&&Date.now()-Date.parse(recent[0].created_at)<60000)
+     return respond({error:"Please wait a minute before sending another request."},429);
+   return await createTrial(user.id,serviceName,notes);
+  }
   if(input.action==="get_checkout"){
    const days=Number(input.contract_days),devices=Number(input.device_count),method=input.preferred_payment_method;
    if(![365,730].includes(days)||!Number.isInteger(devices)||devices<1||devices>5||
@@ -138,16 +185,21 @@ Deno.serve(async req=>{
    if(member.role!=="owner"||user.app_metadata?.mykioo_role!=="owner")
      return respond({error:"Owner access required"},403);
    const member_id=input.member_id,request_type=input.request_type;
-   if(!uuid(member_id)||!["new","renewal"].includes(request_type))
+   if(!uuid(member_id)||!["new","renewal","trial"].includes(request_type))
      return respond({error:"Select a valid account and request type"},400);
    const {data:target,error:targetError}=await db.from("mykioo_members")
      .select("user_id,role,status").eq("user_id",member_id).maybeSingle();
    if(targetError||!target||
-       !(target.status==="approved"||(request_type==="new"&&target.status==="pending"))||
+       !(target.status==="approved"||(["new","trial"].includes(request_type)&&target.status==="pending"))||
        !(target.role==="member"||(target.role==="owner"&&target.user_id===user.id&&target.status==="approved")))
      return respond({error:"Choose a valid member. Only new requests may use accounts awaiting approval."},403);
    const contract_days=Number(input.contract_days);
    const notes=typeof input.notes==="string"?input.notes.trim():"";
+   if(request_type==="trial"){
+     if(target.role!=="member")return respond({error:"Free trials are only available to member accounts"},403);
+     const serviceName=typeof input.service_name==="string"?input.service_name.trim():"";
+     return await createTrial(member_id,serviceName,notes,true);
+   }
    if(![365,730].includes(contract_days)||notes.length>1000)
      return respond({error:"Select a valid duration and notes up to 1000 characters"},400);
    const packageSelection=await chosenPackage();
