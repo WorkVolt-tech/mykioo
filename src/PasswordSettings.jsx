@@ -17,8 +17,8 @@ export default function PasswordSettings({language='en',mode='change',onComplete
   if(!recovery&&!currentPassword){
    setError(tr('Enter your current password.','Saisissez votre mot de passe actuel.'));return;
   }
-  if(nextPassword.length<12||nextPassword.length>128){
-   setError(tr('Use a password between 12 and 128 characters.','Utilisez un mot de passe de 12 à 128 caractères.'));return;
+  if(nextPassword.length<8||nextPassword.length>128){
+   setError(tr('Choose a password between 8 and 128 characters.','Choisissez un mot de passe de 8 à 128 caractères.'));return;
   }
   if(nextPassword!==confirmation){
    setError(tr('The two new passwords do not match.','Les deux nouveaux mots de passe ne correspondent pas.'));return;
@@ -60,18 +60,18 @@ export default function PasswordSettings({language='en',mode='change',onComplete
      value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} disabled={saving}/>
    </label>}
    <label htmlFor="mykioo-new-password">{tr('New password','Nouveau mot de passe')}
-    <input id="mykioo-new-password" type={visible?'text':'password'} autoComplete="new-password" minLength={12} maxLength={128} required
+    <input id="mykioo-new-password" type={visible?'text':'password'} autoComplete="new-password" minLength={8} maxLength={128} required
      value={nextPassword} onChange={e=>setNextPassword(e.target.value)} disabled={saving}/>
    </label>
    <label htmlFor="mykioo-confirm-password">{tr('Confirm new password','Confirmer le nouveau mot de passe')}
-    <input id="mykioo-confirm-password" type={visible?'text':'password'} autoComplete="new-password" minLength={12} maxLength={128} required
+    <input id="mykioo-confirm-password" type={visible?'text':'password'} autoComplete="new-password" minLength={8} maxLength={128} required
      value={confirmation} onChange={e=>setConfirmation(e.target.value)} disabled={saving}/>
    </label>
    <button className="mykioo-password-visibility" type="button" onClick={()=>setVisible(v=>!v)}>
     {visible?<EyeOff size={16}/>:<Eye size={16}/>}
     {visible?tr('Hide passwords','Masquer les mots de passe'):tr('Show passwords','Afficher les mots de passe')}
    </button>
-   <p className="mykioo-password-guidance"><ShieldCheck size={16}/>{tr('At least 12 characters. Use a unique password that you do not use elsewhere.','Au moins 12 caractères. Utilisez un mot de passe unique que vous n’utilisez pas ailleurs.')}</p>
+   <p className="mykioo-password-guidance"><ShieldCheck size={16}/>{tr('Choose your own password (at least 8 characters). A unique password is safest.','Choisissez votre mot de passe (8 caractères minimum). Un mot de passe unique est plus sûr.')}</p>
    {error&&<p role="alert" className="mykioo-password-error">{error}</p>}
    {notice&&<p role="status" className="mykioo-password-success">{notice}</p>}
    <button className="mykioo-password-submit" type="submit" disabled={saving}>
