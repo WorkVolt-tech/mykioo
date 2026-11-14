@@ -1,0 +1,2730 @@
+[
+  {
+    "name": "Afghanistan",
+    "bouquets": [
+      {
+        "id": 7809,
+        "name": "AFGH ❖ AFGHANISTAN",
+        "type": "live"
+      }
+    ],
+    "fr": "Afghanistan"
+  },
+  {
+    "name": "Africa",
+    "bouquets": [
+      {
+        "id": 7815,
+        "name": "AF ❖ GENERAL",
+        "type": "live"
+      },
+      {
+        "id": 7823,
+        "name": "AF ❖ SOMALIA",
+        "type": "live"
+      },
+      {
+        "id": 7828,
+        "name": "AF ❖ SUPER SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 7835,
+        "name": "AF ❖ OTHERS AFRICA",
+        "type": "live"
+      },
+      {
+        "id": 7880,
+        "name": "AF ❖ KIDS",
+        "type": "live"
+      },
+      {
+        "id": 7884,
+        "name": "AF ❖ MOVIES",
+        "type": "live"
+      },
+      {
+        "id": 7885,
+        "name": "AF ❖ MUSIC",
+        "type": "live"
+      },
+      {
+        "id": 7890,
+        "name": "AF ❖ RELIGIOUS",
+        "type": "live"
+      },
+      {
+        "id": 7895,
+        "name": "AF ❖ CAMEROON",
+        "type": "live"
+      },
+      {
+        "id": 7896,
+        "name": "AF ❖ CONGO",
+        "type": "live"
+      },
+      {
+        "id": 7898,
+        "name": "AF ❖ GHANA",
+        "type": "live"
+      },
+      {
+        "id": 7900,
+        "name": "AF ❖ KENYA",
+        "type": "live"
+      },
+      {
+        "id": 7905,
+        "name": "AF ❖ NIGERIA",
+        "type": "live"
+      },
+      {
+        "id": 7909,
+        "name": "AF ❖ SENEGAL",
+        "type": "live"
+      },
+      {
+        "id": 7910,
+        "name": "AF ❖ UGANDA",
+        "type": "live"
+      },
+      {
+        "id": 7914,
+        "name": "AF ❖ ZAMBIA",
+        "type": "live"
+      },
+      {
+        "id": 7919,
+        "name": "AF ❖ ZIMBABWE",
+        "type": "live"
+      },
+      {
+        "id": 8073,
+        "name": "AF ❖ CANAL+",
+        "type": "live"
+      },
+      {
+        "id": 8239,
+        "name": "AF ❖ DSTV",
+        "type": "live"
+      },
+      {
+        "id": 8811,
+        "name": "AF ❖ COTE D IVOIRE",
+        "type": "live"
+      },
+      {
+        "id": 8812,
+        "name": "AF ❖ GUINEE",
+        "type": "live"
+      },
+      {
+        "id": 8813,
+        "name": "AF ❖ MALI",
+        "type": "live"
+      }
+    ],
+    "fr": "Afrique"
+  },
+  {
+    "name": "Albania",
+    "bouquets": [
+      {
+        "id": 7740,
+        "name": "AL ❖ GENERAL",
+        "type": "live"
+      },
+      {
+        "id": 8733,
+        "name": "AL ❖ ISLAM",
+        "type": "live"
+      },
+      {
+        "id": 8734,
+        "name": "AL ❖ LAJME",
+        "type": "live"
+      },
+      {
+        "id": 8735,
+        "name": "AL ❖ DOKUMENTARE",
+        "type": "live"
+      },
+      {
+        "id": 8736,
+        "name": "AL ❖ FILM",
+        "type": "live"
+      },
+      {
+        "id": 8737,
+        "name": "AL ❖ MUSIC",
+        "type": "live"
+      },
+      {
+        "id": 8738,
+        "name": "AL ❖ FËMIJË",
+        "type": "live"
+      },
+      {
+        "id": 8739,
+        "name": "AL ❖ SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 8740,
+        "name": "AL ❖ DARK",
+        "type": "live"
+      }
+    ],
+    "fr": "Albanie"
+  },
+  {
+    "name": "Arabic countries",
+    "bouquets": [
+      {
+        "id": 6432,
+        "name": "AR ❖ ISLAMIC",
+        "type": "live"
+      },
+      {
+        "id": 6439,
+        "name": "AR ❖ CHRISTIAN",
+        "type": "live"
+      },
+      {
+        "id": 6446,
+        "name": "AR ❖ SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 6454,
+        "name": "AR ❖ BEIN SPORTS SD",
+        "type": "live"
+      },
+      {
+        "id": 6458,
+        "name": "AR ❖ BEIN SPORTS HD",
+        "type": "live"
+      },
+      {
+        "id": 6459,
+        "name": "AR ❖ BEIN SPORTS 4K",
+        "type": "live"
+      },
+      {
+        "id": 6467,
+        "name": "AR ❖ BEIN TOD",
+        "type": "live"
+      },
+      {
+        "id": 6470,
+        "name": "AR ❖ MBC",
+        "type": "live"
+      },
+      {
+        "id": 6471,
+        "name": "AR ❖ MBC PREMIUM",
+        "type": "live"
+      },
+      {
+        "id": 6476,
+        "name": "AR ❖ ROTANA & ART",
+        "type": "live"
+      },
+      {
+        "id": 6477,
+        "name": "AR ❖ EGYPT",
+        "type": "live"
+      },
+      {
+        "id": 6486,
+        "name": "AR ❖ LIBYA",
+        "type": "live"
+      },
+      {
+        "id": 6487,
+        "name": "AR ❖ TUNISIA",
+        "type": "live"
+      },
+      {
+        "id": 6491,
+        "name": "AR ❖ ALGERIA",
+        "type": "live"
+      },
+      {
+        "id": 6499,
+        "name": "AR ❖ MOROCCO",
+        "type": "live"
+      },
+      {
+        "id": 6500,
+        "name": "AR ❖ MAURITANIA",
+        "type": "live"
+      },
+      {
+        "id": 6509,
+        "name": "AR ❖ LEBANON",
+        "type": "live"
+      },
+      {
+        "id": 6516,
+        "name": "AR ❖ SYRYA",
+        "type": "live"
+      },
+      {
+        "id": 6525,
+        "name": "AR ❖ IRAQ",
+        "type": "live"
+      },
+      {
+        "id": 6532,
+        "name": "AR ❖ JORDAN",
+        "type": "live"
+      },
+      {
+        "id": 6538,
+        "name": "AR ❖ PALESTINE",
+        "type": "live"
+      },
+      {
+        "id": 6540,
+        "name": "AR ❖ UAE",
+        "type": "live"
+      },
+      {
+        "id": 6548,
+        "name": "AR ❖ SAUDI ARABIA",
+        "type": "live"
+      },
+      {
+        "id": 6549,
+        "name": "AR ❖ QATAR",
+        "type": "live"
+      },
+      {
+        "id": 6557,
+        "name": "AR ❖ OMAN",
+        "type": "live"
+      },
+      {
+        "id": 6561,
+        "name": "AR ❖ BAHRAIN",
+        "type": "live"
+      },
+      {
+        "id": 6569,
+        "name": "AR ❖ KUWAIT",
+        "type": "live"
+      },
+      {
+        "id": 6572,
+        "name": "AR ❖ YEMEN",
+        "type": "live"
+      },
+      {
+        "id": 6580,
+        "name": "AR ❖ SUDAN",
+        "type": "live"
+      },
+      {
+        "id": 7260,
+        "name": "AR ❖ SHAHID",
+        "type": "live"
+      },
+      {
+        "id": 7437,
+        "name": "AR ❖ OSN",
+        "type": "live"
+      },
+      {
+        "id": 7981,
+        "name": "AR ❖ DOCUMENTARY",
+        "type": "live"
+      },
+      {
+        "id": 7982,
+        "name": "AR ❖ KIDS",
+        "type": "live"
+      },
+      {
+        "id": 7987,
+        "name": "AR ❖ NEWS",
+        "type": "live"
+      },
+      {
+        "id": 8117,
+        "name": "AR ❖ STARZPLAY",
+        "type": "live"
+      },
+      {
+        "id": 8121,
+        "name": "AR ❖ 24/7 SERIES",
+        "type": "live"
+      },
+      {
+        "id": 8125,
+        "name": "AR ❖ NETFLIX",
+        "type": "live"
+      },
+      {
+        "id": 8467,
+        "name": "AR ❖ JAWWY STC HD",
+        "type": "live"
+      },
+      {
+        "id": 8479,
+        "name": "AR ❖ BEIN SPORTS HEVC",
+        "type": "live"
+      },
+      {
+        "id": 8485,
+        "name": "AR ❖ DAZN",
+        "type": "live"
+      },
+      {
+        "id": 8793,
+        "name": "AR ❖ SHAHID 24/7",
+        "type": "live"
+      },
+      {
+        "id": 8794,
+        "name": "AR ❖ SHOOF 24/7",
+        "type": "live"
+      },
+      {
+        "id": 8796,
+        "name": "AR ❖ WATCH IT",
+        "type": "live"
+      },
+      {
+        "id": 8797,
+        "name": "AR ❖ BOX OFFICE TV",
+        "type": "live"
+      },
+      {
+        "id": 8798,
+        "name": "AR ❖ WORLD OF COOKING",
+        "type": "live"
+      },
+      {
+        "id": 8799,
+        "name": "AR ❖ AKWAM KIDS",
+        "type": "live"
+      },
+      {
+        "id": 8884,
+        "name": "AR ❖ SHAHID SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 8885,
+        "name": "AR ❖ SERIE A SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 8917,
+        "name": "AR ❖ ALWAN NETWORK",
+        "type": "live"
+      },
+      {
+        "id": 8965,
+        "name": "AR ❖ BEIN SPORTS MAX",
+        "type": "live"
+      },
+      {
+        "id": 8974,
+        "name": "AR ❖ BEIN SPORTS TOD",
+        "type": "live"
+      }
+    ],
+    "fr": "Pays arabes"
+  },
+  {
+    "name": "Argentina",
+    "bouquets": [
+      {
+        "id": 8093,
+        "name": "ARG ❖ ARGENTINA",
+        "type": "live"
+      }
+    ],
+    "fr": "Argentine"
+  },
+  {
+    "name": "Armenia",
+    "bouquets": [
+      {
+        "id": 7806,
+        "name": "AM ❖ ARMENIA",
+        "type": "live"
+      }
+    ],
+    "fr": "Arménie"
+  },
+  {
+    "name": "Asia",
+    "bouquets": [
+      {
+        "id": 7850,
+        "name": "AS ❖ OTHER ASIA",
+        "type": "live"
+      },
+      {
+        "id": 8337,
+        "name": "AS ❖ SINGAPORE",
+        "type": "live"
+      }
+    ],
+    "fr": "Asie"
+  },
+  {
+    "name": "Australia",
+    "bouquets": [
+      {
+        "id": 8048,
+        "name": "AU ❖ AUSTRALIA",
+        "type": "live"
+      },
+      {
+        "id": 8415,
+        "name": "AU ❖ AFL",
+        "type": "live"
+      },
+      {
+        "id": 8425,
+        "name": "AU ❖ NRL",
+        "type": "live"
+      }
+    ],
+    "fr": "Australie"
+  },
+  {
+    "name": "Austria",
+    "bouquets": [
+      {
+        "id": 6852,
+        "name": "AT ❖ AUSTRIA",
+        "type": "live"
+      },
+      {
+        "id": 8283,
+        "name": "AT ❖ PLUTO TV",
+        "type": "live"
+      }
+    ],
+    "fr": "Autriche"
+  },
+  {
+    "name": "Balkans",
+    "bouquets": [
+      {
+        "id": 7747,
+        "name": "EXYU ❖ SERBIA",
+        "type": "live"
+      },
+      {
+        "id": 7750,
+        "name": "EXYU ❖ BOSNA",
+        "type": "live"
+      },
+      {
+        "id": 7753,
+        "name": "EXYU ❖ HRVATSKA",
+        "type": "live"
+      },
+      {
+        "id": 7756,
+        "name": "EXYU ❖ MACEDONIA",
+        "type": "live"
+      },
+      {
+        "id": 7757,
+        "name": "EXYU ❖ SLOVENIA",
+        "type": "live"
+      },
+      {
+        "id": 7935,
+        "name": "EXYU ❖ PINK MEDIA",
+        "type": "live"
+      },
+      {
+        "id": 7937,
+        "name": "EXYU ❖ FILMSKI",
+        "type": "live"
+      },
+      {
+        "id": 7944,
+        "name": "EXYU ❖ DOKUMENTARNI",
+        "type": "live"
+      },
+      {
+        "id": 7948,
+        "name": "EXYU ❖ DJECIJI",
+        "type": "live"
+      },
+      {
+        "id": 7954,
+        "name": "EXYU ❖ SPORT",
+        "type": "live"
+      },
+      {
+        "id": 7959,
+        "name": "EXYU ❖ MUZICKI",
+        "type": "live"
+      },
+      {
+        "id": 8115,
+        "name": "EXYU ❖ MONTENEGRO",
+        "type": "live"
+      },
+      {
+        "id": 8745,
+        "name": "EXYU ❖ GENERAL",
+        "type": "live"
+      }
+    ],
+    "fr": "Balkans"
+  },
+  {
+    "name": "Belgium",
+    "bouquets": [
+      {
+        "id": 6622,
+        "name": "BE ❖ WALLONIË",
+        "type": "live"
+      },
+      {
+        "id": 6626,
+        "name": "BE ❖ VLAANDEREN",
+        "type": "live"
+      },
+      {
+        "id": 6627,
+        "name": "BE ❖ SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 8814,
+        "name": "BE ❖ DAZN",
+        "type": "live"
+      },
+      {
+        "id": 8841,
+        "name": "BE ❖ DAZN FR",
+        "type": "live"
+      },
+      {
+        "id": 8907,
+        "name": "BE ❖ DAZN EVENTS",
+        "type": "live"
+      },
+      {
+        "id": 8935,
+        "name": "BE ❖ OD DISNEY+",
+        "type": "live"
+      }
+    ],
+    "fr": "Belgique"
+  },
+  {
+    "name": "Brazil",
+    "bouquets": [
+      {
+        "id": 7964,
+        "name": "BR ❖ BRAZIL",
+        "type": "live"
+      }
+    ],
+    "fr": "Brésil"
+  },
+  {
+    "name": "Bulgaria",
+    "bouquets": [
+      {
+        "id": 7781,
+        "name": "BG ❖ BULGARIA",
+        "type": "live"
+      }
+    ],
+    "fr": "Bulgarie"
+  },
+  {
+    "name": "Canada",
+    "bouquets": [
+      {
+        "id": 7267,
+        "name": "CA ❖ GENERAL",
+        "type": "live"
+      },
+      {
+        "id": 7273,
+        "name": "CA ❖ SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 7282,
+        "name": "CA ❖ KIDS",
+        "type": "live"
+      },
+      {
+        "id": 7286,
+        "name": "CA ❖ MUSIC",
+        "type": "live"
+      },
+      {
+        "id": 7287,
+        "name": "CA ❖ ENTERTAINMENT",
+        "type": "live"
+      },
+      {
+        "id": 8281,
+        "name": "CA ❖ PLUTO TV",
+        "type": "live"
+      },
+      {
+        "id": 8431,
+        "name": "CA ❖ DAZN",
+        "type": "live"
+      },
+      {
+        "id": 8589,
+        "name": "CA ❖ TSN+",
+        "type": "live"
+      },
+      {
+        "id": 8591,
+        "name": "CA ❖ SPORTSNET +",
+        "type": "live"
+      },
+      {
+        "id": 8958,
+        "name": "CA ❖ CBC PPV",
+        "type": "live"
+      },
+      {
+        "id": 8984,
+        "name": "CA ❖ PRIME PPV",
+        "type": "live"
+      }
+    ],
+    "fr": "Canada"
+  },
+  {
+    "name": "Caribbean",
+    "bouquets": [
+      {
+        "id": 8119,
+        "name": "CAR ❖ CARIBBEAN",
+        "type": "live"
+      },
+      {
+        "id": 8697,
+        "name": "CAR ❖  CARAÏBES",
+        "type": "live"
+      }
+    ],
+    "fr": "Caraïbes"
+  },
+  {
+    "name": "Chile",
+    "bouquets": [
+      {
+        "id": 8097,
+        "name": "CH ❖ CHILE",
+        "type": "live"
+      }
+    ],
+    "fr": "Chili"
+  },
+  {
+    "name": "China",
+    "bouquets": [
+      {
+        "id": 7878,
+        "name": "CN ❖ CHINA",
+        "type": "live"
+      }
+    ],
+    "fr": "Chine"
+  },
+  {
+    "name": "Colombia",
+    "bouquets": [
+      {
+        "id": 8095,
+        "name": "CO ❖ COLOMBIA",
+        "type": "live"
+      }
+    ],
+    "fr": "Colombie"
+  },
+  {
+    "name": "Cyprus",
+    "bouquets": [
+      {
+        "id": 7790,
+        "name": "CY ❖ CYPRUS",
+        "type": "live"
+      }
+    ],
+    "fr": "Chypre"
+  },
+  {
+    "name": "Czechia",
+    "bouquets": [
+      {
+        "id": 8111,
+        "name": "CZ ❖ CZECH REPUBLIC",
+        "type": "live"
+      }
+    ],
+    "fr": "Tchéquie"
+  },
+  {
+    "name": "Denmark",
+    "bouquets": [
+      {
+        "id": 7510,
+        "name": "DK ❖ DENMARK",
+        "type": "live"
+      }
+    ],
+    "fr": "Danemark"
+  },
+  {
+    "name": "Dominican Republic",
+    "bouquets": [
+      {
+        "id": 8213,
+        "name": "DO ❖ DOMINICAN",
+        "type": "live"
+      }
+    ],
+    "fr": "République dominicaine"
+  },
+  {
+    "name": "El Salvador",
+    "bouquets": [
+      {
+        "id": 8211,
+        "name": "SLV ❖ SALVADOR",
+        "type": "live"
+      }
+    ],
+    "fr": "Salvador"
+  },
+  {
+    "name": "Finland",
+    "bouquets": [
+      {
+        "id": 7511,
+        "name": "FI ❖ FINLAND",
+        "type": "live"
+      }
+    ],
+    "fr": "Finlande"
+  },
+  {
+    "name": "France",
+    "bouquets": [
+      {
+        "id": 6583,
+        "name": "FR ❖ GENERALE",
+        "type": "live"
+      },
+      {
+        "id": 6592,
+        "name": "FR ❖ INFORMATION",
+        "type": "live"
+      },
+      {
+        "id": 6595,
+        "name": "FR ❖ CINÉMA",
+        "type": "live"
+      },
+      {
+        "id": 6601,
+        "name": "FR ❖ SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 6607,
+        "name": "FR ❖ DIVERTISSEMENT",
+        "type": "live"
+      },
+      {
+        "id": 6613,
+        "name": "FR ❖ JEUNESSE",
+        "type": "live"
+      },
+      {
+        "id": 6620,
+        "name": "FR ❖ MUSIQUE",
+        "type": "live"
+      },
+      {
+        "id": 7121,
+        "name": "FR ❖ DECOUVERTE",
+        "type": "live"
+      },
+      {
+        "id": 8263,
+        "name": "FR ❖ DOM TOM",
+        "type": "live"
+      },
+      {
+        "id": 8275,
+        "name": "FR ❖ PLUTO TV",
+        "type": "live"
+      },
+      {
+        "id": 8321,
+        "name": "FR ❖ FRANCE HEVC",
+        "type": "live"
+      },
+      {
+        "id": 8323,
+        "name": "FR ❖ FRANCE SD",
+        "type": "live"
+      },
+      {
+        "id": 8495,
+        "name": "FR ❖ CANAL+ LIVE",
+        "type": "live"
+      },
+      {
+        "id": 8497,
+        "name": "FR ❖ CHAMPIONS LEAGUE",
+        "type": "live"
+      },
+      {
+        "id": 8499,
+        "name": "FR ❖ RMC SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 8501,
+        "name": "FR ❖ BEIN SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 8730,
+        "name": "FR ❖ GENERALE FHD",
+        "type": "live"
+      },
+      {
+        "id": 8815,
+        "name": "FR ❖ LIGUE 1+ HD",
+        "type": "live"
+      },
+      {
+        "id": 8838,
+        "name": "FR ❖ LIGUE 1+ FHD",
+        "type": "live"
+      },
+      {
+        "id": 8839,
+        "name": "FR ❖ LIGUE 1+ SD",
+        "type": "live"
+      },
+      {
+        "id": 8898,
+        "name": "FR ❖ INFORMATION 4K",
+        "type": "live"
+      },
+      {
+        "id": 8899,
+        "name": "FR ❖ CINÉMA 4K",
+        "type": "live"
+      },
+      {
+        "id": 8905,
+        "name": "FR ❖ DAZN EVENTS",
+        "type": "live"
+      },
+      {
+        "id": 8909,
+        "name": "FR ❖ LIGUE 1+ 4K",
+        "type": "live"
+      },
+      {
+        "id": 8910,
+        "name": "FR ❖ DAZN NBA PRIME",
+        "type": "live"
+      },
+      {
+        "id": 8976,
+        "name": "FR ❖ 24/7 FRENCH",
+        "type": "live"
+      },
+      {
+        "id": 8977,
+        "name": "FR ❖ DISNEY EVENT",
+        "type": "live"
+      },
+      {
+        "id": 8978,
+        "name": "FR ❖ DISNEY+ PPV",
+        "type": "live"
+      },
+      {
+        "id": 8979,
+        "name": "FR ❖ DAZN PPV",
+        "type": "live"
+      },
+      {
+        "id": 8982,
+        "name": "FR ❖ PRIME PPV",
+        "type": "live"
+      },
+      {
+        "id": 8983,
+        "name": "FR ❖ MAX PPV",
+        "type": "live"
+      },
+      {
+        "id": 8988,
+        "name": "FR ❖ DAZN LALIGA",
+        "type": "live"
+      },
+      {
+        "id": 8989,
+        "name": "FR ❖ DAZN SERIE A",
+        "type": "live"
+      },
+      {
+        "id": 8990,
+        "name": "FR ❖ DAZN SAUDI",
+        "type": "live"
+      },
+      {
+        "id": 8991,
+        "name": "FR ❖ DAZN BETCLIC",
+        "type": "live"
+      },
+      {
+        "id": 8992,
+        "name": "FR ❖ DAZN JUPILER & CHALLENGER",
+        "type": "live"
+      }
+    ],
+    "fr": "France"
+  },
+  {
+    "name": "Georgia",
+    "bouquets": [
+      {
+        "id": 8707,
+        "name": "GE ❖ GEORGIA",
+        "type": "live"
+      }
+    ],
+    "fr": "Géorgie"
+  },
+  {
+    "name": "Germany",
+    "bouquets": [
+      {
+        "id": 6828,
+        "name": "DE ❖ ALLGEMEINES",
+        "type": "live"
+      },
+      {
+        "id": 6836,
+        "name": "DE ❖ SPORT",
+        "type": "live"
+      },
+      {
+        "id": 6843,
+        "name": "DE ❖ KINO & SERIEN",
+        "type": "live"
+      },
+      {
+        "id": 6844,
+        "name": "DE ❖ KINDER",
+        "type": "live"
+      },
+      {
+        "id": 6848,
+        "name": "DE ❖ DOKUMENTARFILM",
+        "type": "live"
+      },
+      {
+        "id": 6850,
+        "name": "DE ❖ MUSIK",
+        "type": "live"
+      },
+      {
+        "id": 8279,
+        "name": "DE ❖ PLUTO TV",
+        "type": "live"
+      },
+      {
+        "id": 8653,
+        "name": "DE ❖ DAZN",
+        "type": "live"
+      },
+      {
+        "id": 8655,
+        "name": "DE ❖ DYN SPORT",
+        "type": "live"
+      },
+      {
+        "id": 8657,
+        "name": "DE ❖ SKY BUNDESLIGA",
+        "type": "live"
+      },
+      {
+        "id": 8659,
+        "name": "DE ❖ RTL+",
+        "type": "live"
+      },
+      {
+        "id": 8661,
+        "name": "DE ❖ MYTEAMTV",
+        "type": "live"
+      },
+      {
+        "id": 8665,
+        "name": "DE ❖ FORMULE 1",
+        "type": "live"
+      },
+      {
+        "id": 8667,
+        "name": "DE ❖ OD SKY STORE",
+        "type": "live"
+      },
+      {
+        "id": 8669,
+        "name": "DE ❖ PRIME",
+        "type": "live"
+      },
+      {
+        "id": 8751,
+        "name": "DE ❖ DAZN UFC",
+        "type": "live"
+      },
+      {
+        "id": 8752,
+        "name": "DE ❖ DAZN NFL",
+        "type": "live"
+      },
+      {
+        "id": 8753,
+        "name": "DE ❖ DAZN NBA",
+        "type": "live"
+      },
+      {
+        "id": 8754,
+        "name": "DE ❖ EUROSPORT EXTRA",
+        "type": "live"
+      },
+      {
+        "id": 8755,
+        "name": "DE ❖ OD PLAY SELECT",
+        "type": "live"
+      },
+      {
+        "id": 8762,
+        "name": "DE ❖ NETFLIX SERIES",
+        "type": "live"
+      },
+      {
+        "id": 8764,
+        "name": "DE ❖ NETFLIX PREMIERE",
+        "type": "live"
+      },
+      {
+        "id": 8766,
+        "name": "DE ❖ OD PLEX",
+        "type": "live"
+      },
+      {
+        "id": 8770,
+        "name": "DE ❖ SPORT TOTAAL",
+        "type": "live"
+      }
+    ],
+    "fr": "Allemagne"
+  },
+  {
+    "name": "Greece",
+    "bouquets": [
+      {
+        "id": 7758,
+        "name": "GR ❖ ΕΛΛΑΔΑ ΓΕΝΙΚΑ",
+        "type": "live"
+      },
+      {
+        "id": 8577,
+        "name": "GR ❖ ZONE+",
+        "type": "live"
+      },
+      {
+        "id": 8756,
+        "name": "GR ❖ OD ΠΑΛΙΑ ΕΛΛΗΝΙΚΑ",
+        "type": "live"
+      },
+      {
+        "id": 8757,
+        "name": "GR ❖ OD ΕΛΛΑΔΑ",
+        "type": "live"
+      },
+      {
+        "id": 8758,
+        "name": "GR ❖ OD ΚΙΝΗΜΑΤΟΓΡΑΦΟΣ",
+        "type": "live"
+      },
+      {
+        "id": 8759,
+        "name": "GR ❖ OD ΣΕΙΡΕΣ",
+        "type": "live"
+      },
+      {
+        "id": 8760,
+        "name": "GR ❖ OD NOVA ΠΡΕΜΙΕΡΑ",
+        "type": "live"
+      },
+      {
+        "id": 8761,
+        "name": "GR ❖ OD NOVA ΠΡΕΜΙΕΡΑ 4K",
+        "type": "live"
+      },
+      {
+        "id": 8763,
+        "name": "GR ❖ OD NOVA ΚΙΝΗΜΑΤΟΓΡΑΦΟΣ",
+        "type": "live"
+      },
+      {
+        "id": 8765,
+        "name": "GR ❖ ΚΙΝΗΜΑΤΟΓΡΑΦΟΣ",
+        "type": "live"
+      },
+      {
+        "id": 8768,
+        "name": "GR ❖ ΨΥΧΑΓΩΓΙΑ",
+        "type": "live"
+      },
+      {
+        "id": 8771,
+        "name": "GR ❖ ΑΘΛΗΤΙΚΑ",
+        "type": "live"
+      }
+    ],
+    "fr": "Grèce"
+  },
+  {
+    "name": "Haiti",
+    "bouquets": [
+      {
+        "id": 8181,
+        "name": "HT ❖ HAITI",
+        "type": "live"
+      }
+    ],
+    "fr": "Haïti"
+  },
+  {
+    "name": "Honduras",
+    "bouquets": [
+      {
+        "id": 8099,
+        "name": "HN ❖ HONDURAS",
+        "type": "live"
+      }
+    ],
+    "fr": "Honduras"
+  },
+  {
+    "name": "Hungary",
+    "bouquets": [
+      {
+        "id": 7764,
+        "name": "HU ❖ HUNGARY",
+        "type": "live"
+      }
+    ],
+    "fr": "Hongrie"
+  },
+  {
+    "name": "Iceland",
+    "bouquets": [
+      {
+        "id": 8329,
+        "name": "IS ❖ ICELAND",
+        "type": "live"
+      }
+    ],
+    "fr": "Islande"
+  },
+  {
+    "name": "India",
+    "bouquets": [
+      {
+        "id": 7526,
+        "name": "IN ❖ INDIA",
+        "type": "live"
+      },
+      {
+        "id": 7533,
+        "name": "IN ❖ ZEE CHANNELS",
+        "type": "live"
+      },
+      {
+        "id": 7536,
+        "name": "IN ❖ DD CHANNELS",
+        "type": "live"
+      },
+      {
+        "id": 7538,
+        "name": "IN ❖ STAR CHANNELS",
+        "type": "live"
+      },
+      {
+        "id": 7540,
+        "name": "IN ❖ SONY CHANNELS",
+        "type": "live"
+      },
+      {
+        "id": 7546,
+        "name": "IN ❖ SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 7554,
+        "name": "IN ❖ MALAYALAM",
+        "type": "live"
+      },
+      {
+        "id": 7558,
+        "name": "IN ❖ PUNJABI",
+        "type": "live"
+      },
+      {
+        "id": 7560,
+        "name": "IN ❖ TAMIL",
+        "type": "live"
+      },
+      {
+        "id": 7561,
+        "name": "IN ❖ TELUGU",
+        "type": "live"
+      },
+      {
+        "id": 7568,
+        "name": "IN ❖ MARATHI",
+        "type": "live"
+      },
+      {
+        "id": 7574,
+        "name": "IN ❖ KANNADA",
+        "type": "live"
+      },
+      {
+        "id": 7583,
+        "name": "IN ❖ GUJARATI",
+        "type": "live"
+      },
+      {
+        "id": 7598,
+        "name": "IN ❖ BANGLA",
+        "type": "live"
+      },
+      {
+        "id": 7606,
+        "name": "IN ❖ ASIA UK",
+        "type": "live"
+      }
+    ],
+    "fr": "Inde"
+  },
+  {
+    "name": "Indonesia",
+    "bouquets": [
+      {
+        "id": 7869,
+        "name": "ID ❖ INDONESIA",
+        "type": "live"
+      }
+    ],
+    "fr": "Indonésie"
+  },
+  {
+    "name": "International events",
+    "bouquets": [
+      {
+        "id": 8147,
+        "name": "VIP ❖ CHAMPIONS LEAGUE",
+        "type": "live"
+      },
+      {
+        "id": 8795,
+        "name": "VIP ❖ RELAX",
+        "type": "live"
+      },
+      {
+        "id": 8836,
+        "name": "VIP ❖ 4K CHANNELS",
+        "type": "live"
+      },
+      {
+        "id": 8957,
+        "name": "VIP ❖ APPLE FORMULA 1",
+        "type": "live"
+      },
+      {
+        "id": 8981,
+        "name": "VIP ❖ PREMIER LEAGUE+",
+        "type": "live"
+      }
+    ],
+    "fr": "Événements internationaux"
+  },
+  {
+    "name": "International music",
+    "bouquets": [
+      {
+        "id": 8299,
+        "name": "ALL ❖ MUSIC",
+        "type": "live"
+      },
+      {
+        "id": 8921,
+        "name": "ALL ❖ CRICKET",
+        "type": "live"
+      }
+    ],
+    "fr": "Musique internationale"
+  },
+  {
+    "name": "Iran",
+    "bouquets": [
+      {
+        "id": 7808,
+        "name": "IR ❖ IRAN",
+        "type": "live"
+      },
+      {
+        "id": 7922,
+        "name": "IR ❖ GEM",
+        "type": "live"
+      },
+      {
+        "id": 7923,
+        "name": "IR ❖ IRIB",
+        "type": "live"
+      },
+      {
+        "id": 7930,
+        "name": "IR ❖ PERSIANA",
+        "type": "live"
+      }
+    ],
+    "fr": "Iran"
+  },
+  {
+    "name": "Ireland",
+    "bouquets": [
+      {
+        "id": 7734,
+        "name": "IR ❖ IRELAND",
+        "type": "live"
+      }
+    ],
+    "fr": "Irlande"
+  },
+  {
+    "name": "Israel",
+    "bouquets": [
+      {
+        "id": 7797,
+        "name": "IL ❖ ISRAEL",
+        "type": "live"
+      }
+    ],
+    "fr": "Israël"
+  },
+  {
+    "name": "Italy",
+    "bouquets": [
+      {
+        "id": 6748,
+        "name": "IT ❖ GENERALE",
+        "type": "live"
+      },
+      {
+        "id": 6754,
+        "name": "IT ❖ INTRATTENIMENTO",
+        "type": "live"
+      },
+      {
+        "id": 6757,
+        "name": "IT ❖ SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 6762,
+        "name": "IT ❖ DOCUMENTARI",
+        "type": "live"
+      },
+      {
+        "id": 6767,
+        "name": "IT ❖ BAMBINI",
+        "type": "live"
+      },
+      {
+        "id": 6769,
+        "name": "IT ❖ MUSICA",
+        "type": "live"
+      },
+      {
+        "id": 8273,
+        "name": "IT ❖ PLUTO TV",
+        "type": "live"
+      },
+      {
+        "id": 8613,
+        "name": "IT ❖ DAZN",
+        "type": "live"
+      },
+      {
+        "id": 8671,
+        "name": "IT ❖ DAZN SERIE A",
+        "type": "live"
+      },
+      {
+        "id": 8673,
+        "name": "IT ❖ DAZN SERIE B",
+        "type": "live"
+      }
+    ],
+    "fr": "Italie"
+  },
+  {
+    "name": "Kurdish",
+    "bouquets": [
+      {
+        "id": 7793,
+        "name": "KU ❖ KURDISH",
+        "type": "live"
+      }
+    ],
+    "fr": "Kurde"
+  },
+  {
+    "name": "Latin America",
+    "bouquets": [
+      {
+        "id": 7973,
+        "name": "LAT ❖ LATINO",
+        "type": "live"
+      },
+      {
+        "id": 8079,
+        "name": "LAT ❖ GENERAL",
+        "type": "live"
+      },
+      {
+        "id": 8081,
+        "name": "LAT ❖ MOVIES",
+        "type": "live"
+      },
+      {
+        "id": 8083,
+        "name": "LAT ❖ SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 8085,
+        "name": "LAT ❖ ENTERTAINMENT",
+        "type": "live"
+      },
+      {
+        "id": 8087,
+        "name": "LAT ❖ KIDS",
+        "type": "live"
+      },
+      {
+        "id": 8089,
+        "name": "LAT ❖ DOCUMENTARY",
+        "type": "live"
+      },
+      {
+        "id": 8091,
+        "name": "LAT ❖ MUSIC",
+        "type": "live"
+      },
+      {
+        "id": 8549,
+        "name": "LAT ❖ VIX",
+        "type": "live"
+      }
+    ],
+    "fr": "Amérique latine"
+  },
+  {
+    "name": "Lithuania",
+    "bouquets": [
+      {
+        "id": 8351,
+        "name": "LT ❖ LITHAUNIA",
+        "type": "live"
+      }
+    ],
+    "fr": "Lituanie"
+  },
+  {
+    "name": "Malaysia",
+    "bouquets": [
+      {
+        "id": 7866,
+        "name": "MY ❖ MALAYSIA",
+        "type": "live"
+      }
+    ],
+    "fr": "Malaisie"
+  },
+  {
+    "name": "Malta",
+    "bouquets": [
+      {
+        "id": 7782,
+        "name": "MT ❖ MALTA",
+        "type": "live"
+      }
+    ],
+    "fr": "Malte"
+  },
+  {
+    "name": "Mexico",
+    "bouquets": [
+      {
+        "id": 8113,
+        "name": "MX ❖ MEXICO",
+        "type": "live"
+      },
+      {
+        "id": 8985,
+        "name": "MX ❖ PRIME PPV",
+        "type": "live"
+      },
+      {
+        "id": 8987,
+        "name": "MX ❖ DISNEY+ PPV",
+        "type": "live"
+      }
+    ],
+    "fr": "Mexique"
+  },
+  {
+    "name": "Netherlands",
+    "bouquets": [
+      {
+        "id": 6708,
+        "name": "NL ❖ NEDERLAND FHD",
+        "type": "live"
+      },
+      {
+        "id": 6717,
+        "name": "NL ❖ SPORT",
+        "type": "live"
+      },
+      {
+        "id": 6726,
+        "name": "NL ❖ NEDERLAND HD",
+        "type": "live"
+      },
+      {
+        "id": 8477,
+        "name": "NL ❖ NEDERLAND UHD",
+        "type": "live"
+      },
+      {
+        "id": 8489,
+        "name": "NL ❖ VIDEOLAND",
+        "type": "live"
+      },
+      {
+        "id": 8886,
+        "name": "NL ❖ ZIGGO SPORT",
+        "type": "live"
+      },
+      {
+        "id": 8887,
+        "name": "NL ❖ ESPN",
+        "type": "live"
+      },
+      {
+        "id": 8888,
+        "name": "NL ❖ VIAPLAY FORMULA1",
+        "type": "live"
+      },
+      {
+        "id": 8889,
+        "name": "NL ❖ VIAPLAY PREMIER LEAGUE",
+        "type": "live"
+      },
+      {
+        "id": 8890,
+        "name": "NL ❖ VIAPLAY BUNDESLIGA",
+        "type": "live"
+      },
+      {
+        "id": 8891,
+        "name": "NL ❖ VIAPLAY HOCKEY",
+        "type": "live"
+      },
+      {
+        "id": 8892,
+        "name": "NL ❖ VIAPLAY EVENTS",
+        "type": "live"
+      },
+      {
+        "id": 8923,
+        "name": "NL ❖ REGIONALE ZENDERS",
+        "type": "live"
+      },
+      {
+        "id": 8924,
+        "name": "NL ❖ ESPN WATCH",
+        "type": "live"
+      },
+      {
+        "id": 8925,
+        "name": "NL ❖ VIAPLAY DARTS",
+        "type": "live"
+      },
+      {
+        "id": 8927,
+        "name": "NL ❖ PDC DARTS",
+        "type": "live"
+      },
+      {
+        "id": 8928,
+        "name": "NL ❖ HBO MAX SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 8929,
+        "name": "NL ❖ RAKUTEN TV",
+        "type": "live"
+      },
+      {
+        "id": 8930,
+        "name": "NL ❖ ANIME PLAY",
+        "type": "live"
+      },
+      {
+        "id": 8931,
+        "name": "NL ❖ ZONE+",
+        "type": "live"
+      },
+      {
+        "id": 8932,
+        "name": "NL ❖ ZONE+ KIDS",
+        "type": "live"
+      },
+      {
+        "id": 8933,
+        "name": "NL ❖ PPV",
+        "type": "live"
+      },
+      {
+        "id": 8938,
+        "name": "NL ❖ F1 TV PRO",
+        "type": "live"
+      }
+    ],
+    "fr": "Pays-Bas"
+  },
+  {
+    "name": "New Zealand",
+    "bouquets": [
+      {
+        "id": 8265,
+        "name": "NZ ❖ NEW ZEALAND",
+        "type": "live"
+      }
+    ],
+    "fr": "Nouvelle-Zélande"
+  },
+  {
+    "name": "Norway",
+    "bouquets": [
+      {
+        "id": 7525,
+        "name": "NO ❖ NORWAY",
+        "type": "live"
+      },
+      {
+        "id": 8940,
+        "name": "NO ❖ VIAPLAY PPV",
+        "type": "live"
+      },
+      {
+        "id": 8941,
+        "name": "NO ❖ VGTV PPV",
+        "type": "live"
+      },
+      {
+        "id": 8942,
+        "name": "NO ❖ DIREKET SPORT PPV",
+        "type": "live"
+      },
+      {
+        "id": 8943,
+        "name": "NO ❖ TV2 PLAY PPV",
+        "type": "live"
+      },
+      {
+        "id": 8944,
+        "name": "NO ❖ MAX PPV",
+        "type": "live"
+      }
+    ],
+    "fr": "Norvège"
+  },
+  {
+    "name": "Pakistan",
+    "bouquets": [
+      {
+        "id": 7615,
+        "name": "PK ❖ PAKISTAN",
+        "type": "live"
+      }
+    ],
+    "fr": "Pakistan"
+  },
+  {
+    "name": "Poland",
+    "bouquets": [
+      {
+        "id": 8863,
+        "name": "PL ❖ OGÓLNY",
+        "type": "live"
+      },
+      {
+        "id": 8864,
+        "name": "PL ❖ SERYJNY",
+        "type": "live"
+      },
+      {
+        "id": 8865,
+        "name": "PL ❖ DZIECI",
+        "type": "live"
+      },
+      {
+        "id": 8866,
+        "name": "PL ❖ MUZYKA",
+        "type": "live"
+      },
+      {
+        "id": 8867,
+        "name": "PL ❖ KULTURA",
+        "type": "live"
+      },
+      {
+        "id": 8868,
+        "name": "PL ❖ POLSAT SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 8869,
+        "name": "PL ❖ CANAL+ SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 8870,
+        "name": "PL ❖ SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 8871,
+        "name": "PL ❖ INFORMACJA",
+        "type": "live"
+      },
+      {
+        "id": 8872,
+        "name": "PL ❖ ROZRYWKA",
+        "type": "live"
+      }
+    ],
+    "fr": "Pologne"
+  },
+  {
+    "name": "Portugal",
+    "bouquets": [
+      {
+        "id": 6679,
+        "name": "PT ❖ GERAL",
+        "type": "live"
+      },
+      {
+        "id": 6683,
+        "name": "PT ❖ ESPORTES",
+        "type": "live"
+      },
+      {
+        "id": 6692,
+        "name": "PT ❖ CINEMA",
+        "type": "live"
+      },
+      {
+        "id": 6695,
+        "name": "PT ❖ CRIANÇAS",
+        "type": "live"
+      },
+      {
+        "id": 6697,
+        "name": "PT ❖ DOCUMENTÁRIOS",
+        "type": "live"
+      },
+      {
+        "id": 6699,
+        "name": "PT ❖ MÚSICA",
+        "type": "live"
+      },
+      {
+        "id": 7128,
+        "name": "PT ❖ ENTRETENIMENTO",
+        "type": "live"
+      }
+    ],
+    "fr": "Portugal"
+  },
+  {
+    "name": "Quebec",
+    "bouquets": [
+      {
+        "id": 7263,
+        "name": "CA ❖ QUEBEC",
+        "type": "live"
+      }
+    ],
+    "fr": "Québec"
+  },
+  {
+    "name": "Réunion",
+    "bouquets": [
+      {
+        "id": 8695,
+        "name": "REU ❖ REUNION",
+        "type": "live"
+      }
+    ],
+    "fr": "La Réunion"
+  },
+  {
+    "name": "Romania",
+    "bouquets": [
+      {
+        "id": 7774,
+        "name": "RO ❖ ROMANIA",
+        "type": "live"
+      }
+    ],
+    "fr": "Roumanie"
+  },
+  {
+    "name": "Russia",
+    "bouquets": [
+      {
+        "id": 7762,
+        "name": "RU ❖ RUSSIA",
+        "type": "live"
+      }
+    ],
+    "fr": "Russie"
+  },
+  {
+    "name": "Slovakia",
+    "bouquets": [
+      {
+        "id": 8319,
+        "name": "SK ❖ SLOVAKIA",
+        "type": "live"
+      }
+    ],
+    "fr": "Slovaquie"
+  },
+  {
+    "name": "Spain",
+    "bouquets": [
+      {
+        "id": 6634,
+        "name": "ES ❖ GENERAL",
+        "type": "live"
+      },
+      {
+        "id": 6642,
+        "name": "ES ❖ DEPORTES",
+        "type": "live"
+      },
+      {
+        "id": 6647,
+        "name": "ES ❖ CINE & SERIES",
+        "type": "live"
+      },
+      {
+        "id": 6649,
+        "name": "ES ❖ DOCUMENTALES",
+        "type": "live"
+      },
+      {
+        "id": 6657,
+        "name": "ES ❖ ENTRETENIMIENTO",
+        "type": "live"
+      },
+      {
+        "id": 6658,
+        "name": "ES ❖ NIÑOS",
+        "type": "live"
+      },
+      {
+        "id": 6667,
+        "name": "ES ❖ MÚSICA",
+        "type": "live"
+      },
+      {
+        "id": 8277,
+        "name": "ES ❖ PLUTO TV",
+        "type": "live"
+      },
+      {
+        "id": 8593,
+        "name": "ES ❖ CHAMPIONS LEAGUE",
+        "type": "live"
+      },
+      {
+        "id": 8595,
+        "name": "ES ❖ MOVISTAR+",
+        "type": "live"
+      },
+      {
+        "id": 8637,
+        "name": "ES ❖ DAZN",
+        "type": "live"
+      },
+      {
+        "id": 8643,
+        "name": "ES ❖ MOVISTAR DEPORTES",
+        "type": "live"
+      },
+      {
+        "id": 8645,
+        "name": "ES ❖ MOVISTAR CAMPEONES",
+        "type": "live"
+      },
+      {
+        "id": 8647,
+        "name": "ES ❖ MOVISTAR LA LIGA",
+        "type": "live"
+      },
+      {
+        "id": 8649,
+        "name": "ES ❖ DAZN LALIGA",
+        "type": "live"
+      },
+      {
+        "id": 8651,
+        "name": "ES ❖ TOROS",
+        "type": "live"
+      },
+      {
+        "id": 8858,
+        "name": "ES ❖ TIVIFY GOLD",
+        "type": "live"
+      },
+      {
+        "id": 8859,
+        "name": "ES ❖ LALIGA+ EVENTS",
+        "type": "live"
+      },
+      {
+        "id": 8906,
+        "name": "ES ❖ DAZN EVENTS",
+        "type": "live"
+      },
+      {
+        "id": 8911,
+        "name": "ES ❖ DAZN ACB",
+        "type": "live"
+      },
+      {
+        "id": 8955,
+        "name": "ES ❖ VIX PPV",
+        "type": "live"
+      }
+    ],
+    "fr": "Espagne"
+  },
+  {
+    "name": "Suriname",
+    "bouquets": [
+      {
+        "id": 8569,
+        "name": "SR ❖ SURINAME",
+        "type": "live"
+      }
+    ],
+    "fr": "Suriname"
+  },
+  {
+    "name": "Sweden",
+    "bouquets": [
+      {
+        "id": 8271,
+        "name": "SW ❖ PLUTO TV",
+        "type": "live"
+      },
+      {
+        "id": 8713,
+        "name": "SW ❖ SVERIGE",
+        "type": "live"
+      },
+      {
+        "id": 8715,
+        "name": "SW ❖ DOCUMENTARY",
+        "type": "live"
+      },
+      {
+        "id": 8716,
+        "name": "SW ❖ BARN",
+        "type": "live"
+      },
+      {
+        "id": 8717,
+        "name": "SW ❖ FILMER",
+        "type": "live"
+      },
+      {
+        "id": 8718,
+        "name": "SW ❖ MUSIK",
+        "type": "live"
+      },
+      {
+        "id": 8719,
+        "name": "SW ❖ SPORTER",
+        "type": "live"
+      },
+      {
+        "id": 8779,
+        "name": "SW ❖ SWEDEN 4K",
+        "type": "live"
+      },
+      {
+        "id": 8816,
+        "name": "SW ❖ VIAPLAY",
+        "type": "live"
+      },
+      {
+        "id": 8817,
+        "name": "SW ❖ PLAY+ PPV",
+        "type": "live"
+      },
+      {
+        "id": 8818,
+        "name": "SW ❖ TV4 PLAY",
+        "type": "live"
+      },
+      {
+        "id": 8819,
+        "name": "SW ❖ MAX PPV",
+        "type": "live"
+      },
+      {
+        "id": 8820,
+        "name": "SW ❖ PRIME PPV",
+        "type": "live"
+      },
+      {
+        "id": 8821,
+        "name": "SW ❖ DISNEY+ PPV",
+        "type": "live"
+      },
+      {
+        "id": 8822,
+        "name": "SW ❖ AFTONBLADET PPV",
+        "type": "live"
+      },
+      {
+        "id": 8823,
+        "name": "SW ❖ SVENSK HOCKEY PPV",
+        "type": "live"
+      },
+      {
+        "id": 8824,
+        "name": "SW ❖ SVENSKBIL SPORT PPV",
+        "type": "live"
+      },
+      {
+        "id": 8825,
+        "name": "SW ❖ HANDBOLLSLIGAN PPV",
+        "type": "live"
+      },
+      {
+        "id": 8826,
+        "name": "SW ❖ INNEBANDY PPV",
+        "type": "live"
+      },
+      {
+        "id": 8827,
+        "name": "SW ❖ HOCKEY ETTAN PPV",
+        "type": "live"
+      },
+      {
+        "id": 8828,
+        "name": "SW ❖ ETTAN PLAY PPV",
+        "type": "live"
+      },
+      {
+        "id": 8829,
+        "name": "SW ❖ FANSEAT PPV",
+        "type": "live"
+      },
+      {
+        "id": 8830,
+        "name": "SW ❖ MFFPLAY PPV",
+        "type": "live"
+      }
+    ],
+    "fr": "Suède"
+  },
+  {
+    "name": "Switzerland",
+    "bouquets": [
+      {
+        "id": 6779,
+        "name": "CH ❖ SWITZERLAND",
+        "type": "live"
+      },
+      {
+        "id": 8445,
+        "name": "CH ❖ BLUE SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 8805,
+        "name": "CH ❖ DAZN",
+        "type": "live"
+      }
+    ],
+    "fr": "Suisse"
+  },
+  {
+    "name": "Thailand",
+    "bouquets": [
+      {
+        "id": 7857,
+        "name": "TH ❖ THAILAND",
+        "type": "live"
+      }
+    ],
+    "fr": "Thaïlande"
+  },
+  {
+    "name": "Türkiye",
+    "bouquets": [
+      {
+        "id": 7442,
+        "name": "TR ❖ GENEL",
+        "type": "live"
+      },
+      {
+        "id": 7451,
+        "name": "TR ❖ AVRUPA",
+        "type": "live"
+      },
+      {
+        "id": 7457,
+        "name": "TR ❖ HABERLER",
+        "type": "live"
+      },
+      {
+        "id": 7459,
+        "name": "TR ❖ SPOR",
+        "type": "live"
+      },
+      {
+        "id": 7460,
+        "name": "TR ❖ BEIN MOVIE",
+        "type": "live"
+      },
+      {
+        "id": 7465,
+        "name": "TR ❖ SINEMA MOVIE",
+        "type": "live"
+      },
+      {
+        "id": 7480,
+        "name": "TR ❖ LOCA MOVIE",
+        "type": "live"
+      },
+      {
+        "id": 7486,
+        "name": "TR ❖ FILMLER",
+        "type": "live"
+      },
+      {
+        "id": 7487,
+        "name": "TR ❖ COCUKLAR",
+        "type": "live"
+      },
+      {
+        "id": 7492,
+        "name": "TR ❖ MUZIK",
+        "type": "live"
+      },
+      {
+        "id": 7497,
+        "name": "TR ❖ BELGESELLER",
+        "type": "live"
+      },
+      {
+        "id": 7501,
+        "name": "TR ❖ DINI",
+        "type": "live"
+      },
+      {
+        "id": 7503,
+        "name": "TR ❖ DIGER",
+        "type": "live"
+      }
+    ],
+    "fr": "Turquie"
+  },
+  {
+    "name": "Ukraine",
+    "bouquets": [
+      {
+        "id": 7770,
+        "name": "UA ❖ UKRAINE",
+        "type": "live"
+      }
+    ],
+    "fr": "Ukraine"
+  },
+  {
+    "name": "United Kingdom",
+    "bouquets": [
+      {
+        "id": 6781,
+        "name": "UK ❖ GENERAL",
+        "type": "live"
+      },
+      {
+        "id": 6782,
+        "name": "UK ❖ NEWS",
+        "type": "live"
+      },
+      {
+        "id": 6791,
+        "name": "UK ❖ SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 6799,
+        "name": "UK ❖ MOVIES",
+        "type": "live"
+      },
+      {
+        "id": 6805,
+        "name": "UK ❖ ENTERTAINMENT",
+        "type": "live"
+      },
+      {
+        "id": 6810,
+        "name": "UK ❖ DOCUMENTARY",
+        "type": "live"
+      },
+      {
+        "id": 6813,
+        "name": "UK ❖ KIDS",
+        "type": "live"
+      },
+      {
+        "id": 6815,
+        "name": "UK ❖ MUSIC",
+        "type": "live"
+      },
+      {
+        "id": 6820,
+        "name": "UK ❖ PPV EVENTS",
+        "type": "live"
+      },
+      {
+        "id": 8261,
+        "name": "UK ❖ HORSE RACE",
+        "type": "live"
+      },
+      {
+        "id": 8269,
+        "name": "UK ❖ PLUTO TV",
+        "type": "live"
+      },
+      {
+        "id": 8311,
+        "name": "UK ❖ EPL",
+        "type": "live"
+      },
+      {
+        "id": 8315,
+        "name": "UK ❖ EFL CHAMPIONSHIP",
+        "type": "live"
+      },
+      {
+        "id": 8391,
+        "name": "UK ❖ TNT EVENTS",
+        "type": "live"
+      },
+      {
+        "id": 8433,
+        "name": "UK ❖ DAZN",
+        "type": "live"
+      },
+      {
+        "id": 8471,
+        "name": "UK ❖ MATCHROOM",
+        "type": "live"
+      },
+      {
+        "id": 8724,
+        "name": "UK ❖ SPFL",
+        "type": "live"
+      },
+      {
+        "id": 8790,
+        "name": "UK ❖ HUB PREMIER",
+        "type": "live"
+      },
+      {
+        "id": 8831,
+        "name": "UK ❖ SCOTTISH PREMIER LEAGUE",
+        "type": "live"
+      },
+      {
+        "id": 8832,
+        "name": "UK ❖ EFL LEAGUE ONE",
+        "type": "live"
+      },
+      {
+        "id": 8833,
+        "name": "UK ❖ EFL LEAGUE TWO",
+        "type": "live"
+      },
+      {
+        "id": 8850,
+        "name": "UK ❖ NATIONAL LEAGUE",
+        "type": "live"
+      }
+    ],
+    "fr": "Royaume-Uni"
+  },
+  {
+    "name": "United States",
+    "bouquets": [
+      {
+        "id": 7292,
+        "name": "US ❖ 24-7",
+        "type": "live"
+      },
+      {
+        "id": 7297,
+        "name": "US ❖ ABC",
+        "type": "live"
+      },
+      {
+        "id": 7301,
+        "name": "US ❖ CBS",
+        "type": "live"
+      },
+      {
+        "id": 7306,
+        "name": "US ❖ DAZN",
+        "type": "live"
+      },
+      {
+        "id": 7308,
+        "name": "US ❖ DOCUMENTARY",
+        "type": "live"
+      },
+      {
+        "id": 7314,
+        "name": "US ❖ ENTERTAINMENT",
+        "type": "live"
+      },
+      {
+        "id": 7326,
+        "name": "US ❖ FOX",
+        "type": "live"
+      },
+      {
+        "id": 7329,
+        "name": "US ❖ NEWS",
+        "type": "live"
+      },
+      {
+        "id": 7335,
+        "name": "US ❖ KIDS",
+        "type": "live"
+      },
+      {
+        "id": 7341,
+        "name": "US ❖ MLB",
+        "type": "live"
+      },
+      {
+        "id": 7349,
+        "name": "US ❖ MLS",
+        "type": "live"
+      },
+      {
+        "id": 7350,
+        "name": "US ❖ MOVIES",
+        "type": "live"
+      },
+      {
+        "id": 7358,
+        "name": "US ❖ MUSIC",
+        "type": "live"
+      },
+      {
+        "id": 7365,
+        "name": "US ❖ MY-CW",
+        "type": "live"
+      },
+      {
+        "id": 7367,
+        "name": "US ❖ NBA",
+        "type": "live"
+      },
+      {
+        "id": 7376,
+        "name": "US ❖ NBC",
+        "type": "live"
+      },
+      {
+        "id": 7384,
+        "name": "US ❖ NFL",
+        "type": "live"
+      },
+      {
+        "id": 7387,
+        "name": "US ❖ NHL",
+        "type": "live"
+      },
+      {
+        "id": 7395,
+        "name": "US ❖ PPV EVENTS",
+        "type": "live"
+      },
+      {
+        "id": 7403,
+        "name": "US ❖ SPORTS",
+        "type": "live"
+      },
+      {
+        "id": 7412,
+        "name": "US ❖ TELEMUNDO",
+        "type": "live"
+      },
+      {
+        "id": 7424,
+        "name": "US ❖ UNIVI/UNIMAS",
+        "type": "live"
+      },
+      {
+        "id": 7431,
+        "name": "US ❖ PBS",
+        "type": "live"
+      },
+      {
+        "id": 7733,
+        "name": "US ❖ F1 & MOTOGP",
+        "type": "live"
+      },
+      {
+        "id": 8145,
+        "name": "US ❖ ESPN PLUS",
+        "type": "live"
+      },
+      {
+        "id": 8177,
+        "name": "US ❖ TENNIS",
+        "type": "live"
+      },
+      {
+        "id": 8251,
+        "name": "US ❖ DEPORTES",
+        "type": "live"
+      },
+      {
+        "id": 8253,
+        "name": "US ❖ PLUTO TV",
+        "type": "live"
+      },
+      {
+        "id": 8255,
+        "name": "US ❖ NCAA",
+        "type": "live"
+      },
+      {
+        "id": 8285,
+        "name": "US ❖ PEACOCK",
+        "type": "live"
+      },
+      {
+        "id": 8303,
+        "name": "US ❖ METV",
+        "type": "live"
+      },
+      {
+        "id": 8427,
+        "name": "US ❖ TRILLERTV",
+        "type": "live"
+      },
+      {
+        "id": 8429,
+        "name": "US ❖ MILB",
+        "type": "live"
+      },
+      {
+        "id": 8449,
+        "name": "US ❖ HULU ORIGINALS",
+        "type": "live"
+      },
+      {
+        "id": 8451,
+        "name": "US ❖ APPLE TV+ SERIES",
+        "type": "live"
+      },
+      {
+        "id": 8455,
+        "name": "US ❖ PEACOCK SERIES",
+        "type": "live"
+      },
+      {
+        "id": 8457,
+        "name": "US ❖ PARAMOUNT+ ON-DEMAND",
+        "type": "live"
+      },
+      {
+        "id": 8461,
+        "name": "US ❖ STARZPLAY ON-DEMAND",
+        "type": "live"
+      },
+      {
+        "id": 8463,
+        "name": "US ❖ FLOSPORTS",
+        "type": "live"
+      },
+      {
+        "id": 8465,
+        "name": "US ❖  SPECTRUM NEWS",
+        "type": "live"
+      },
+      {
+        "id": 8473,
+        "name": "US ❖ BTN+",
+        "type": "live"
+      },
+      {
+        "id": 8597,
+        "name": "US ❖ CHRISTMAS",
+        "type": "live"
+      },
+      {
+        "id": 8746,
+        "name": "US ❖ PLAY KIDZ",
+        "type": "live"
+      },
+      {
+        "id": 8747,
+        "name": "US ❖ REALITY SHOW",
+        "type": "live"
+      },
+      {
+        "id": 8748,
+        "name": "US ❖ DISNEY+ SERIES",
+        "type": "live"
+      },
+      {
+        "id": 8749,
+        "name": "US ❖ PRIME VIDEO",
+        "type": "live"
+      },
+      {
+        "id": 8750,
+        "name": "US ❖ HBO MAX",
+        "type": "live"
+      },
+      {
+        "id": 8787,
+        "name": "US ❖ PPV UFC",
+        "type": "live"
+      },
+      {
+        "id": 8788,
+        "name": "US ❖ PPV BOXING",
+        "type": "live"
+      },
+      {
+        "id": 8789,
+        "name": "US ❖ PPV NETFLIX",
+        "type": "live"
+      },
+      {
+        "id": 8862,
+        "name": "US ❖ NHL TEAMS",
+        "type": "live"
+      },
+      {
+        "id": 8895,
+        "name": "US ❖ PARAMOUNT PPV",
+        "type": "live"
+      },
+      {
+        "id": 8896,
+        "name": "US ❖ VICTORY +",
+        "type": "live"
+      },
+      {
+        "id": 8959,
+        "name": "US ❖ CINEMANIA",
+        "type": "live"
+      },
+      {
+        "id": 8980,
+        "name": "US ❖ SLING PPV",
+        "type": "live"
+      },
+      {
+        "id": 8986,
+        "name": "US ❖ PRIME PPV",
+        "type": "live"
+      }
+    ],
+    "fr": "États-Unis"
+  },
+  {
+    "name": "Uruguay",
+    "bouquets": [
+      {
+        "id": 8101,
+        "name": "UY ❖ URUGUAY",
+        "type": "live"
+      }
+    ],
+    "fr": "Uruguay"
+  },
+  {
+    "name": "Vietnam",
+    "bouquets": [
+      {
+        "id": 7844,
+        "name": "VN ❖ VIETNAM",
+        "type": "live"
+      }
+    ],
+    "fr": "Viêt Nam"
+  }
+]

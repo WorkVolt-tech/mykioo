@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 import SubscriptionDirectory from './SubscriptionDirectory';
+import './CountryPackPicker.css';
 
 const blank={id:'',member_id:'',service_name:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:'',contract_days:365,device_count:1,service_password:'',request_id:''};
 const todayLocal=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
@@ -217,6 +218,10 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     {view!=='all'&&<button type="button" className="admin-action" onClick={()=>onViewChange?.(form.request_id?'requests':'directory')}>{tr('Back to list','Retour à la liste')}</button>}
    </div>
    <p>{form.request_id&&form.id?tr("This extends the existing subscription and keeps the same login and encrypted password. The expiry date is prefilled and may be adjusted.","Cette opération prolonge l’abonnement existant et conserve ses identifiants et son mot de passe chiffré. La date d’expiration est préremplie et modifiable."):form.request_id?tr("Add the service credentials and dates to complete this request. The member will then see the subscription in their account.","Ajoutez les identifiants et les dates pour terminer cette demande. Le membre verra alors l’abonnement dans son compte."):tr("Each service login can have its own subscription, contract and status.","Chaque identifiant de service peut avoir son propre abonnement, sa durée et son statut.")}</p>
+   {form.request_id&&requests.find(r=>r.id===form.request_id)?.notes&&<div className="mykioo-order-preferences">
+    <strong>{tr('Customer selections and notes','Sélections et notes du client')}</strong>
+    <p>{requests.find(r=>r.id===form.request_id).notes}</p>
+   </div>}
    {trialEditor&&<p className="mykioo-free-trial-callout">{tr('Free trial: no payment needed. Enter the service credentials below. Saving activates exactly 24 hours from activation. MYKIOO tracks expiry, but you must disable access with the external provider afterward.','Essai gratuit : aucun paiement requis. Saisissez les identifiants du service. L’enregistrement active exactement 24 heures à compter de l’activation. MYKIOO suit l’expiration, mais vous devez ensuite désactiver l’accès chez le fournisseur externe.')}</p>}
     <form className="mykioo-sub-form" onSubmit={save}>
     <div className="mykioo-owner-customer-email">

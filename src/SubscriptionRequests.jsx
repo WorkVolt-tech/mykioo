@@ -3,6 +3,7 @@ import {supabase} from './supabase';
 import SubscriptionHistory from './SubscriptionHistory';
 import {MemberBilling} from './Billing';
 import {priceCAD,PAYMENT_LABELS} from './PackagePricing';
+import CountryPackPicker,{countryPackNotes} from './CountryPackPicker';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-subscription-requests';
 const statuses={
@@ -25,6 +26,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const [targetId,setTargetId]=useState(userId||'');
  const [ownerEmail,setOwnerEmail]=useState(''),[createdInvite,setCreatedInvite]=useState(null);
  const [requestType,setRequestType]=useState('new');
+ const [countryPacks,setCountryPacks]=useState([]);
  const [service,setService]=useState(owner?'':'MYKIOO TV'),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
  const [deviceCount,setDeviceCount]=useState(1),[paymentMethod,setPaymentMethod]=useState('interac');
  const [checkout,setCheckout]=useState(null),[checkoutLoading,setCheckoutLoading]=useState(false);
@@ -94,8 +96,8 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const pendingRenewals=new Set(rows.filter(r=>r.request_type==='renewal'&&['pending','in_review'].includes(r.status)).map(r=>r.renewal_subscription_id));
  const selectedRenewal=eligible.find(s=>s.id===renewalId);
  const renewalExpiry=sub=>sub.expires_at?new Date(sub.expires_at).toLocaleDateString(fr?'fr-CA':'en-CA',{year:'numeric',month:'short',day:'numeric'}):tr('Not available','Non disponible');
- function chooseType(value){setRequestType(value);setRenewalId('');if(value!=='renewal')setDeviceCount(1);setContractDays(365);setError('');setNotice('')}
- function chooseAccount(value){setTargetId(value);setRenewalId('');setError('');setNotice('')}
+ function chooseType(value){setCountryPacks([]);setRequestType(value);setRenewalId('');if(value!=='renewal')setDeviceCount(1);setContractDays(365);setError('');setNotice('')}
+ function chooseAccount(value){setCountryPacks([]);setTargetId(value);setRenewalId('');setError('');setNotice('')}
  function chooseOwnerEmail(value){
   setOwnerEmail(value);setCreatedInvite(null);
   const member=users.find(m=>m.email?.trim().toLowerCase()===value.trim().toLowerCase());
@@ -123,6 +125,11 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  async function submit(e){
   e.preventDefault();if(saving)return;
   const renewal=requestType==='renewal',trial=requestType==='trial';
+  const requestNotes=trial?notes.trim():countryPackNotes(countryPacks,notes);
+  if(requestNotes.length>1000){
+   setError(tr('Please shorten your note. Country selections and notes can contain up to 1000 characters combined.','Veuillez raccourcir votre note. Les pays sélectionnés et la note peuvent contenir 1000 caractères au total.'));
+   return;
+  }
   if(!trial&&(!priceCAD(contractDays,deviceCount)||!PAYMENT_LABELS[paymentMethod])){setError(tr('Choose a valid package and payment method.','Choisissez un forfait et un mode de paiement valides.'));return;}
   if(isBankPayment&&(!bankReady||checkoutLoading)){
    setError(tr('Bank payment instructions are not ready. Select a configured method or contact MYKIOO.','Les instructions de paiement bancaire ne sont pas prêtes. Choisissez un autre mode configuré ou contactez MYKIOO.'));return;
@@ -165,12 +172,12 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    const payload=owner?
      {action:'owner_create',member_id:resolvedTargetId,request_type:requestType,
        service_name:renewal?undefined:service.trim(),subscription_id:renewal?renewalId:undefined,
-       contract_days:trial?1:contractDays,device_count:trial?1:deviceCount,preferred_payment_method:trial?null:paymentMethod,notes:notes.trim()}:
+       contract_days:trial?1:contractDays,device_count:trial?1:deviceCount,preferred_payment_method:trial?null:paymentMethod,notes:requestNotes}:
      trial?
-      {action:'trial',service_name:service.trim()||'MYKIOO TV',notes:notes.trim()}:
+      {action:'trial',service_name:service.trim()||'MYKIOO TV',notes:requestNotes}:
      renewal?
-      {action:'renew',subscription_id:renewalId,contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim()}:
-      {action:'create',service_name:service.trim(),contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:notes.trim()};
+      {action:'renew',subscription_id:renewalId,contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:requestNotes}:
+      {action:'create',service_name:service.trim(),contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:requestNotes};
    const response=await fetch(endpoint,{method:'POST',headers:{
      'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
      'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -182,9 +189,9 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
       ...result.request,request_type:requestType,
       renewal_subscription_id:renewal?renewalId:null,
       service_name:renewal?(selected?.service_name||'Renewal'):service.trim(),
-      contract_days:trial?1:contractDays,device_count:trial?1:deviceCount,preferred_payment_method:trial?null:paymentMethod,notes:notes.trim(),quoted_price_cad:trial?null:priceCAD(contractDays,deviceCount),status:'pending'
+      contract_days:trial?1:contractDays,device_count:trial?1:deviceCount,preferred_payment_method:trial?null:paymentMethod,notes:requestNotes,quoted_price_cad:trial?null:priceCAD(contractDays,deviceCount),status:'pending'
     },...previous.filter(r=>r.id!==result.request.id)]);
-   setService(owner?'':'MYKIOO TV');setRenewalId('');if(owner){setOwnerEmail('');setCreatedInvite(null)}setNotes('');setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setRequestType('new');
+   setService(owner?'':'MYKIOO TV');setRenewalId('');if(owner){setOwnerEmail('');setCreatedInvite(null)}setNotes('');setCountryPacks([]);setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setRequestType('new');
    setNotice(owner?
     (invitationSent?tr('Request created and a customer invitation was issued. The new member must be approved before they can access MYKIOO.','Demande créée et invitation envoyée au client. Le nouveau membre doit être approuvé avant d’accéder à MYKIOO.'):trial?tr('Free trial requested for this member. Activate it manually from the subscription manager.','Essai gratuit demandé pour ce membre. Activez-le manuellement dans le gestionnaire d’abonnements.'):tr('Request created for the existing customer.','Demande créée pour le client existant.')):
     trial?tr('Free trial requested. MYKIOO will review it. No payment is required and access is not active yet.','Demande d’essai gratuit envoyée. MYKIOO doit l’examiner. Aucun paiement requis et l’accès n’est pas encore actif.'):
@@ -282,6 +289,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
       <strong>CA$ {priceCAD(contractDays,deviceCount)?.toFixed(2)}</strong>
       <small>{tr('Total for','Total pour')} {deviceCount} {deviceCount===1?tr('device','appareil'):tr('devices','appareils')} · {contractDays===365?tr('12 months','12 mois'):tr('24 months','24 mois')} · CA$ {(priceCAD(contractDays,deviceCount)/deviceCount).toFixed(2)} {tr('per device','par appareil')}</small>
      </div>
+     <CountryPackPicker selected={countryPacks} onChange={setCountryPacks} language={language} disabled={saving}/>
      {!owner&&<div className="mykioo-checkout-step"><span>2</span><strong>{tr('Choose how to pay','Choisissez comment payer')}</strong></div>}
     <label htmlFor="mykioo-request-payment-method">{tr('Payment method','Mode de paiement')}</label>
      <select id="mykioo-request-payment-method" required value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)}>
