@@ -8,6 +8,7 @@ import {ExpiryAlerts} from './ExpiryAlerts';
 import SubscriptionRequests from './SubscriptionRequests';
 import SubscriptionDirectory from './SubscriptionDirectory';
 import PasswordSettings from './PasswordSettings';
+import InvitationAcceptance from './InvitationAcceptance';
 import MemberInvitations from './MemberInvitations';
 import {MemberBilling} from './Billing';
 import {useSupportUnread} from './useSupportUnread';
@@ -228,6 +229,7 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
  const pending=(member?.status||'pending')==='pending';
  const setupDone=Boolean(member?.display_name?.trim());
  const [password,setPassword]=useState('');
+ const [passwordConfirmation,setPasswordConfirmation]=useState('');
  const [displayName,setDisplayName]=useState(member?.display_name||'');
  const [message,setMessage]=useState('');
  const [sessionExpired,setSessionExpired]=useState(false);
@@ -241,6 +243,7 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
   const name=displayName.trim().replace(/\s+/g,' ');
   if(name.length<2||name.length>40){setMessage(tr('Choose a name between 2 and 40 characters.','Choisissez un nom de 2 à 40 caractères.'));return}
   if(password && password.length<12){setMessage(tr('Your password must contain at least 12 characters.','Votre mot de passe doit contenir au moins 12 caractères.'));return}
+  if(password!==passwordConfirmation){setMessage(tr('The passwords do not match.','Les mots de passe ne correspondent pas.'));return}
   if(!password&&!member?.display_name){setMessage(tr('Please enter a password to finish account setup.','Veuillez créer un mot de passe pour terminer votre inscription.'));return}
   setWorking(true);
   try{
@@ -262,7 +265,7 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
         if(/jwt|token|expired|session|sub claim|user.*not exist/i.test(passwordError.message||''))setSessionExpired(true);
         throw passwordError;
       }
-      setPassword('');
+      setPassword('');setPasswordConfirmation('');
     }
     const {data:latestSession,error:latestSessionError}=await supabase.auth.getSession();
     if(latestSessionError||!latestSession?.session){
@@ -289,8 +292,11 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
  return <div className="holding"><Brand/><div className="hold-card">
   <div className="hold-icon">{pending?<Clock3 size={34}/>:<LockKeyhole size={34}/>}</div>
   <div className="eyebrow">{tr('MYKIOO MEMBERSHIP','ADHÉSION MYKIOO')}</div>
-  <h1>{pending?tr('Awaiting approval','En attente d’approbation'):tr('Access restricted','Accès restreint')}</h1>
-  <p>{pending?tr('Your account is registered. An administrator must approve your membership before your private dashboard is available.','Votre compte est enregistré. Un administrateur doit approuver votre adhésion avant que votre espace privé soit accessible.'):tr('Your account currently does not have permission to enter the member space. Please contact the administrator.','Votre compte n’a pas actuellement accès à l’espace membre. Veuillez communiquer avec l’administrateur.')}</p>
+  <h1>{pending?(setupDone?tr('Awaiting approval','En attente d’approbation'):tr('Complete your invitation','Complétez votre invitation')):tr('Access restricted','Accès restreint')}</h1>
+  <p>{pending?(setupDone?
+  tr('Your account setup is complete. The owner must approve your membership before you can enter the private dashboard.','Votre compte est créé. Le propriétaire doit approuver votre adhésion avant que vous puissiez accéder à votre espace privé.'):
+  tr('Create your name and password below. After saving, your membership will wait for owner approval.','Choisissez votre nom et votre mot de passe ci-dessous. Après enregistrement, votre adhésion attendra la validation du propriétaire.')):
+  tr('Your account currently does not have permission to enter the member space. Please contact the administrator.','Votre compte n’a pas actuellement accès à l’espace membre. Veuillez communiquer avec l’administrateur.')}</p>
   {pending&&!setupDone&&<div className="hold-user"><Mail size={17}/>{user.email}</div>}
   {pending&&!setupDone&&<form className="pending-password mykioo-setup-form" onSubmit={saveSetup}>
    <label htmlFor="member-display-name">{tr('What should we call you?','Comment pouvons-nous vous appeler ?')}</label>
@@ -298,13 +304,20 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
    <input id="member-display-name" type="text" value={displayName} onChange={e=>{setDisplayName(e.target.value);setComplete(false)}} placeholder={tr('Your preferred name or nickname','Votre nom ou surnom préféré')} maxLength={40} minLength={2} autoComplete="nickname" disabled={working} required/>
    <label htmlFor="pending-password">{tr(member?.display_name?'Change your password (optional)':'Create your member password',member?.display_name?'Modifier votre mot de passe (facultatif)':'Créer votre mot de passe')}</label>
    <input id="pending-password" type="password" value={password} onChange={e=>{setPassword(e.target.value);setComplete(false)}} autoComplete="new-password" placeholder={tr(member?.display_name?'Leave blank to keep your current password':'At least 12 characters',member?.display_name?'Laissez vide pour conserver votre mot de passe':'Au moins 12 caractères')} minLength={12} disabled={working} required={!member?.display_name}/>
+   <label htmlFor="pending-password-confirmation">{tr('Confirm your password','Confirmez votre mot de passe')}</label>
+   <input id="pending-password-confirmation" type="password" value={passwordConfirmation} onChange={e=>{setPasswordConfirmation(e.target.value);setComplete(false)}} autoComplete="new-password" placeholder={tr('Repeat your password','Répétez votre mot de passe')} minLength={12} disabled={working} required={!member?.display_name||Boolean(password)}/>
    {message&&<p role={sessionExpired?'alert':'status'} className={sessionExpired?'mykioo-setup-error':'member-field-message'}>{message}</p>}
    {sessionExpired?<button type="button" className="outline-button" onClick={logout}>{tr('Sign out and sign in again','Se déconnecter et se reconnecter')}</button>:<button type="submit" className="outline-button" disabled={working||complete}>{working?tr('Saving…','Enregistrement…'):complete?tr('Details saved','Informations enregistrées'):tr('Save my account details','Enregistrer mes informations')}</button>}
   </form>}
   <button className="outline-button" onClick={logout}><LogOut size={17}/>{tr('Sign out','Déconnexion')}</button>
  </div></div>;
 }
-export default function App(){const [language,setLanguage]=useState(()=>{try{return localStorage.getItem('mykioo-language')||((navigator.language||'en').toLowerCase().startsWith('fr')?'fr':'en')}catch{return 'en'}});function changeLanguage(value){setLanguage(value);try{localStorage.setItem('mykioo-language',value)}catch{}}useEffect(()=>{document.documentElement.lang=language;window.dispatchEvent(new CustomEvent('mykioo-language-changed',{detail:language}));},[language]);const [user,setUser]=useState(null),[member,setMember]=useState(null),[subscriptions,setSubscriptions]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');const [passwordRecovery,setPasswordRecovery]=useState(()=>new URLSearchParams(window.location.search).has('reset_password')),[recoveryComplete,setRecoveryComplete]=useState(false);async function load(sessionUser){if(!sessionUser){setUser(null);setMember(null);setSubscriptions([]);setLoading(false);return}setLoading(true);setUser(sessionUser);const {data,error:err}=await supabase.from('mykioo_members').select('user_id,email,display_name,status,role').eq('user_id',sessionUser.id).maybeSingle();if(err){setError('Unable to confirm membership access. Please try again later.');setMember(null)}else{setError('');setMember(data||{status:'pending'});if(data?.status==='approved'){const r=await supabase.from('mykioo_subscriptions').select('id,member_id,service_name,contract_days,device_count,service_username,supplier_reference,has_password,status,starts_at,expires_at,created_at,updated_at').eq('member_id',sessionUser.id);setSubscriptions(r.data||[])}}setLoading(false)}useEffect(()=>{
+export default function App(){const [language,setLanguage]=useState(()=>{try{return localStorage.getItem('mykioo-language')||((navigator.language||'en').toLowerCase().startsWith('fr')?'fr':'en')}catch{return 'en'}});function changeLanguage(value){setLanguage(value);try{localStorage.setItem('mykioo-language',value)}catch{}}useEffect(()=>{document.documentElement.lang=language;window.dispatchEvent(new CustomEvent('mykioo-language-changed',{detail:language}));},[language]);const [user,setUser]=useState(null),[member,setMember]=useState(null),[subscriptions,setSubscriptions]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');const [passwordRecovery,setPasswordRecovery]=useState(()=>new URLSearchParams(window.location.search).has('reset_password')),[recoveryComplete,setRecoveryComplete]=useState(false);
+ const [invitationLink,setInvitationLink]=useState(()=>{
+  const query=new URLSearchParams(window.location.search);
+  const token=query.get('invite_token');
+  return token?{token,type:query.get('invite_type')==='recovery'?'recovery':'invite'}:null;
+ });async function load(sessionUser){if(!sessionUser){setUser(null);setMember(null);setSubscriptions([]);setLoading(false);return}setLoading(true);setUser(sessionUser);const {data,error:err}=await supabase.from('mykioo_members').select('user_id,email,display_name,status,role').eq('user_id',sessionUser.id).maybeSingle();if(err){setError('Unable to confirm membership access. Please try again later.');setMember(null)}else{setError('');setMember(data||{status:'pending'});if(data?.status==='approved'){const r=await supabase.from('mykioo_subscriptions').select('id,member_id,service_name,contract_days,device_count,service_username,supplier_reference,has_password,status,starts_at,expires_at,created_at,updated_at').eq('member_id',sessionUser.id);setSubscriptions(r.data||[])}}setLoading(false)}useEffect(()=>{
  if(!supabase||!user?.id)return;
  let live=true;
  let checking=false;
@@ -360,7 +373,7 @@ useEffect(()=>{
  supabase.auth.getUser().then(({data})=>{if(live)load(data.user)});
  const {data:{subscription}}=supabase.auth.onAuthStateChange((evt,session)=>{
   if(!live)return;
-  if(evt==='PASSWORD_RECOVERY'){
+  if(evt==='PASSWORD_RECOVERY'&&!new URLSearchParams(window.location.search).has('invite_token')){
    setPasswordRecovery(true);
    if(session?.user){setUser(session.user);setLoading(false)}
   }
@@ -369,7 +382,17 @@ useEffect(()=>{
   }
  });
  return()=>{live=false;subscription.unsubscribe()};
-},[]);async function logout(){await supabase.auth.signOut();setUser(null);setMember(null);setSubscriptions([])}
+},[]);
+ async function finishInvitation(invitedUser){
+  window.history.replaceState(null,'',window.location.pathname);
+  setInvitationLink(null);setPasswordRecovery(false);setRecoveryComplete(false);
+  await load(invitedUser);
+ }
+ function exitInvitation(){
+  window.history.replaceState(null,'',window.location.pathname);
+  setInvitationLink(null);
+ }
+ async function logout(){await supabase.auth.signOut();setUser(null);setMember(null);setSubscriptions([])}
 async function completeRecovery(){
  try{await supabase.auth.signOut()}
  finally{
@@ -377,7 +400,9 @@ async function completeRecovery(){
   setRecoveryComplete(true);setPasswordRecovery(false);setUser(null);setMember(null);setSubscriptions([]);
  }
 }
-if(loading)return <div className="loading"><Brand/><span>Checking your access…</span></div>;
+if(invitationLink)return <InvitationAcceptance tokenHash={invitationLink.token} tokenType={invitationLink.type} language={language}
+  onAccepted={finishInvitation} onCancel={exitInvitation}/>;
+ if(loading)return <div className="loading"><Brand/><span>Checking your access…</span></div>;
 if(passwordRecovery&&user)return <div className="mykioo-recovery-screen"><Brand/>
  <PasswordSettings mode="recovery" language={language} onComplete={completeRecovery}/>
  <p className="mykioo-recovery-footer">{language==='fr'?'Après la modification, reconnectez-vous avec votre nouveau mot de passe.':'After updating, sign in again with your new password.'}</p>
