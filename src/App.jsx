@@ -242,7 +242,7 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
   setMessage('');setSessionExpired(false);
   const name=displayName.trim().replace(/\s+/g,' ');
   if(name.length<2||name.length>40){setMessage(tr('Choose a name between 2 and 40 characters.','Choisissez un nom de 2 à 40 caractères.'));return}
-  if(password && password.length<12){setMessage(tr('Your password must contain at least 12 characters.','Votre mot de passe doit contenir au moins 12 caractères.'));return}
+  if(password && password.length<8){setMessage(tr('Your password must contain at least 8 characters.','Votre mot de passe doit contenir au moins 8 caractères.'));return}
   if(password!==passwordConfirmation){setMessage(tr('The passwords do not match.','Les mots de passe ne correspondent pas.'));return}
   if(!password&&!member?.display_name){setMessage(tr('Please enter a password to finish account setup.','Veuillez créer un mot de passe pour terminer votre inscription.'));return}
   setWorking(true);
@@ -303,9 +303,9 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
    <p className="member-name-hint">{tr('It does not have to be your real name. Choose a nickname or any name you would like us to use.','Il n’est pas nécessaire d’utiliser votre vrai nom. Choisissez un surnom ou le nom par lequel vous souhaitez être appelé(e).')}</p>
    <input id="member-display-name" type="text" value={displayName} onChange={e=>{setDisplayName(e.target.value);setComplete(false)}} placeholder={tr('Your preferred name or nickname','Votre nom ou surnom préféré')} maxLength={40} minLength={2} autoComplete="nickname" disabled={working} required/>
    <label htmlFor="pending-password">{tr(member?.display_name?'Change your password (optional)':'Create your member password',member?.display_name?'Modifier votre mot de passe (facultatif)':'Créer votre mot de passe')}</label>
-   <input id="pending-password" type="password" value={password} onChange={e=>{setPassword(e.target.value);setComplete(false)}} autoComplete="new-password" placeholder={tr(member?.display_name?'Leave blank to keep your current password':'At least 12 characters',member?.display_name?'Laissez vide pour conserver votre mot de passe':'Au moins 12 caractères')} minLength={12} disabled={working} required={!member?.display_name}/>
+   <input id="pending-password" type="password" value={password} onChange={e=>{setPassword(e.target.value);setComplete(false)}} autoComplete="new-password" placeholder={tr(member?.display_name?'Leave blank to keep your current password':'At least 8 characters',member?.display_name?'Laissez vide pour conserver votre mot de passe':'Au moins 8 caractères')} minLength={8} disabled={working} required={!member?.display_name}/>
    <label htmlFor="pending-password-confirmation">{tr('Confirm your password','Confirmez votre mot de passe')}</label>
-   <input id="pending-password-confirmation" type="password" value={passwordConfirmation} onChange={e=>{setPasswordConfirmation(e.target.value);setComplete(false)}} autoComplete="new-password" placeholder={tr('Repeat your password','Répétez votre mot de passe')} minLength={12} disabled={working} required={!member?.display_name||Boolean(password)}/>
+   <input id="pending-password-confirmation" type="password" value={passwordConfirmation} onChange={e=>{setPasswordConfirmation(e.target.value);setComplete(false)}} autoComplete="new-password" placeholder={tr('Repeat your password','Répétez votre mot de passe')} minLength={8} disabled={working} required={!member?.display_name||Boolean(password)}/>
    {message&&<p role={sessionExpired?'alert':'status'} className={sessionExpired?'mykioo-setup-error':'member-field-message'}>{message}</p>}
    {sessionExpired?<button type="button" className="outline-button" onClick={logout}>{tr('Sign out and sign in again','Se déconnecter et se reconnecter')}</button>:<button type="submit" className="outline-button" disabled={working||complete}>{working?tr('Saving…','Enregistrement…'):complete?tr('Details saved','Informations enregistrées'):tr('Save my account details','Enregistrer mes informations')}</button>}
   </form>}
