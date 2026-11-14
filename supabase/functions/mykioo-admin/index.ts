@@ -1,3 +1,4 @@
+import {makeInvitationEmail} from "./email-template.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.0";
 
 const origin = "https://mykioo.pages.dev";
@@ -155,15 +156,9 @@ Deno.serve(async (request) => {
         return reply({error:"Could not create a secure account-setup link"},503);
       }
       const actionLink=origin+"/?invite_token="+encodeURIComponent(setupToken)+"&invite_type=recovery";
-      const safeLink=actionLink.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
-      const fr=language==="fr";
-      const subject=fr?"MYKIOO — votre invitation et création de mot de passe":
-        "MYKIOO — your invitation and account setup";
-      const html=fr?
-        '<div style="background:#18141f;color:#f5edf7;font-family:Arial,sans-serif;padding:26px"><h1 style="color:#e6c68d">MYKIOO</h1><p>Votre invitation MYKIOO a été approuvée.</p><p>Utilisez ce lien privé pour choisir votre mot de passe et finaliser votre compte :</p><p><a style="color:#e6c68d" href="'+safeLink+'">Créer mon mot de passe</a></p><p>Ce lien est personnel et expire automatiquement. Si vous n’avez pas demandé cet accès, ignorez ce message.</p></div>':
-        '<div style="background:#18141f;color:#f5edf7;font-family:Arial,sans-serif;padding:26px"><h1 style="color:#e6c68d">MYKIOO</h1><p>Your MYKIOO invitation has been approved.</p><p>Use this private link to choose your password and complete account setup:</p><p><a style="color:#e6c68d" href="'+safeLink+'">Create my password</a></p><p>This personal link expires automatically. If you did not request access, you can ignore this message.</p></div>';
-      const textContent=(fr?"Votre invitation MYKIOO a été approuvée. Créez votre mot de passe : ":
-        "Your MYKIOO invitation was approved. Set your account password: ")+actionLink;
+      const {subject,htmlContent:html,textContent}=makeInvitationEmail({
+        language,actionLink,resend:true
+      });
       let mailResponse:Response;
       try{
         mailResponse=await fetch("https://api.brevo.com/v3/smtp/email",{
@@ -284,18 +279,15 @@ Deno.serve(async (request) => {
       // Deliver a first-party acceptance URL. MYKIOO verifies the token only after
       // a deliberate click, avoiding accidental consumption by email link scanners.
       // Send with the existing Brevo provider.
-      const safeLink=actionLink.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
-      const fr=language==="fr";
-      const subject=fr?"MYKIOO | Invitation et creation de compte":"MYKIOO | Account invitation";
-      const html=fr?
-        '<div style="background:#17131f;color:#f5edf7;font-family:Arial,sans-serif;padding:28px"><h2 style="color:#e7c58b">MYKIOO</h2><p>Vous avez ete invite a rejoindre MYKIOO.</p><p>Acceptez cette invitation, choisissez votre nom et mot de passe, puis attendez la validation du proprietaire.</p><p><a style="color:#e7c58b" href="'+safeLink+'">Accepter cette invitation et creer mon compte</a></p><p>Ce lien est personnel et expire automatiquement.</p></div>':
-        '<div style="background:#17131f;color:#f5edf7;font-family:Arial,sans-serif;padding:28px"><h2 style="color:#e7c58b">MYKIOO</h2><p>You have been invited to join MYKIOO.</p><p>Accept the invitation, choose a display name and password, then wait for the owner to approve your membership.</p><p><a style="color:#e7c58b" href="'+safeLink+'">Accept invitation and create my account</a></p><p>This personal link expires automatically.</p></div>';
+      const {subject,htmlContent:html,textContent}=makeInvitationEmail({
+        language,actionLink
+      });
       let emailOk=false,emailMessageId="";
       try{
         const response=await fetch("https://api.brevo.com/v3/smtp/email",{
           method:"POST",headers:{"api-key":brevoKey,"Content-Type":"application/json","Accept":"application/json"},
           body:JSON.stringify({sender,to:[{email}],subject,htmlContent:html,
-            textContent:(fr?"Invitation MYKIOO: ":"MYKIOO invitation: ")+actionLink,
+            textContent,
             tags:["mykioo","account-invitation"]})
         });
         const result=await response.json().catch(()=>({}));
