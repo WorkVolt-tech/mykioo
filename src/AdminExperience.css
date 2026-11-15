@@ -169,3 +169,14 @@
 
 /* Label the owner mobile navigation button for members unfamiliar with the icon. */
 @media(max-width:900px){.admin-layout .admin-mobile-toggle{flex-direction:column;gap:2px;width:46px;height:46px;min-width:46px;min-height:46px;padding:3px 4px}.admin-layout .admin-mobile-toggle .mykioo-mobile-menu-label{font-size:10px;line-height:1.1;font-weight:700}}
+
+/* Keep the owner page title and action icons in separate rows on narrow phones. */
+@media(max-width:600px){
+ .admin-layout .admin-bar{display:grid;grid-template-columns:46px minmax(0,1fr);column-gap:10px;row-gap:12px;align-items:start}
+ .admin-layout .admin-mobile-toggle{grid-column:1;grid-row:1}
+ .admin-layout .admin-page-heading{grid-column:2;grid-row:1;min-width:0}
+ .admin-layout .admin-account{grid-column:1 / -1;grid-row:2;width:100%;min-width:0;align-self:auto;justify-content:flex-end;flex-wrap:wrap}
+ .admin-layout .admin-bar h1,.admin-layout .admin-page-caption{overflow-wrap:anywhere}
+ .admin-layout .admin-table-wrap{overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+ .admin-layout .admin-subnav{scroll-padding-inline:8px;-webkit-overflow-scrolling:touch}
+}
