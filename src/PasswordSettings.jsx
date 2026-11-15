@@ -30,8 +30,17 @@ export default function PasswordSettings({language='en',mode='change',onComplete
   try{
    const {data,error:authError}=await supabase.auth.getUser();
    if(authError||!data?.user)throw Error(tr('Your secure session has expired. Request a new reset link or sign in again.','Votre session sécurisée a expiré. Demandez un nouveau lien ou reconnectez-vous.'));
-   const payload=recovery?{password:nextPassword}:{password:nextPassword,current_password:currentPassword};
-   const {error:updateError}=await supabase.auth.updateUser(payload);
+   if(!recovery){
+    // Supabase updateUser does not verify the submitted "current_password" field.
+    // Reauthenticate the same account before authorizing its password change.
+    if(!data.user.email)throw Error(tr('Your account email could not be verified. Use Forgot password instead.','Impossible de vérifier votre adresse courriel. Utilisez plutôt Mot de passe oublié.'));
+    const {data:verified,error:verifyError}=await supabase.auth.signInWithPassword({
+     email:data.user.email,password:currentPassword
+    });
+    if(verifyError||verified?.user?.id!==data.user.id)
+     throw Error(tr('The current password was not accepted. Check it and try again, or use Forgot password.','Le mot de passe actuel est incorrect. Vérifiez-le ou utilisez Mot de passe oublié.'));
+   }
+   const {error:updateError}=await supabase.auth.updateUser({password:nextPassword});
    if(updateError)throw updateError;
    setCurrentPassword('');setNextPassword('');setConfirmation('');
    setNotice(tr('Password updated successfully.','Mot de passe modifié avec succès.'));
