@@ -23,7 +23,9 @@ Deno.serve(async req=>{
  const botToken=Deno.env.get("TELEGRAM_BOT_TOKEN")?.trim();
  const chatId=Deno.env.get("TELEGRAM_OWNER_CHAT_ID")?.trim();
  if(!botToken||!chatId||!/^(-?[0-9]{5,20})$/.test(chatId))
-   return respond({error:"Telegram owner bot secrets are missing or invalid"},503);
+   return respond({error:"Telegram owner bot secrets are missing or invalid",
+    bot_token_configured:Boolean(botToken),chat_id_configured:Boolean(chatId),
+    chat_id_numeric:Boolean(chatId&&/^(-?[0-9]{5,20})$/.test(chatId))},503);
  const params=await req.json().catch(()=>({}));
  const mode=params?.mode==="test"?"test":params?.mode==="dry_run"?"dry_run":"dispatch";
  const send=async(alert:Alert)=>{
@@ -166,7 +168,8 @@ Deno.serve(async req=>{
 
  // Limit the number of Telegram API calls per dispatch; any remaining alerts are found next minute.
  let sent=0,skipped=0,failed=0;
- for(const alert of alerts.slice(0,15)){
+ for(const alert of alerts){
+  if(sent+failed>=15)break;
   const attempt=new Date().toISOString();
   const initial={event_key:alert.key,kind:alert.kind,state:"sending",
    attempts:1,last_attempt_at:attempt,last_error:null};
