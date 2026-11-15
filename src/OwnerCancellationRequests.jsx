@@ -14,11 +14,11 @@ export default function OwnerCancellationRequests({requests=[],cancellations=[],
   const request=byId.get(c.request_id);
   const finished=request?.status==='fulfilled'||Boolean(request?.completed_at||request?.subscription_id||request?.service_activated_at);
   if(decision==='approve'&&finished){
-   setError(tr('This order has already been completed. Cancellation cannot be approved or refunded. Refresh your records.','Cette commande est déjà terminée. Son annulation ou remboursement ne peut pas être approuvé. Actualisez les données.'));return;
+   setError(tr('This order has already been completed. The voluntary cancellation cannot be approved here. Any statutory rights must be reviewed through support. Refresh your records.','Cette commande est déjà terminée. L’annulation volontaire ne peut pas être approuvée ici. Toute demande fondée sur des droits légaux doit être examinée par l’assistance. Actualisez les données.'));return;
   }
   const ask=decision==='approve'
    ?tr('Approve cancellation only if this order has NOT been completed or activated. An approval will cancel the unfulfilled request. Continue?','Approuvez l’annulation uniquement si la commande n’a PAS été terminée ni activée. Cela annulera la demande non finalisée. Continuer ?')
-   :tr('Deny this cancellation request? The subscription order will remain in effect. No refund after activation.','Refuser cette demande d’annulation ? La commande restera valide. Aucun remboursement après activation.');
+   :tr('Deny this cancellation request? The subscription order will remain in effect. Refund rights required by law remain unaffected.','Refuser cette demande d’annulation ? La commande restera valide. Les droits au remboursement prévus par la loi demeurent applicables.');
   if(!window.confirm(ask))return;
   setWorkingId(c.request_id);setError('');setNotice('');
   try{
@@ -45,7 +45,7 @@ export default function OwnerCancellationRequests({requests=[],cancellations=[],
  return <section className="mykioo-cancellation-owner">
   <div className="mykioo-cancellation-owner-title"><ShieldCheck size={21}/><div>
    <h2>{tr('Cancellation approval requests','Demandes d’annulation à approuver')}</h2>
-   <p>{tr('Cancellation is never automatic. If you complete or activate the service before approving, the cancellation must be denied. No refunds after service activation.','L’annulation n’est jamais automatique. Si vous terminez ou activez le service avant d’approuver, l’annulation doit être refusée. Aucun remboursement après activation.')}</p>
+   <p>{tr('Cancellation is never automatic. If you complete or activate the service before approving, the cancellation must be denied. Voluntary refunds are not offered after activation, except where required by law.','L’annulation n’est jamais automatique. Si vous terminez ou activez le service avant d’approuver, l’annulation doit être refusée. Les droits au remboursement prévus par la loi demeurent applicables.')}</p>
   </div></div>
   {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
   {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
