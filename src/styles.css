@@ -1214,3 +1214,24 @@
 .mykioo-provider-review-info a:hover,.mykioo-provider-review-info a:focus-visible{outline-offset:3px;background:rgba(219,188,134,.13)}
 .mykioo-alert-editor-form .mykioo-alert-checked-now{margin:8px 0 4px;width:fit-content;max-width:100%;min-width:0;background:#302838;border:1px solid #947b56;color:#f3d49c;border-radius:8px;padding:9px 12px;white-space:normal;font-size:12px;font-weight:700;cursor:pointer}
 @media(max-width:600px){.mykioo-provider-review-info{padding:12px}.mykioo-provider-review-info a,.mykioo-alert-editor-form .mykioo-alert-checked-now{width:100%;box-sizing:border-box}}
+
+/* First-time setup: one clearly readable action at a time on TVs and phones. */
+.mykioo-guide-wizard{min-width:0;display:grid;gap:13px;margin:10px 0 22px;padding:16px;border:1px solid #796044;border-radius:12px;background:linear-gradient(125deg,#2c2432,#1e1c29)}
+.mykioo-guide-progress-header{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#f2dba9;font-size:13px}
+.mykioo-guide-progress-header span{color:#ded3e2;font-variant-numeric:tabular-nums}
+.mykioo-guide-progress-track{display:block;height:7px;overflow:hidden;border-radius:30px;background:#54475d}
+.mykioo-guide-progress-track>span{display:block;height:100%;border-radius:30px;background:#e5c17e;transition:width .2s ease}
+.mykioo-guide-current-step{min-height:118px;display:grid;align-content:center;gap:9px;border:1px solid #68566b;background:#1b1824;border-radius:11px;padding:15px}
+.mykioo-guide-current-step small{color:#e8c486;font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:11px}
+.mykioo-guide-current-step p{margin:0!important;color:#f5edf7!important;font-size:15px!important;line-height:1.68!important;white-space:pre-wrap;overflow-wrap:anywhere}
+.mykioo-guide-step-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mykioo-guide-step-actions button{min-width:0!important;width:100%;box-sizing:border-box;padding:12px!important;margin:0!important;border:1px solid #a88b61!important;border-radius:9px;background:#302b38!important;color:#f9e3b8!important;font-size:12px!important;font-weight:800!important;white-space:normal;cursor:pointer}
+.mykioo-guide-step-actions button:last-child{background:#daba82!important;color:#211b26!important}
+.mykioo-guide-step-actions button:disabled{opacity:.5;cursor:default}
+.mykioo-guide-show-all{width:max-content;max-width:100%;padding:5px 0!important;margin:0!important;border:0!important;background:transparent!important;color:#ecd2a6!important;font-size:12px!important;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.mykioo-guide-all-steps{padding:3px 0 0 24px;margin:0;display:grid;gap:10px;color:#d7be8e}
+.mykioo-guide-all-steps li{padding-left:4px;line-height:1.55}
+.mykioo-guide-all-steps button{background:none!important;border:0!important;padding:0!important;color:#e6dee8!important;text-align:left!important;font:inherit!important;line-height:1.6!important;cursor:pointer}
+.mykioo-guide-all-steps button:hover{text-decoration:underline}
+.mykioo-guide-wizard button:focus-visible{outline:2px solid #f6d9a2;outline-offset:3px}
+@media(max-width:600px){.mykioo-guide-wizard{padding:12px;gap:12px}.mykioo-guide-current-step{padding:13px}.mykioo-guide-current-step p{font-size:14px!important}.mykioo-guide-step-actions{grid-template-columns:1fr 1fr;gap:8px}.mykioo-guide-step-actions button{padding:10px 6px!important}}
