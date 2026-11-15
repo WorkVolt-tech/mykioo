@@ -22,12 +22,12 @@ Deno.serve(async req=>{
 
  const botToken=Deno.env.get("TELEGRAM_BOT_TOKEN")?.trim();
  const chatId=Deno.env.get("TELEGRAM_OWNER_CHAT_ID")?.trim();
- if(!botToken||!chatId||!/^(-?[0-9]{5,20})$/.test(chatId))
+ const params=await req.json().catch(()=>({}));
+ const mode=params?.mode==="test"?"test":params?.mode==="dry_run"?"dry_run":"dispatch";
+ if(mode!=="dry_run"&&(!botToken||!chatId||!/^(-?[0-9]{5,20})$/.test(chatId)))
    return respond({error:"Telegram owner bot secrets are missing or invalid",
     bot_token_configured:Boolean(botToken),chat_id_configured:Boolean(chatId),
     chat_id_numeric:Boolean(chatId&&/^(-?[0-9]{5,20})$/.test(chatId))},503);
- const params=await req.json().catch(()=>({}));
- const mode=params?.mode==="test"?"test":params?.mode==="dry_run"?"dry_run":"dispatch";
  const send=async(alert:Alert)=>{
   const text="🔔 MYKIOO Owner Alerts\n\n"+alert.title+"\n"+
    (alert.details?"\n"+alert.details+"\n":"")+
