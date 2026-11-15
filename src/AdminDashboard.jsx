@@ -21,6 +21,7 @@ import SupportThread from './SupportThread';
 import React,{useEffect,useState} from 'react';
 import './AdminExperience.css';
 import {usePageSection} from './usePageSection';
+import {useRememberedState} from './useRememberedState';
 import {Users,MailPlus,ShieldCheck,CalendarDays,Receipt,Headphones,LogOut,RefreshCw,Clock3,LockKeyhole,AlertCircle,CheckCircle2,Bell,BookOpen,History,Menu,X,ClipboardList,BarChart3,SlidersHorizontal,Megaphone,Settings2,Inbox} from 'lucide-react';
 import {supabase} from './supabase';
 const tabs=[{id:'overview',name:'Overview',icon:ShieldCheck},{id:'members',name:'Members',icon:Users},{id:'invitations',name:'Invitations',icon:MailPlus},{id:'subscriptions',name:'Subscriptions',icon:CalendarDays},{id:'create-request',name:'Create request',icon:MailPlus},{id:'orders',name:'Orders',icon:Receipt},{id:'billing',name:'Billing',icon:Receipt},{id:'guides',name:'Guides',icon:BookOpen},{id:'support',name:'Support',icon:Headphones},{id:'activity',name:'Activity',icon:History},{id:'notifications',name:'Notifications',icon:Bell},{id:'security',name:'Security',icon:LockKeyhole}];
@@ -75,10 +76,12 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  const {followups,refresh:refreshFollowups}=useSupportFollowups();
  const fr=language==='fr';
  const tr=(english,french)=>fr?french:english;
- const [tab,setTab]=usePageSection(tabs.map(item=>item.id),'overview'),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [selectedTicketIds,setSelectedTicketIds]=useState([]);
- const [mobileNav,setMobileNav]=useState(false),[supportView,setSupportView]=useState('tickets'),
-  [subscriptionView,setSubscriptionView]=useState('queue'),[guideView,setGuideView]=useState('faq'),
-  [expandedTickets,setExpandedTickets]=useState([]);const [focusedTicket,setFocusedTicket]=useState(null);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all'),[supportPriorityFilter,setSupportPriorityFilter]=useState('all'),[supportCategoryFilter,setSupportCategoryFilter]=useState('all'),[supportSort,setSupportSort]=useState('priority');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
+ const [tab,setTab]=usePageSection(tabs.map(item=>item.id),'overview','owner:'+user.id),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [selectedTicketIds,setSelectedTicketIds]=useState([]);
+ const [mobileNav,setMobileNav]=useState(false);
+  const [supportView,setSupportView]=useRememberedState('mykioo-ui:owner:'+user.id+':support-view','tickets');
+  const [subscriptionView,setSubscriptionView]=useRememberedState('mykioo-ui:owner:'+user.id+':subscription-view','queue');
+  const [guideView,setGuideView]=useRememberedState('mykioo-ui:owner:'+user.id+':guide-view','faq');
+  const [expandedTickets,setExpandedTickets]=useState([]);const [focusedTicket,setFocusedTicket]=useState(null);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all'),[supportPriorityFilter,setSupportPriorityFilter]=useState('all'),[supportCategoryFilter,setSupportCategoryFilter]=useState('all'),[supportSort,setSupportSort]=useState('priority');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
  async function refresh({silent=false}={}){
   if(!silent){setLoading(true);setError('')}
   try{
@@ -294,7 +297,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  const pendingSubscriptionCount=(rows.subscription_requests||[]).filter(r=>['pending','in_review'].includes(r.status)).length;
  const pendingCancellationCount=(rows.cancellation_requests||[]).filter(r=>r.status==='pending').length;
  const openSupportCount=(rows.support||[]).filter(ticket=>['open','in_progress'].includes(ticket.status)).length;
- function navigate(next){setTab(next);setMobileNav(false);if(next==='support')setSupportView('tickets')}
+ function navigate(next){setTab(next);setMobileNav(false)}
  function jumpToSubscription(item){
   setSubscriptionView(item.category==='cancellations'?'cancellations':'requests');
   window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
