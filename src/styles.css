@@ -1161,3 +1161,10 @@
 .mykioo-free-trial-callout strong{font-size:14px;color:#efd39f;font-weight:800}
 .mykioo-free-trial-callout p{font-size:13px;line-height:1.65;color:#ded0e5;margin:0}
 .mykioo-free-trial-callout small{color:#f2c7a1;font-size:12px}
+
+/* MYKIOO member overview news */
+.mykioo-overview-news{margin:0 0 22px;padding:22px 25px;border:1px solid #624c63;border-left:3px solid #ddb879;border-radius:14px;background:linear-gradient(115deg,#292033,#1b192b);color:#ebe3ee}
+.mykioo-overview-news-heading{display:flex;align-items:center;gap:10px;color:#ddb879;margin-bottom:10px}
+.mykioo-overview-news-heading h2{font-family:Outfit,sans-serif;font-size:19px;line-height:1.35;margin:0;color:#f5e4c6}
+.mykioo-overview-news p{font-size:13px;line-height:1.7;color:#d0c7d5;margin:8px 0 0}
+@media(max-width:600px){.mykioo-overview-news{padding:18px}.mykioo-overview-news-heading h2{font-size:17px}}
