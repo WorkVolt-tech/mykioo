@@ -1205,3 +1205,12 @@
  .mykioo-risk-notice h3{font-size:15px}
  .mykioo-risk-notice p,.mykioo-risk-notice .mykioo-risk-acceptance{font-size:12px!important}
 }
+
+/* MYKIOO manual upstream-status review; visible only in the owner announcement editor. */
+.mykioo-provider-review-info{display:grid;gap:8px;min-width:0;padding:15px 17px;margin:12px 0 16px;border:1px solid #786445;border-radius:10px;background:rgba(219,188,134,.07);color:#eee2d0}
+.mykioo-provider-review-info strong{color:#f0d29b;font-size:14px}
+.mykioo-provider-review-info p{margin:0;font-size:12px;line-height:1.6;color:#dfd4e0;overflow-wrap:anywhere}
+.mykioo-provider-review-info a{display:inline-flex;align-items:center;justify-content:center;max-width:100%;width:fit-content;padding:9px 12px;border:1px solid #8b734d;border-radius:9px;color:#f7dcad;font-size:12px;font-weight:700;text-decoration:none;overflow-wrap:anywhere}
+.mykioo-provider-review-info a:hover,.mykioo-provider-review-info a:focus-visible{outline-offset:3px;background:rgba(219,188,134,.13)}
+.mykioo-alert-editor-form .mykioo-alert-checked-now{margin:8px 0 4px;width:fit-content;max-width:100%;min-width:0;background:#302838;border:1px solid #947b56;color:#f3d49c;border-radius:8px;padding:9px 12px;white-space:normal;font-size:12px;font-weight:700;cursor:pointer}
+@media(max-width:600px){.mykioo-provider-review-info{padding:12px}.mykioo-provider-review-info a,.mykioo-alert-editor-form .mykioo-alert-checked-now{width:100%;box-sizing:border-box}}
