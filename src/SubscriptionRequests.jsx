@@ -319,6 +319,27 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
       <strong>CA$ {priceCAD(contractDays,deviceCount)?.toFixed(2)}</strong>
       <small>{tr('Total for','Total pour')} {deviceCount} {deviceCount===1?tr('device','appareil'):tr('devices','appareils')} · {contractDays===365?tr('12 months','12 mois'):tr('24 months','24 mois')} · CA$ {(priceCAD(contractDays,deviceCount)/deviceCount).toFixed(2)} {tr('per device','par appareil')}</small>
      </div>
+     <div className="mykioo-discount-checkout">
+      <label htmlFor="mykioo-discount-code">{tr('Have a discount code?','Vous avez un code de réduction ?')}</label>
+      <div className="mykioo-discount-entry">
+       <input id="mykioo-discount-code" value={discountDraft} maxLength={32} autoComplete="off" autoCapitalize="characters" disabled={saving}
+        onChange={e=>{const code=e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g,'');setDiscountDraft(code);if(code!==appliedDiscount)setAppliedDiscount('')}}
+        placeholder={tr('Enter your code','Entrez votre code')}/>
+       <button type="button" disabled={saving||checkoutLoading||discountDraft.trim().length<3} onClick={()=>setAppliedDiscount(discountDraft.trim())}>{tr('Apply code','Appliquer')}</button>
+       {(appliedDiscount||discountDraft)&&<button type="button" className="mykioo-discount-clear" disabled={saving} onClick={()=>{setDiscountDraft('');setAppliedDiscount('')}}>{tr('Clear','Effacer')}</button>}
+      </div>
+      {appliedDiscount&&checkoutLoading&&<small>{tr('Checking discount…','Vérification de la réduction…')}</small>}
+      {appliedDiscount&&!checkoutLoading&&checkout?.discount_code===appliedDiscount&&checkout?.available===true&&<p className="mykioo-discount-success" role="status">
+       {tr('Code applied','Code appliqué')}: <strong>{appliedDiscount}</strong> · {tr('You save','Économie')}: CA$ {Number(checkout.discount_amount_cad).toFixed(2)} / US$ {Number(checkout.discount_amount_usd).toFixed(2)}
+      </p>}
+      {appliedDiscount&&!checkoutLoading&&checkout?.discount_code!==appliedDiscount&&<p className="mykioo-discount-error" role="alert">{checkout?.reason||tr('Discount code cannot be applied to this plan.','Ce code ne peut pas être appliqué à ce forfait.')}</p>}
+      <div className="mykioo-discount-totals" aria-live="polite">
+       {appliedDiscount&&checkout?.discount_code===appliedDiscount&&<div><span>{tr('Original price','Prix initial')}</span><strong>CA$ {Number(checkout.gross_amount_cad).toFixed(2)} / US$ {Number(checkout.gross_amount_usd).toFixed(2)}</strong></div>}
+       <div><span>{tr('Total for Interac / crypto (CAD)','Total Interac / crypto (CAD)')}</span><strong>CA$ {Number(checkout?.amount_cad??priceCAD(contractDays,deviceCount)).toFixed(2)}</strong></div>
+       {checkout?.amount_usd!=null&&<div><span>{tr('Total for Zelle (USD)','Total Zelle (USD)')}</span><strong>US$ {Number(checkout.amount_usd).toFixed(2)}</strong></div>}
+      </div>
+      <small>{tr('Only one code per paid order. Fixed discounts have separate CAD and USD amounts. Payment totals are confirmed by MYKIOO before you send money.','Un seul code par commande payante. Les réductions fixes ont des montants distincts en CAD et USD. MYKIOO confirme les montants avant tout paiement.')}</small>
+     </div>
      <CountryPackPicker selected={countryPacks} onChange={setCountryPacks} language={language} disabled={saving}/>
      {!owner&&<div className="mykioo-checkout-step"><span>2</span><strong>{tr('Choose how to pay','Choisissez comment payer')}</strong></div>}
     <label htmlFor="mykioo-request-payment-method">{tr('Payment method','Mode de paiement')}</label>
