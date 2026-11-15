@@ -167,7 +167,7 @@ export function MemberSetupGuides({language='en',onOpenSupport}){
   <div className="mykioo-guide-intro">
    <BookOpen size={26}/>
    <div><h2>{tr('Setup & help guides','Guides d’installation et d’aide')}</h2>
-    <p>{tr('New to this? First choose your device below, then open its installation guide. If you use a Fire Stick for the first time, begin with “START HERE — First-time Fire TV Stick setup.” Follow one instruction at a time and press “Done — next step” only after you have completed it.','C’est votre première fois ? Choisissez d’abord votre appareil ci-dessous, puis ouvrez son guide. Pour un premier Fire Stick, commencez par « COMMENCEZ ICI — Première installation Fire TV Stick ». Suivez une instruction à la fois et appuyez sur « Terminé — étape suivante » seulement après l’avoir effectuée.')}</p></div>
+    <p>{tr('New to this? First choose your device below, then open its installation guide. If you use a Fire Stick, first check whether it runs Vega OS or Fire OS. Vega OS users should start with “Vega OS Fire Sticks — Why Android apps do not install”; Fire OS users can follow “START HERE — First-time Fire TV Stick setup.” Follow one instruction at a time and press “Done — next step” only after you have completed it.','C’est votre première fois ? Choisissez d’abord votre appareil ci-dessous, puis ouvrez son guide. Si vous utilisez un Fire Stick, vérifiez d’abord s’il fonctionne sous Vega OS ou Fire OS. Sous Vega OS, ouvrez « Fire Stick Vega OS — Pourquoi les applications Android ne s’installent pas »; sous Fire OS, suivez « COMMENCEZ ICI — Première installation Fire TV Stick ». Suivez une instruction à la fois et appuyez sur « Terminé — étape suivante » seulement après l’avoir effectuée.')}</p></div>
   </div>
   <div className="mykioo-guide-filters">
    <label><Search size={16}/><input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder={tr('Search help guides…','Rechercher dans les guides…')} aria-label={tr('Search help guides','Rechercher dans les guides')}/></label>
@@ -178,6 +178,10 @@ export function MemberSetupGuides({language='en',onOpenSupport}){
     <option value="all">{tr('All devices','Tous les appareils')}</option>{platformOptions.filter(opt=>opt.id!=='general').map(opt=><option value={opt.id} key={opt.id}>{fr?opt.fr:opt.en}</option>)}
    </select>
   </div>
+  {platform==='fire_tv'&&<div className="mykioo-vega-explainer" role="note">
+   <strong>{tr('New Fire Stick? Check for Vega OS first.','Nouveau Fire Stick ? Vérifiez d’abord Vega OS.')}</strong>
+   <p>{tr('Vega OS cannot run the Android APK players used in these guides. For MYKIOO, we recommend a compatible Android TV / Google TV streaming box instead; you can keep your existing television. Specific recommended box models will be listed only after MYKIOO tests them.','Vega OS ne peut pas exécuter les lecteurs APK Android de ces guides. Pour MYKIOO, nous recommandons plutôt un boîtier de streaming Android TV / Google TV compatible; vous pouvez garder votre téléviseur. Nous proposerons des modèles précis uniquement après les avoir testés.')}</p>
+  </div>}
   {error&&<p role="alert" className="mykioo-profile-error">{tr('Could not load guides. Please refresh this page.','Impossible de charger les guides. Veuillez actualiser cette page.')}</p>}
   {loading?<p className="mykioo-guide-empty">{tr('Loading guides…','Chargement des guides…')}</p>:
    visible.length===0?<div className="mykioo-guide-empty">
