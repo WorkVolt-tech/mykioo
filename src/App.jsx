@@ -315,12 +315,41 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
   <button className="outline-button" onClick={logout}><LogOut size={17}/>{tr('Sign out','Déconnexion')}</button>
  </div></div>;
 }
-export default function App(){const [language,setLanguage]=useState(()=>{try{return localStorage.getItem('mykioo-language')||((navigator.language||'en').toLowerCase().startsWith('fr')?'fr':'en')}catch{return 'en'}});function changeLanguage(value){setLanguage(value);try{localStorage.setItem('mykioo-language',value)}catch{}}useEffect(()=>{document.documentElement.lang=language;window.dispatchEvent(new CustomEvent('mykioo-language-changed',{detail:language}));},[language]);const [user,setUser]=useState(null),[member,setMember]=useState(null),[subscriptions,setSubscriptions]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');const [passwordRecovery,setPasswordRecovery]=useState(()=>new URLSearchParams(window.location.search).has('reset_password')),[recoveryComplete,setRecoveryComplete]=useState(false);
+export default function App(){const [language,setLanguage]=useState(()=>{try{return localStorage.getItem('mykioo-language')||((navigator.language||'en').toLowerCase().startsWith('fr')?'fr':'en')}catch{return 'en'}});function changeLanguage(value){setLanguage(value);try{localStorage.setItem('mykioo-language',value)}catch{}}useEffect(()=>{document.documentElement.lang=language;window.dispatchEvent(new CustomEvent('mykioo-language-changed',{detail:language}));},[language]);const [user,setUser]=useState(null),[member,setMember]=useState(null),[subscriptions,setSubscriptions]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');const [passwordRecovery,setPasswordRecovery]=useState(()=>new URLSearchParams(window.location.search).has('reset_password')),[recoveryComplete,setRecoveryComplete]=useState(false);const authUserIdRef=useRef(null),authLoadGenerationRef=useRef(0);
  const [invitationLink,setInvitationLink]=useState(()=>{
   const query=new URLSearchParams(window.location.search);
   const token=query.get('invite_token');
   return token?{token,type:['recovery','managed'].includes(query.get('invite_type'))?query.get('invite_type'):'invite'}:null;
- });async function load(sessionUser){if(!sessionUser){setUser(null);setMember(null);setSubscriptions([]);setLoading(false);return}setLoading(true);setUser(sessionUser);const {data,error:err}=await supabase.from('mykioo_members').select('user_id,email,display_name,status,role').eq('user_id',sessionUser.id).maybeSingle();if(err){setError('Unable to confirm membership access. Please try again later.');setMember(null)}else{setError('');setMember(data||{status:'pending'});if(data?.status==='approved'){const r=await supabase.from('mykioo_subscriptions').select('id,member_id,service_name,contract_days,device_count,service_username,supplier_reference,has_password,status,starts_at,expires_at,created_at,updated_at').eq('member_id',sessionUser.id);setSubscriptions(r.data||[])}}setLoading(false)}useEffect(()=>{
+ });async function load(sessionUser,{force=false}={}){
+  const nextId=sessionUser?.id||null;
+  // Supabase can re-emit SIGNED_IN when a browser tab regains focus.
+  // Keep the current dashboard mounted for the same authenticated user.
+  if(nextId&&authUserIdRef.current===nextId&&!force){
+   setUser(current=>current?.id===nextId?current:sessionUser);
+   return;
+  }
+  authUserIdRef.current=nextId;
+  const generation=++authLoadGenerationRef.current;
+  if(!sessionUser){setUser(null);setMember(null);setSubscriptions([]);setLoading(false);return}
+  setLoading(true);
+  setUser(sessionUser);
+  const {data,error:err}=await supabase.from('mykioo_members')
+    .select('user_id,email,display_name,status,role').eq('user_id',sessionUser.id).maybeSingle();
+  if(generation!==authLoadGenerationRef.current)return;
+  if(err){setError('Unable to confirm membership access. Please try again later.');setMember(null)}
+  else{
+   setError('');
+   setMember(data||{status:'pending'});
+   if(data?.status==='approved'){
+    const r=await supabase.from('mykioo_subscriptions')
+      .select('id,member_id,service_name,contract_days,device_count,service_username,supplier_reference,has_password,status,starts_at,expires_at,created_at,updated_at')
+      .eq('member_id',sessionUser.id);
+    if(generation!==authLoadGenerationRef.current)return;
+    setSubscriptions(r.data||[]);
+   }else setSubscriptions([]);
+  }
+  if(generation===authLoadGenerationRef.current)setLoading(false);
+ }useEffect(()=>{
  if(!supabase||!user?.id)return;
  let live=true;
  let checking=false;
@@ -373,7 +402,11 @@ export default function App(){const [language,setLanguage]=useState(()=>{try{ret
 useEffect(()=>{
  if(!supabase){setLoading(false);return}
  let live=true;
- supabase.auth.getUser().then(({data})=>{if(live)load(data.user)});
+ const initialGeneration=authLoadGenerationRef.current;
+ supabase.auth.getUser().then(({data})=>{
+  // Ignore a stale initial lookup if another sign-in/sign-out was processed.
+  if(live&&authLoadGenerationRef.current===initialGeneration)load(data.user);
+ }).catch(()=>{if(live&&authLoadGenerationRef.current===initialGeneration)setLoading(false)});
  const {data:{subscription}}=supabase.auth.onAuthStateChange((evt,session)=>{
   if(!live)return;
   if(evt==='PASSWORD_RECOVERY'&&!new URLSearchParams(window.location.search).has('invite_token')){
@@ -392,7 +425,7 @@ useEffect(()=>{
  async function finishInvitation(invitedUser){
   window.history.replaceState(null,'',window.location.pathname);
   setInvitationLink(null);setPasswordRecovery(false);setRecoveryComplete(false);
-  await load(invitedUser);
+  await load(invitedUser,{force:true});
  }
  function exitInvitation(){
   window.history.replaceState(null,'',window.location.pathname);
