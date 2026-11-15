@@ -64,7 +64,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
    }else{
      setForm({...blank,request_id:r.id,member_id:r.member_id,service_name:r.service_name,contract_days:days,device_count:r.device_count||1,starts_at:today,expires_at:addDays(today,days),status:'active'});
    }
-   setNotice(pendingCancellationIds.has(r.id)?tr('Cancellation approval is pending. Completing this order will automatically deny cancellation. No refunds after activation.','Une demande d’annulation attend votre approbation. La finalisation de cette commande refusera automatiquement l’annulation. Aucun remboursement après activation.'):'' );setError('');
+   setNotice(pendingCancellationIds.has(r.id)?tr('Cancellation approval is pending. Completing this order will automatically deny cancellation. Voluntary refunds are not offered after activation, except where required by law.','Une demande d’annulation attend votre approbation. La finalisation de cette commande refusera automatiquement l’annulation. Aucun remboursement volontaire après activation, sauf lorsque la loi l’exige.'):'' );setError('');
    openEditor();
  }
  async function markActivated(r){
@@ -87,7 +87,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
    if(!response.ok||!result.ok)throw Error(result.error||tr('Unable to record activation.','Impossible d’enregistrer l’activation.'));
    setNotice(tr(
     'External activation recorded. Cancellation is now unavailable. Finish the subscription details using Complete / add login.',
-    'Activation externe enregistrée. L’annulation est maintenant impossible. Terminez les détails de l’abonnement avec Terminer / ajouter les accès.'
+    'Activation externe enregistrée. L’annulation volontaire n’est plus possible dans ce formulaire. Les droits prévus par la loi demeurent applicables. Terminez les détails de l’abonnement avec Terminer / ajouter les accès.'
    ));
    await onSaved?.();
   }catch(err){setError(err.message||tr('Unable to record activation.','Impossible d’enregistrer l’activation.'))}
@@ -115,7 +115,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
  async function save(e){
   e.preventDefault();if(saving)return;
   if(form.request_id&&pendingCancellationIds.has(form.request_id)&&
-    !window.confirm(tr('A member has requested cancellation approval. Completing this subscription will deny the cancellation and activate or extend service without a refund. Continue?','Un membre a demandé une approbation d’annulation. Finaliser cet abonnement refusera l’annulation et activera ou prolongera le service sans remboursement. Continuer ?')))return;
+    !window.confirm(tr('A member has requested cancellation approval. Completing this subscription will deny the cancellation and activate or extend service. Statutory refund rights remain unaffected. Continue?','Un membre a demandé une approbation d’annulation. Finaliser cet abonnement refusera l’annulation et activera ou prolongera le service. Les droits légaux au remboursement restent applicables. Continuer ?')))return;
   setSaving(true);setError('');setNotice('');
   let invitationSent=false;
   try{
