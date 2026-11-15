@@ -1,30 +1,70 @@
 # MYKIOO
 
-Private, invitation-only entertainment membership portal. React + Vite on Cloudflare Pages, with the existing Supabase Adult DB project.
+A private, invitation-only, bilingual (English/French) entertainment-membership portal. The site is built with React + Vite, published on Cloudflare Pages, and backed by Supabase.
 
-## Deployment
+Production site: https://mykioo.pages.dev/
 
-Cloudflare Pages: framework **Vite**, build command **npm run build**, output **dist**, root directory **/**.
+## Hosting and configuration
 
-Set Cloudflare build environment variables:
-- `VITE_SUPABASE_URL` = `https://porpqvphytecuidomcgy.supabase.co`
-- `VITE_SUPABASE_PUBLISHABLE_KEY` = the project's **publishable** public client key (NOT a service-role or secret key).
+- **Frontend:** Cloudflare Pages, Vite; build command `npm run build`, output directory `dist`, root `/`.
+- **Database and authentication:** Supabase project `porpqvphytecuidomcgy`.
+- **Transactional email:** Brevo, including invitation, member-status, subscription, renewal, support and reminder notifications.
+- **Owner alerts:** `mykioo-telegram-owner` Edge Function; protected owner-only chat destination and scheduled checks.
+- **Provider integration:** MYKIOO's reseller-panel API is used for supported automated trial creation. Keep panel API tokens server-side.
 
-Do not commit keys or secrets. The site builds without environment variables but displays a controlled setup message when someone tries to sign in.
+The only frontend build variables are `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Never put `service_role`, Brevo keys, Telegram bot tokens, panel API credentials or account passwords into a `VITE_` variable or commit them to GitHub.
 
-## Security & scope
+## Accounts and permissions
 
-- No public sign-up route or registration action.
-- Login checks `mykioo_members.status` before showing member content; database Row Level Security is the final enforcement layer.
-- New Supabase authentication accounts do not automatically become MYKIOO members. An invitation-only account creation endpoint must be implemented server-side before issuing invitations.
-- Admin approval, invitation generation, payment activation, reseller credentials, and email notifications are intentionally **not implemented** in this initial deployment.
-- Existing Supabase Auth is shared with other apps; do **not** disable global signups without assessing impact on those apps.
-- Frontend privacy is not the same as preventing public access to the login page. Add a Cloudflare Access gate if you require the entire site to be inaccessible to uninvited visitors.
+1. The owner sends an invitation, or an approved member requests an invitation for someone else.
+2. A recipient uses their private link to set up an account. The owner then approves membership before the member dashboard is available.
+3. Owners and approved members sign in through the same login page, but have separate dashboards and separate database permissions.
+4. Client reads are restricted using Supabase Row Level Security (RLS). Owner-only financial, support and administrative records must never be authorized solely by hiding frontend controls.
+5. Service credentials are encrypted server-side and are not readable directly through the browser API. Sensitive operations use authenticated Edge Functions.
+6. Frontend login and invitation-renewal forms include a honeypot. Honeypots are only a supplementary anti-spam measure; rate limits and optional Supabase Auth CAPTCHA/Cloudflare Turnstile should also be configured.
 
-## Development
+**Shared database caution:** Supabase Auth is also used by other applications. Do not globally disable sign-ups, change unrelated users, alter shared public RPCs, or modify shared Auth configuration without assessing those applications.
+
+## Password recovery and account security
+
+- Select **Forgot password** on the login page and request a reset for the account's email address.
+- Recovery emails use Supabase Auth and redirect to `https://mykioo.pages.dev/?reset_password=1`. The link must be allowlisted in the Supabase Auth redirect URL configuration.
+- A valid recovery session opens the bilingual **Create a new password** form. After saving, the user is signed out and can sign in with the new password.
+- A signed-in owner or member can select **Change password** under account security. The current password is reauthenticated before `updateUser({password})` is called.
+- For a complete real-world test, check inbox/spam delivery, the exact reset URL, one-time link consumption, and sign-in with the new password on **one controlled member test account and the owner account**. Do not reset other members' credentials as part of QA.
+- In Supabase **Authentication → Settings**, enable leaked-password protection, consider MFA for owner accounts, check OTP/link expiry, SMTP settings and rate limits, and configure Cloudflare Turnstile for auth abuse protection if desired. Turning on Auth CAPTCHA also requires passing the CAPTCHA token from the frontend; do not enable it without implementing and testing that UI.
+
+## Subscription, payment and email flows
+
+- A member requests a trial, a new paid subscription, or a renewal.
+- The owner reviews the request and verifies payment before completing or activating a paid service.
+- Successful completed subscriptions and renewals are queued in `mykioo_completion_email_log`; `mykioo-completion-emails` processes that queue on the existing schedule.
+- Credential-delivery emails are handled in `mykioo-subscriptions`, using the member's preferred language and a Brevo sender. Their credentials must not appear in logs or Telegram alerts.
+- Expiry reminders are handled by `mykioo-expiry-reminders`; payment reminders use `mykioo-payment-reminders`.
+- A successful Brevo API response means Brevo accepted a send request; it **does not prove inbox delivery**. Confirm delivery in the sender logs and recipient inboxes. Do not trigger actual member email tests without a controlled test recipient.
+
+## Cancellation and refunds
+
+Voluntary cancellation requests are reviewed by the owner and must be approved before the service has been completed or activated. MYKIOO does not offer voluntary cancellation or refunds after activation, **except where required by applicable law**. Statutory cancellation, consumer-protection and refund rights are not waived by the application's normal order workflow. Customers who believe such rights apply should contact support for individual review.
+
+This policy should be reviewed for the customer's jurisdiction and the applicable service category before public launch; in Quebec, consumer distance-contract and civil-law rights may apply. The website policy wording is not legal advice.
+
+## Owner and mobile review checklist
+
+- **Owner:** Overview, members, invitations, subscription queue, new/renewal request, billing, support tickets, FAQs, guides, notifications, security.
+- **Mobile:** Menu label is visible; drawer can be closed; header icons don't overlap the page title; tables scroll horizontally without making the entire page unusable; forms show labels, validation feedback and clear submit confirmation.
+- **Email:** Review English and French copies separately and confirm sender, subject, activation/renewal dates, secure links, reminders and support-ticket outcomes.
+- **Permissions:** Test with an approved member account that other members' orders/invoices and all owner-only records remain inaccessible.
+- **Recovery:** Test owner and member emails, single-use reset links, current-password verification and new-password sign-in in a controlled session.
+
+Visual confirmation requires a real mobile browser and owner session; static code review cannot establish that all controls are reachable on every device.
+
+## Local development
 
 ```sh
 npm install
 npm run dev
 npm run build
 ```
+
+No terminal is needed to manage MYKIOO in GitHub's browser interface or Cloudflare Pages. Always review the latest branch before changing files and avoid unrelated changes.
