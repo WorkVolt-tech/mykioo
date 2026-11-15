@@ -81,7 +81,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
     const response=await fetch(endpoint,{method:'POST',signal:controller.signal,headers:{
       'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
       'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-    },body:JSON.stringify({action:'get_checkout',contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,discount_code:appliedDiscount||null,...(owner&&targetId?{member_id:targetId}:{})})});
+    },body:JSON.stringify({action:'get_checkout',contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,discount_code:appliedDiscount||null})});
     const result=await response.json().catch(()=>({}));
     if(!response.ok||!result.ok)throw Error(result.error||'Payment information unavailable');
     if(live)setCheckout(result);
