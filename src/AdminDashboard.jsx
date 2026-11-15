@@ -338,7 +338,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  <main className="admin-main">
   <header className="admin-bar">
    <button className="admin-mobile-toggle" type="button" onClick={()=>setMobileNav(v=>!v)}
-    aria-controls="mykioo-owner-sidebar" aria-expanded={mobileNav} aria-label={tr('Open owner menu','Ouvrir le menu propriétaire')}><Menu size={22}/></button>
+    aria-controls="mykioo-owner-sidebar" aria-expanded={mobileNav} aria-label={tr('Open owner menu','Ouvrir le menu propriétaire')}><Menu size={22}/><span className="mykioo-mobile-menu-label">{tr("Menu","Menu")}</span></button>
    <div className="admin-page-heading">
     <span className="admin-tag">{tr('PRIVATE ADMINISTRATION','ADMINISTRATION PRIVÉE')}</span>
     <h1>{tr(...ownerLabels[tab])}</h1>
