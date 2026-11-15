@@ -1,6 +1,7 @@
 import React,{useCallback,useEffect,useState} from 'react';
 import {BookOpen,Search,Monitor,Smartphone,HelpCircle,ChevronDown,ChevronUp,CheckCircle2,Pencil,Eye,EyeOff,Copy,ExternalLink,Download} from 'lucide-react';
 import {supabase} from './supabase';
+import {useRememberedState} from './useRememberedState';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-setup-guides';
 const categoryOptions=[
@@ -78,15 +79,18 @@ async function ownerAction(payload){
  return result;
 }
 
-function GuideCard({guide,language='en',owner=false}){
- const [expanded,setExpanded]=useState(false),[copied,setCopied]=useState('');
- const [currentStep,setCurrentStep]=useState(0),[showAll,setShowAll]=useState(false);
+function GuideCard({guide,language='en',owner=false,userId=''}){
+ const guideScope='mykioo-ui:member:'+userId+':guide:'+guide.id;
+ const [expanded,setExpanded]=useRememberedState(guideScope+':expanded',false);
+ const [currentStep,setCurrentStep]=useRememberedState(guideScope+':step',0);
+ const [copied,setCopied]=useState(''),[showAll,setShowAll]=useState(false);
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const app=downloadFor(guide);
  const protonLink=officialProtonLink(guide);
  const instructions=(fr?guide.steps_fr:guide.steps_en)||'';
  const steps=instructions.split(/\r?\n/).map(s=>s.trim()).filter(Boolean)
   .filter(step=>!(app&&step.endsWith(app.url)&&/^(download url|lien de téléchargement)\s*:/i.test(step)));
+ const safeStep=Number.isInteger(currentStep)?Math.max(0,Math.min(steps.length-1,currentStep)):0;
  async function copyValue(value,kind){
   try{await navigator.clipboard.writeText(value);setCopied(kind)}
   catch(_error){setCopied('')}
@@ -105,19 +109,19 @@ function GuideCard({guide,language='en',owner=false}){
    <h4>{tr('Follow each step in order','Suivez chaque étape dans l’ordre')}</h4>
    <div className="mykioo-guide-wizard" aria-label={tr('Guided installation','Installation guidée')}>
     <div className="mykioo-guide-progress-header">
-     <strong>{tr('Step','Étape')} {Math.min(currentStep+1,steps.length)} {tr('of','sur')} {steps.length}</strong>
-     <span>{Math.round((currentStep+1)/Math.max(steps.length,1)*100)}%</span>
+     <strong>{tr('Step','Étape')} {Math.min(safeStep+1,steps.length)} {tr('of','sur')} {steps.length}</strong>
+     <span>{Math.round((safeStep+1)/Math.max(steps.length,1)*100)}%</span>
     </div>
-    <div className="mykioo-guide-progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={currentStep+1} aria-label={tr('Installation guide progress','Progression du guide d’installation')}>
-     <span style={{width:((currentStep+1)/Math.max(steps.length,1)*100)+'%'}}/>
+    <div className="mykioo-guide-progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={safeStep+1} aria-label={tr('Installation guide progress','Progression du guide d’installation')}>
+     <span style={{width:((safeStep+1)/Math.max(steps.length,1)*100)+'%'}}/>
     </div>
     <div className="mykioo-guide-current-step" aria-live="polite">
      <small>{tr('Do this now','À faire maintenant')}</small>
-     <p>{(steps[currentStep]||'').replace(/^\d+[.)]\s*/, '')}</p>
+     <p>{(steps[safeStep]||'').replace(/^\d+[.)]\s*/, '')}</p>
     </div>
     <div className="mykioo-guide-step-actions">
-     <button type="button" disabled={currentStep===0} onClick={()=>setCurrentStep(n=>Math.max(0,n-1))}>{tr('Previous step','Étape précédente')}</button>
-     <button type="button" disabled={currentStep>=steps.length-1} onClick={()=>setCurrentStep(n=>Math.min(steps.length-1,n+1))}>{currentStep>=steps.length-1?tr('All steps complete','Toutes les étapes sont terminées'):tr('Done — next step','Terminé — étape suivante')}</button>
+     <button type="button" disabled={safeStep===0} onClick={()=>setCurrentStep(n=>Math.max(0,n-1))}>{tr('Previous step','Étape précédente')}</button>
+     <button type="button" disabled={safeStep>=steps.length-1} onClick={()=>setCurrentStep(n=>Math.min(steps.length-1,n+1))}>{safeStep>=steps.length-1?tr('All steps complete','Toutes les étapes sont terminées'):tr('Done — next step','Terminé — étape suivante')}</button>
     </div>
     <button type="button" className="mykioo-guide-show-all" aria-expanded={showAll} onClick={()=>setShowAll(v=>!v)}>{showAll?tr('Hide complete checklist','Masquer la liste complète'):tr('See all steps together','Voir toutes les étapes')}</button>
     {showAll&&<ol className="mykioo-guide-all-steps">{steps.map((step,i)=><li key={i}><button type="button" onClick={()=>{setCurrentStep(i);setShowAll(false)}}>{step.replace(/^\d+[.)]\s*/, '')}</button></li>)}</ol>}
@@ -153,10 +157,13 @@ function GuideCard({guide,language='en',owner=false}){
  </article>;
 }
 
-export function MemberSetupGuides({language='en',onOpenSupport}){
+export function MemberSetupGuides({language='en',onOpenSupport,userId=''}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const {guides,loading,error}=useSetupGuides();
- const [search,setSearch]=useState(''),[category,setCategory]=useState('all'),[platform,setPlatform]=useState('all');
+ const scope='mykioo-ui:member:'+userId+':guides';
+ const [search,setSearch]=useRememberedState(scope+':search','', 'session');
+ const [category,setCategory]=useRememberedState(scope+':category','all');
+ const [platform,setPlatform]=useRememberedState(scope+':platform','all');
  const visible=guides.filter(g=>g.published).filter(g=>{
   const term=search.trim().toLocaleLowerCase();
   return (!term||[g.title_en,g.title_fr,g.summary_en,g.summary_fr,g.steps_en,g.steps_fr].some(x=>(x||'').toLocaleLowerCase().includes(term)))
@@ -187,7 +194,7 @@ export function MemberSetupGuides({language='en',onOpenSupport}){
    visible.length===0?<div className="mykioo-guide-empty">
     <BookOpen size={24}/><strong>{guides.length===0?tr('Guides are being prepared.','Les guides sont en préparation.'):tr('No guides match your search.','Aucun guide ne correspond à votre recherche.')}</strong>
     <p>{tr('Need assistance? You can contact MYKIOO Support.','Besoin d’aide ? Vous pouvez contacter l’assistance MYKIOO.')}</p>
-   </div>:<div className="mykioo-guide-list">{visible.map(g=><GuideCard key={g.id} guide={g} language={language}/>)}</div>}
+   </div>:<div className="mykioo-guide-list">{visible.map(g=><GuideCard key={g.id} guide={g} language={language} userId={userId}/>)}</div>}
   <div className="mykioo-guide-help">
    <div><strong>{tr('Still need help?','Vous avez encore besoin d’aide ?')}</strong>
     <p>{tr('Send a support request. Please allow up to 24 hours for an initial reply.','Envoyez une demande d’assistance. Veuillez prévoir jusqu’à 24 heures pour une première réponse.')}</p></div>
