@@ -30,6 +30,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const [service,setService]=useState(owner?'':'MYKIOO TV'),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
  const [deviceCount,setDeviceCount]=useState(1),[paymentMethod,setPaymentMethod]=useState('interac');
  const [acceptedServiceRisks,setAcceptedServiceRisks]=useState(false);
+ const [discountDraft,setDiscountDraft]=useState(''),[appliedDiscount,setAppliedDiscount]=useState('');
  const [checkout,setCheckout]=useState(null),[checkoutLoading,setCheckoutLoading]=useState(false);
  const [submittedRequest,setSubmittedRequest]=useState(null);
  const [showSubmittedHistory,setShowSubmittedHistory]=useState(false);
@@ -80,7 +81,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
     const response=await fetch(endpoint,{method:'POST',signal:controller.signal,headers:{
       'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
       'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-    },body:JSON.stringify({action:'get_checkout',contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod})});
+    },body:JSON.stringify({action:'get_checkout',contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,discount_code:appliedDiscount||null,...(owner&&targetId?{member_id:targetId}:{})})});
     const result=await response.json().catch(()=>({}));
     if(!response.ok||!result.ok)throw Error(result.error||'Payment information unavailable');
     if(live)setCheckout(result);
@@ -90,7 +91,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   }
   loadCheckout();
   return()=>{live=false;controller.abort()};
- },[contractDays,deviceCount,paymentMethod,requestType,view,submittedRequest]);
+ },[contractDays,deviceCount,paymentMethod,requestType,view,submittedRequest,appliedDiscount,owner,targetId]);
  const isBankPayment=requestType!=='trial'&&(paymentMethod==='interac'||paymentMethod==='zelle');
  const bankReady=isBankPayment&&checkout?.available===true&&!!checkout?.destination&&Number(checkout?.amount_due)>0;
  const users=useMemo(()=>members.filter(m=>['approved','pending'].includes(m.status)&&(m.role==='member'||(m.role==='owner'&&m.user_id===userId))),[members,userId]);
@@ -102,7 +103,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const pendingRenewals=new Set(rows.filter(r=>r.request_type==='renewal'&&['pending','in_review'].includes(r.status)).map(r=>r.renewal_subscription_id));
  const selectedRenewal=eligible.find(s=>s.id===renewalId);
  const renewalExpiry=sub=>sub.expires_at?new Date(sub.expires_at).toLocaleDateString(fr?'fr-CA':'en-CA',{year:'numeric',month:'short',day:'numeric'}):tr('Not available','Non disponible');
- function chooseType(value){setCountryPacks([]);setRequestType(value);setRenewalId('');setAcceptedServiceRisks(false);if(value!=='renewal')setDeviceCount(1);setContractDays(365);setError('');setNotice('')}
+ function chooseType(value){setCountryPacks([]);setRequestType(value);setRenewalId('');setAcceptedServiceRisks(false);setDiscountDraft('');setAppliedDiscount('');if(value!=='renewal')setDeviceCount(1);setContractDays(365);setError('');setNotice('')}
  function chooseAccount(value){setCountryPacks([]);setTargetId(value);setRenewalId('');setError('');setNotice('')}
  function chooseOwnerEmail(value){
   setOwnerEmail(value);setCreatedInvite(null);
@@ -141,6 +142,10 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    return;
   }
   if(!trial&&(!priceCAD(contractDays,deviceCount)||!PAYMENT_LABELS[paymentMethod])){setError(tr('Choose a valid package and payment method.','Choisissez un forfait et un mode de paiement valides.'));return;}
+  if(!trial&&appliedDiscount&&(checkoutLoading||checkout?.discount_code!==appliedDiscount||checkout?.available!==true)){
+   setError(tr('The discount has not been validated for this plan and payment method. Please apply it again before proceeding.','La réduction n’a pas été validée pour ce forfait et ce mode de paiement. Appliquez-la à nouveau avant de continuer.'));
+   return;
+  }
   if(isBankPayment&&(!bankReady||checkoutLoading)){
    setError(tr('Bank payment instructions are not ready. Select a configured method or contact MYKIOO.','Les instructions de paiement bancaire ne sont pas prêtes. Choisissez un autre mode configuré ou contactez MYKIOO.'));return;
   }
@@ -188,6 +193,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
      renewal?
       {action:'renew',subscription_id:renewalId,contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:requestNotes}:
       {action:'create',service_name:service.trim(),contract_days:contractDays,device_count:deviceCount,preferred_payment_method:paymentMethod,notes:requestNotes};
+   if(!trial)payload.discount_code=appliedDiscount||null;
    const response=await fetch(endpoint,{method:'POST',headers:{
      'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
      'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -201,14 +207,14 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
       service_name:renewal?(selected?.service_name||'Renewal'):service.trim(),
       contract_days:trial?1:contractDays,device_count:trial?1:deviceCount,preferred_payment_method:trial?null:paymentMethod,notes:requestNotes,quoted_price_cad:trial?null:priceCAD(contractDays,deviceCount),status:'pending'
     },...previous.filter(r=>r.id!==result.request.id)]);
-   setService(owner?'':'MYKIOO TV');setRenewalId('');if(owner){setOwnerEmail('');setCreatedInvite(null)}setNotes('');setCountryPacks([]);setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setRequestType('new');setAcceptedServiceRisks(false);
+   setService(owner?'':'MYKIOO TV');setRenewalId('');if(owner){setOwnerEmail('');setCreatedInvite(null)}setNotes('');setCountryPacks([]);setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setRequestType('new');setAcceptedServiceRisks(false);setDiscountDraft('');setAppliedDiscount('');
    setNotice(owner?
     (invitationSent?tr('Request created and a customer invitation was issued. The new member must be approved before they can access MYKIOO.','Demande créée et invitation envoyée au client. Le nouveau membre doit être approuvé avant d’accéder à MYKIOO.'):trial?tr('Free trial requested for this member. Activate it manually from the subscription manager.','Essai gratuit demandé pour ce membre. Activez-le manuellement dans le gestionnaire d’abonnements.'):tr('Request created for the existing customer.','Demande créée pour le client existant.')):
     trial?tr('Free trial requested. MYKIOO will review it. No payment is required and access is not active yet.','Demande d’essai gratuit envoyée. MYKIOO doit l’examiner. Aucun paiement requis et l’accès n’est pas encore actif.'):
     isBankPayment?tr('Request submitted. Complete payment in the next step. The owner verifies actual receipt before activation.','Demande envoyée. Effectuez le paiement à la prochaine étape. Le propriétaire vérifiera la réception avant activation.'):
     renewal?tr('Renewal requested. Your existing login will be kept.','Renouvellement demandé. Vos identifiants actuels seront conservés.'):
     tr('Your request was sent for review.','Votre demande a été envoyée pour examen.'));
-   setSubmittedRequest({id:result.request?.id,type:requestType,invoiceId:!trial&&isBankPayment?result.invoice?.id:null,bankPayment:isBankPayment,service:renewal?(selected?.service_name||'MYKIOO TV'):service.trim()||'MYKIOO TV',days:trial?1:contractDays,devices:trial?1:deviceCount});
+   setSubmittedRequest({id:result.request?.id,type:requestType,invoiceId:!trial&&isBankPayment?result.invoice?.id:null,bankPayment:isBankPayment,service:renewal?(selected?.service_name||'MYKIOO TV'):service.trim()||'MYKIOO TV',days:trial?1:contractDays,devices:trial?1:deviceCount,discountCode:trial?null:result.request?.discount_code||null,netCad:result.request?.quoted_price_cad,netUsd:result.request?.quoted_price_usd});
    if(owner)await onSaved?.();
   }catch(err){setError((invitationSent||createdInvite?tr('A site invitation may already have been issued. ','Une invitation a peut-être déjà été envoyée. '):'')+(err.message||tr('Request could not be submitted.','Impossible d’envoyer la demande.')))}
   finally{setSaving(false)}
@@ -220,6 +226,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    <p><strong>{tr('Your request was submitted successfully. You do not need to submit it again.','Votre demande a bien été envoyée. Vous n’avez pas besoin de la soumettre à nouveau.')}</strong></p>
    <p>{submittedRequest.service} · {submittedRequest.type==='trial'?tr('24-hour free trial','Essai gratuit de 24 heures'):displayDuration(submittedRequest.days,tr)+' · '+submittedRequest.devices+' '+tr('device(s)','appareil(s)')}</p>
    {submittedRequest.id&&<p>{tr('Request reference','Référence de la demande')}: <strong>{submittedRequest.id}</strong></p>}
+   {submittedRequest.discountCode&&<p>{tr('Discount applied','Réduction appliquée')}: <strong>{submittedRequest.discountCode}</strong> · {tr('CAD total','Total CAD')}: <strong>CA$ {Number(submittedRequest.netCad).toFixed(2)}</strong> · {tr('USD total (Zelle)','Total USD (Zelle)')}: <strong>US$ {Number(submittedRequest.netUsd).toFixed(2)}</strong></p>}
    <p>{owner?tr('The request is saved. Review and complete it from the subscription manager; verify payment first for paid services.','La demande est enregistrée. Examinez-la et finalisez-la dans le gestionnaire d’abonnements; vérifiez d’abord le paiement des services payants.'):
     submittedRequest.type==='trial'?
     tr('No payment is required. MYKIOO will review and activate your trial, then email your service login details. Your trial is not active yet.','Aucun paiement n’est requis. MYKIOO examinera et activera votre essai, puis vous enverra les identifiants du service par courriel. Votre essai n’est pas encore actif.'):
