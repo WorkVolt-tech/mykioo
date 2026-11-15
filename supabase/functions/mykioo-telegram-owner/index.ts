@@ -1,7 +1,7 @@
 import {createClient} from "npm:@supabase/supabase-js@2.57.0";
 
 // Server-only dispatcher: called by the existing authenticated MYKIOO cron pattern.
-// Telegram secrets NEVER enter browser code or the database.
+// Telegram BOT TOKEN never enters browser code or the database; recipient ID is RLS-protected.
 const root="https://mykioo.pages.dev/";
 const respond=(body:unknown,status=200)=>new Response(JSON.stringify(body),{
  status,headers:{"Content-Type":"application/json","Cache-Control":"no-store"}
@@ -20,12 +20,17 @@ Deno.serve(async req=>{
  const {data:authorized,error:checkError}=await db.rpc("mykioo_validate_reminder_cron_token",{provided:supplied});
  if(checkError||authorized!==true)return respond({error:"Not authorized"},401);
 
+ const {data:settings,error:settingsError}=await db.from("mykioo_telegram_owner_settings")
+  .select("enabled,started_at,chat_id").eq("id",1).single();
+ if(settingsError||!settings)return respond({error:"Owner alert settings unavailable"},503);
  const botToken=Deno.env.get("TELEGRAM_BOT_TOKEN")?.trim();
- const chatId=Deno.env.get("TELEGRAM_OWNER_CHAT_ID")?.trim();
+ // The recipient ID is protected by RLS; only the service-role dispatcher can read it.
+ // The Telegram bot token remains exclusively in Supabase Edge Function secrets.
+ const chatId=String(settings.chat_id||Deno.env.get("TELEGRAM_OWNER_CHAT_ID")||"").trim();
  const params=await req.json().catch(()=>({}));
  const mode=params?.mode==="test"?"test":params?.mode==="dry_run"?"dry_run":"dispatch";
  if(mode!=="dry_run"&&(!botToken||!chatId||!/^(-?[0-9]{5,20})$/.test(chatId)))
-   return respond({error:"Telegram owner bot secrets are missing or invalid",
+   return respond({error:"Telegram owner bot settings are missing or invalid",
     bot_token_configured:Boolean(botToken),chat_id_configured:Boolean(chatId),
     chat_id_numeric:Boolean(chatId&&/^(-?[0-9]{5,20})$/.test(chatId))},503);
  const send=async(alert:Alert)=>{
@@ -54,9 +59,6 @@ Deno.serve(async req=>{
   return respond({ok:sent.ok,notification:sent.ok?"accepted":"failed",error:sent.error||undefined},
    sent.ok?200:502);
  }
- const {data:settings,error:settingsError}=await db.from("mykioo_telegram_owner_settings")
-  .select("enabled,started_at").eq("id",1).single();
- if(settingsError||!settings)return respond({error:"Owner alert settings unavailable"},503);
  if(!settings.enabled)return respond({ok:true,enabled:false});
  const since=settings.started_at;
  const {data:ownerRows,error:ownerError}=await db.from("mykioo_members")
