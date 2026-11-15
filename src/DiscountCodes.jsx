@@ -1,5 +1,6 @@
 import React,{useCallback,useEffect,useState} from 'react';
 import {supabase} from './supabase';
+import {useRememberedState} from './useRememberedState';
 import {Tag,Plus,RefreshCw,Pencil,CheckCircle2,PauseCircle} from 'lucide-react';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-discounts';
@@ -22,10 +23,11 @@ async function discountAction(payload){
  if(!response.ok||!result.ok)throw Error(result.error||'Unable to update discount codes');
  return result;
 }
-export default function OwnerDiscountCodes({language='en'}){
+export default function OwnerDiscountCodes({language='en',userId=''}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
- const [rows,setRows]=useState([]),[form,setForm]=useState(empty),[saving,setSaving]=useState(false),
-  [loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [rows,setRows]=useState([]);
+ const [form,setForm]=useRememberedState('mykioo-ui:owner:'+userId+':discount-draft',empty(),'session');
+ const [saving,setSaving]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const reload=useCallback(async()=>{
   const result=await discountAction({action:'list'});
   setRows(result.codes||[]);
