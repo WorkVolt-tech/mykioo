@@ -45,7 +45,7 @@ export default function OwnerCancellationRequests({requests=[],cancellations=[],
  return <section className="mykioo-cancellation-owner">
   <div className="mykioo-cancellation-owner-title"><ShieldCheck size={21}/><div>
    <h2>{tr('Cancellation approval requests','Demandes d’annulation à approuver')}</h2>
-   <p>{tr('Cancellation is never automatic. If you complete or activate the service before approving, the cancellation must be denied. Voluntary refunds are not offered after activation, except where required by law.','L’annulation n’est jamais automatique. Si vous terminez ou activez le service avant d’approuver, l’annulation doit être refusée. Les droits au remboursement prévus par la loi demeurent applicables.')}</p>
+   <p>{tr('Cancellation is never automatic. If you complete or activate the service before approving, the cancellation must be denied. Voluntary refunds are not offered after activation, except where required by law.','L’annulation volontaire n’est jamais automatique. Si vous terminez ou activez le service avant d’approuver, cette demande doit être refusée dans ce formulaire. Aucun remboursement volontaire après l’activation, sauf lorsque la loi l’exige.')}</p>
   </div></div>
   {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
   {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
