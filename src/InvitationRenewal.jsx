@@ -3,9 +3,14 @@ import {supabase,configured} from './supabase';
 
 export default function InvitationRenewal({language='en'}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
- const [email,setEmail]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ const [email,setEmail]=useState(''),[website,setWebsite]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
  async function submit(event){
   event.preventDefault();if(busy||!configured)return;
+  // Quiet bot trap: this field is never visible or focused by normal users.
+  if(website.trim()){
+   setMessage(tr('If the address has an unfinished invitation, the owner will review the request.','Si cette adresse a une invitation incomplète, le propriétaire examinera la demande.'));
+   return;
+  }
   setBusy(true);setMessage('');
   try{
    const {error}=await supabase.rpc('mykioo_request_invitation_renewal',{request_email:email.trim().toLowerCase()});
@@ -18,6 +23,10 @@ export default function InvitationRenewal({language='en'}){
  return <details className="mykioo-invitation-renewal" style={{marginTop:20,textAlign:'left',width:'100%',maxWidth:460}}>
   <summary style={{cursor:'pointer'}}>{tr('Invitation expired or missing? Request a new link','Invitation expirée ou introuvable? Demander un nouveau lien')}</summary>
   <form onSubmit={submit} style={{display:'grid',gap:12,paddingTop:14}}>
+   <label className="mykioo-honeypot" aria-hidden="true" style={{position:'absolute',left:'-10000px',width:1,height:1,overflow:'hidden',opacity:0,pointerEvents:'none'}}>
+    Website (leave blank)
+    <input type="text" name="website_address" tabIndex={-1} autoComplete="off" value={website} onChange={e=>setWebsite(e.target.value)}/>
+   </label>
    <p>{tr('Enter the email address that was invited. The owner will review your request.','Entrez l’adresse courriel invitée. Le propriétaire examinera votre demande.')}</p>
    <label>{tr('Invited email address','Adresse courriel invitée')}<input type="email" required maxLength={254} autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} style={{display:'block',width:'100%',marginTop:8,padding:12}}/></label>
    <button type="submit" className="mykioo-invite-accept-button" disabled={busy||!configured}>{busy?tr('Sending…','Envoi…'):tr('Request a new invitation','Demander une nouvelle invitation')}</button>
