@@ -2,6 +2,11 @@ import React,{useState} from 'react';
 import packs from './CountryPacks.json';
 import './CountryPackPicker.css';
 
+const LANGUAGE_PACKS=[
+ {en:'Full English pack (US, CA, UK)',fr:'Bouquet anglais complet (É.-U., CA, R.-U.)',countries:['United States','Canada','United Kingdom']},
+ {en:'Full French pack (France, Quebec)',fr:'Bouquet français complet (France, Québec)',countries:['France','Quebec']},
+];
+
 export function countryPackNotes(selected,notes){
  const names=packs.filter(pack=>selected.includes(pack.name)).map(pack=>pack.name);
  const selection=names.length===packs.length?'Countries / Pays — All countries and packs / Tous les pays et bouquets':names.length?'Countries / Pays — '+names.join(', '):'';
@@ -15,12 +20,20 @@ export default function CountryPackPicker({selected,onChange,language='en',disab
  const normalize=value=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
  const matching=packs.filter(pack=>normalize([pack.name,pack.fr,...pack.bouquets.map(b=>b.name)].join(' ')).includes(normalize(query.trim())))
   .sort((a,b)=>(fr?a.fr:a.name).localeCompare(fr?b.fr:b.name,language));
+ function addPacks(countries){
+  onChange([...new Set([...selected,...countries])]);
+ }
  function toggle(name){
   onChange(selected.includes(name)?selected.filter(value=>value!==name):[...selected,name]);
  }
  return <fieldset className="mykioo-country-picker" disabled={disabled}>
   <legend>{tr('Live TV countries & packs','Pays et bouquets de télévision en direct')}</legend>
   <p>{tr('Choose your preferred countries or regional packs. MYKIOO will apply your choices when preparing your paid service. This selection is optional.','Choisissez vos pays ou bouquets régionaux préférés. MYKIOO appliquera vos choix lors de la préparation de votre service payant. Cette sélection est facultative.')}</p>
+  <div className="mykioo-country-selection">
+   {LANGUAGE_PACKS.map(({en,fr,countries})=><button key={en} type="button"
+    disabled={countries.every(country=>selected.includes(country))}
+    onClick={()=>addPacks(countries)}>{tr(en,fr)}</button>)}
+  </div>
   <label htmlFor="mykioo-country-search">{tr('Search countries or channel groups','Rechercher un pays ou un groupe de chaînes')}</label>
   <input id="mykioo-country-search" type="search" value={query} onChange={e=>setQuery(e.target.value)}
    placeholder={tr('Haiti, Quebec, sports…','Haïti, Québec, sports…')}/>
