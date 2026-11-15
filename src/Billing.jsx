@@ -1,6 +1,7 @@
 import React,{useCallback,useEffect,useState} from 'react';
 import {QRCodeSVG} from 'qrcode.react';
 import {supabase} from './supabase';
+import {useRememberedState} from './useRememberedState';
 import OwnerDiscountCodes from './DiscountCodes';
 import {Wallet,RefreshCw,Copy,CheckCircle2,ShieldAlert,AlertTriangle,FileText,Receipt,Clock3,Send,Settings,Bitcoin} from 'lucide-react';
 import './Billing.css';
@@ -200,14 +201,15 @@ export function MemberBilling({userId,language='en',highlightInvoiceId=null}){
   <div className="mykioo-billing-list">{visibleInvoices.map(inv=><InvoiceCard key={inv.id} invoice={inv} language={language} busy={busy} onAction={action}/>)}</div>
  </section>;
 }
-export function OwnerBilling({language='en',requests=[],members=[]}){
+export function OwnerBilling({language='en',userId='',requests=[],members=[]}){
  const tr=(en,fr)=>trFor(language,en,fr);
  const [settings,setSettings]=useState(null),[invoices,setInvoices]=useState([]),[loading,setLoading]=useState(true);
  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[requestId,setRequestId]=useState('');
  const [cad,setCad]=useState('80'),[usd,setUsd]=useState('');
  const [cryptoAddress,setCryptoAddress]=useState(''),[cryptoAmount,setCryptoAmount]=useState('');
  const [packagePrices,setPackagePrices]=useState([]),[usdDrafts,setUsdDrafts]=useState({});
- const [ownerPage,setOwnerPage]=useState('payments'),[invoiceFilter,setInvoiceFilter]=useState('review');
+ const [ownerPage,setOwnerPage]=useRememberedState('mykioo-ui:owner:'+userId+':billing-view','payments');
+ const [invoiceFilter,setInvoiceFilter]=useRememberedState('mykioo-ui:owner:'+userId+':billing-filter','review');
  const [form,setForm]=useState({default_cad:'80',default_usd:'60',interac_destination:'',zelle_destination:''});
  const reload=useCallback(async()=>{
   const [s,i,pr]=await Promise.all([
@@ -296,7 +298,7 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
      <button type="button" role="tab" aria-selected={ownerPage==='settings'} onClick={()=>setOwnerPage('settings')}>{tr('Payment settings','Paramètres de paiement')}</button>
    </div>
    {loading?<p className="mykioo-billing-muted">{tr('Loading billing…','Chargement de la facturation…')}</p>:<>
-    {ownerPage==='discounts'&&<div className="mykioo-owner-billing-pane"><OwnerDiscountCodes language={language}/></div>}
+    {ownerPage==='discounts'&&<div className="mykioo-owner-billing-pane"><OwnerDiscountCodes language={language} userId={userId}/></div>}
      {ownerPage==='settings'&&<div className="mykioo-owner-billing-pane">
      <p className="mykioo-billing-muted">{tr('Set receiving contacts and USD prices for future transactions.','Configurez les coordonnées de réception et les prix USD pour les prochaines transactions.')}</p>
      <form className="mykioo-billing-box" onSubmit={saveSettings}>
