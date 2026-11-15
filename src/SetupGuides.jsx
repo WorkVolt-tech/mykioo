@@ -81,6 +81,7 @@ async function ownerAction(payload){
 
 function GuideCard({guide,language='en',owner=false}){
  const [expanded,setExpanded]=useState(false),[copied,setCopied]=useState('');
+ const [currentStep,setCurrentStep]=useState(0),[showAll,setShowAll]=useState(false);
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const app=downloadFor(guide);
  const protonLink=officialProtonLink(guide);
@@ -102,8 +103,26 @@ function GuideCard({guide,language='en',owner=false}){
    {expanded?<ChevronUp size={19}/>:<ChevronDown size={19}/>}
   </button>
   {expanded&&<div className="mykioo-guide-detail">
-   <h4>{tr('Step-by-step instructions','Instructions étape par étape')}</h4>
-   <ol>{steps.map((step,i)=><li key={i}>{step.replace(/^\d+[.)]\s*/, '')}</li>)}</ol>
+   <h4>{tr('Follow each step in order','Suivez chaque étape dans l’ordre')}</h4>
+   <div className="mykioo-guide-wizard" aria-label={tr('Guided installation','Installation guidée')}>
+    <div className="mykioo-guide-progress-header">
+     <strong>{tr('Step','Étape')} {Math.min(currentStep+1,steps.length)} {tr('of','sur')} {steps.length}</strong>
+     <span>{Math.round((currentStep+1)/Math.max(steps.length,1)*100)}%</span>
+    </div>
+    <div className="mykioo-guide-progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={currentStep+1} aria-label={tr('Installation guide progress','Progression du guide d’installation')}>
+     <span style={{width:((currentStep+1)/Math.max(steps.length,1)*100)+'%'}}/>
+    </div>
+    <div className="mykioo-guide-current-step" aria-live="polite">
+     <small>{tr('Do this now','À faire maintenant')}</small>
+     <p>{(steps[currentStep]||'').replace(/^\d+[.)]\s*/, '')}</p>
+    </div>
+    <div className="mykioo-guide-step-actions">
+     <button type="button" disabled={currentStep===0} onClick={()=>setCurrentStep(n=>Math.max(0,n-1))}>{tr('Previous step','Étape précédente')}</button>
+     <button type="button" disabled={currentStep>=steps.length-1} onClick={()=>setCurrentStep(n=>Math.min(steps.length-1,n+1))}>{currentStep>=steps.length-1?tr('All steps complete','Toutes les étapes sont terminées'):tr('Done — next step','Terminé — étape suivante')}</button>
+    </div>
+    <button type="button" className="mykioo-guide-show-all" aria-expanded={showAll} onClick={()=>setShowAll(v=>!v)}>{showAll?tr('Hide complete checklist','Masquer la liste complète'):tr('See all steps together','Voir toutes les étapes')}</button>
+    {showAll&&<ol className="mykioo-guide-all-steps">{steps.map((step,i)=><li key={i}><button type="button" onClick={()=>{setCurrentStep(i);setShowAll(false)}}>{step.replace(/^\d+[.)]\s*/, '')}</button></li>)}</ol>}
+   </div>
    {protonLink&&<div className="mykioo-guide-app-download">
     <strong className="mykioo-guide-app-heading"><Download size={17}/>{tr('Official Proton VPN website','Site officiel de Proton VPN')}</strong>
     <p>{tr('Choose the app for your device from Proton’s official website or app store. A free Proton account is separate from your MYKIOO login.','Choisissez l’application correspondant à votre appareil depuis le site officiel ou sa boutique d’applications. Le compte Proton gratuit est distinct de votre compte MYKIOO.')}</p>
