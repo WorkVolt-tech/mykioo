@@ -62,3 +62,33 @@
 .mykioo-owner-billing-filter label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#e3c993}
 .mykioo-owner-billing-filter select{min-width:190px;max-width:100%;padding:10px;border-radius:8px;background:#2d2635;color:#f5eefa;border:1px solid #6a536f;font:inherit}
 @media(max-width:620px){.mykioo-owner-billing-tabs button{padding:10px 11px;font-size:11px}.mykioo-owner-billing-filter{align-items:stretch}.mykioo-owner-billing-filter label,.mykioo-owner-billing-filter select{width:100%}}
+
+/* Owner discount code controls and invoice audit snapshots. */
+.mykioo-discounts{display:grid;gap:20px;min-width:0;color:#f4eaf5}
+.mykioo-discounts-title{display:flex;align-items:flex-start;gap:12px}
+.mykioo-discounts-title svg{color:#e6c693;flex-shrink:0;margin-top:2px}
+.mykioo-discounts-title h3{font-size:19px;margin:0 0 8px;color:#f5d9aa}
+.mykioo-discounts-title p{font-size:13px;line-height:1.6;color:#d0c1d5;margin:0}
+.mykioo-discounts-form{display:grid;gap:14px;padding:18px;border:1px solid #62536f;border-radius:13px;background:#201b2b}
+.mykioo-discounts-form h4{font-size:16px;color:#f4dbad;margin:0}
+.mykioo-discounts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:13px}
+.mykioo-discounts-grid label{display:grid;gap:6px;min-width:0;font-size:12px;font-weight:700;color:#ead4ae}
+.mykioo-discounts-grid input,.mykioo-discounts-grid select{display:block;min-width:0;width:100%;box-sizing:border-box;background:#171620;color:#f6eff7;border:1px solid #685a77;border-radius:8px;padding:11px 12px;font:inherit;font-size:13px}
+.mykioo-discounts-grid input:focus,.mykioo-discounts-grid select:focus{outline:2px solid #e8c790;outline-offset:2px}
+.mykioo-discounts-hint{font-size:12px;line-height:1.6;color:#cfc1d5;margin:0}
+.mykioo-discounts-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mykioo-discounts-actions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:8px;border:1px solid #8f775b;background:#332b38;padding:10px 13px;color:#f5dbb0;font-size:12px;font-weight:750;cursor:pointer}
+.mykioo-discounts-actions button:first-child{background:#d4af77;color:#201722;border-color:#d4af77}
+.mykioo-discounts-actions button:disabled{opacity:.55;cursor:default}
+.mykioo-discounts-list-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.mykioo-discounts-list-head>strong{font-size:16px;color:#f3dbb0}
+.mykioo-discounts-list-head button{display:inline-flex;align-items:center;gap:7px;border:1px solid #706079;color:#f2e6f2;background:#2c2537;border-radius:9px;padding:9px 12px;font-size:12px;cursor:pointer}
+.mykioo-discounts-rows{display:grid;gap:10px}
+.mykioo-discounts-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#211c2c;border:1px solid #544861;border-radius:10px;padding:14px}
+.mykioo-discounts-row-info{display:flex;flex-direction:column;gap:5px;min-width:0}
+.mykioo-discounts-row-info>strong{font-size:16px;color:#f2d4a2;overflow-wrap:anywhere}
+.mykioo-discounts-row-info>span{font-size:14px;font-weight:750;color:#f5eff9}
+.mykioo-discounts-row-info small{font-size:11px;color:#c9bed0;overflow-wrap:anywhere}
+.mykioo-discount-invoice-details{display:grid;gap:7px;padding:10px 0;border-top:1px solid #52465d;border-bottom:1px solid #52465d}
+.mykioo-discount-invoice-details small{font-size:11px;color:#ddd0e0}
+@media(max-width:600px){.mykioo-discounts-form{padding:13px}.mykioo-discounts-grid{grid-template-columns:1fr}.mykioo-discounts-row{align-items:stretch}.mykioo-discounts-row .mykioo-discounts-actions{width:100%}.mykioo-discounts-row .mykioo-discounts-actions button{flex:1}}
