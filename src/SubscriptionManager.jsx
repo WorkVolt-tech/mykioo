@@ -104,7 +104,11 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
    });
    const result=await response.json().catch(()=>({}));
    if(!response.ok||!result.ok)throw Error(result.error||tr('Could not update request.','Impossible de mettre à jour la demande.'));
-   setNotice(tr('Request updated.','Demande mise à jour.'));onSaved?.();
+   setNotice(status==='declined'?(result.notification==='accepted'?
+    tr('Request declined. The customer email was accepted for delivery.','Demande refusée. Le courriel du client a été accepté pour livraison.'):
+    result.notification==='failed'?
+    tr('Request declined, but the email could not be sent. Contact the customer directly.','Demande refusée, mais le courriel n’a pas pu être envoyé. Contactez directement le client.'):
+    tr('Request declined.','Demande refusée.')):tr('Request updated.','Demande mise à jour.'));onSaved?.();
   }catch(err){setError(err.message||tr('Could not update request.','Impossible de mettre à jour la demande.'))}
   finally{setSaving(false)}
  }
