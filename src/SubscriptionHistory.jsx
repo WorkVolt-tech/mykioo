@@ -141,7 +141,7 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
            tr('Cancellation denied','Annulation refusée')}</strong>
          <small>{cancellation.status==='pending'?tr('Your subscription request remains valid until the owner approves cancellation.','Votre demande d’abonnement reste valide jusqu’à l’approbation de l’annulation.'):
            cancellation.status==='approved'?tr('The order was cancelled before completion.','La commande a été annulée avant sa finalisation.'):
-           tr('The request was not cancelled. No refunds after service activation.','La demande n’a pas été annulée. Aucun remboursement après l’activation du service.')}</small>
+           tr('The request was not cancelled. Voluntary refunds are not offered after activation, except where required by law.','La demande n’a pas été annulée. Aucun remboursement volontaire après l’activation, sauf lorsque la loi l’exige.')}</small>
          {cancellation.decision_note&&<small>{cancellation.decision_note}</small>}
         </div>}
         {!owner&&onRequestCancellation&&!cancellation&&['pending','in_review'].includes(r.status)&&!r.subscription_id&&!r.completed_at&&!r.service_activated_at&&
@@ -149,7 +149,7 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
           <button type="button" disabled={Boolean(cancellingId)} onClick={()=>onRequestCancellation(r)}>
             {cancellingId===r.id?tr('Sending cancellation request…','Envoi de la demande d’annulation…'):tr('Request cancellation','Demander l’annulation')}
           </button>
-          <small>{tr('Owner approval required. No cancellation or refund after activation.','Approbation du propriétaire requise. Aucune annulation ni remboursement après activation.')}</small>
+          <small>{tr('Owner approval required. No voluntary cancellation or refund after activation, except where required by law. Contact support for statutory rights.','Approbation du propriétaire requise. Aucune annulation volontaire ni remboursement après l’activation, sauf lorsque la loi l’exige. Contactez l’assistance pour vos droits légaux.')}</small>
          </div>}
         {item.linked&&<span><b>{tr('Linked service','Service associé')}:</b> {item.linked.service_name||tr('Subscription','Abonnement')}</span>}
         {renew&&r.status==='fulfilled'&&r.renewed_expires_at&&<div className="mykioo-history-expiry-snapshot">
