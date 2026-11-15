@@ -29,6 +29,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const [countryPacks,setCountryPacks]=useState([]);
  const [service,setService]=useState(owner?'':'MYKIOO TV'),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
  const [deviceCount,setDeviceCount]=useState(1),[paymentMethod,setPaymentMethod]=useState('interac');
+ const [acceptedServiceRisks,setAcceptedServiceRisks]=useState(false);
  const [checkout,setCheckout]=useState(null),[checkoutLoading,setCheckoutLoading]=useState(false);
  const [submittedRequest,setSubmittedRequest]=useState(null);
  const [showSubmittedHistory,setShowSubmittedHistory]=useState(false);
@@ -101,7 +102,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const pendingRenewals=new Set(rows.filter(r=>r.request_type==='renewal'&&['pending','in_review'].includes(r.status)).map(r=>r.renewal_subscription_id));
  const selectedRenewal=eligible.find(s=>s.id===renewalId);
  const renewalExpiry=sub=>sub.expires_at?new Date(sub.expires_at).toLocaleDateString(fr?'fr-CA':'en-CA',{year:'numeric',month:'short',day:'numeric'}):tr('Not available','Non disponible');
- function chooseType(value){setCountryPacks([]);setRequestType(value);setRenewalId('');if(value!=='renewal')setDeviceCount(1);setContractDays(365);setError('');setNotice('')}
+ function chooseType(value){setCountryPacks([]);setRequestType(value);setRenewalId('');setAcceptedServiceRisks(false);if(value!=='renewal')setDeviceCount(1);setContractDays(365);setError('');setNotice('')}
  function chooseAccount(value){setCountryPacks([]);setTargetId(value);setRenewalId('');setError('');setNotice('')}
  function chooseOwnerEmail(value){
   setOwnerEmail(value);setCreatedInvite(null);
@@ -130,6 +131,10 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  async function submit(e){
   e.preventDefault();if(saving)return;
   const renewal=requestType==='renewal',trial=requestType==='trial';
+  if(!owner&&!trial&&!acceptedServiceRisks){
+   setError(tr('Please read and acknowledge the subscription risks before submitting.','Veuillez lire et accepter les risques liés à l’abonnement avant de soumettre votre demande.'));
+   return;
+  }
   const requestNotes=trial?notes.trim():countryPackNotes(countryPacks,notes);
   if(requestNotes.length>1000){
    setError(tr('Please shorten your note. Country selections and notes can contain up to 1000 characters combined.','Veuillez raccourcir votre note. Les pays sélectionnés et la note peuvent contenir 1000 caractères au total.'));
@@ -196,7 +201,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
       service_name:renewal?(selected?.service_name||'Renewal'):service.trim(),
       contract_days:trial?1:contractDays,device_count:trial?1:deviceCount,preferred_payment_method:trial?null:paymentMethod,notes:requestNotes,quoted_price_cad:trial?null:priceCAD(contractDays,deviceCount),status:'pending'
     },...previous.filter(r=>r.id!==result.request.id)]);
-   setService(owner?'':'MYKIOO TV');setRenewalId('');if(owner){setOwnerEmail('');setCreatedInvite(null)}setNotes('');setCountryPacks([]);setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setRequestType('new');
+   setService(owner?'':'MYKIOO TV');setRenewalId('');if(owner){setOwnerEmail('');setCreatedInvite(null)}setNotes('');setCountryPacks([]);setContractDays(365);setDeviceCount(1);setPaymentMethod('interac');setRequestType('new');setAcceptedServiceRisks(false);
    setNotice(owner?
     (invitationSent?tr('Request created and a customer invitation was issued. The new member must be approved before they can access MYKIOO.','Demande créée et invitation envoyée au client. Le nouveau membre doit être approuvé avant d’accéder à MYKIOO.'):trial?tr('Free trial requested for this member. Activate it manually from the subscription manager.','Essai gratuit demandé pour ce membre. Activez-le manuellement dans le gestionnaire d’abonnements.'):tr('Request created for the existing customer.','Demande créée pour le client existant.')):
     trial?tr('Free trial requested. MYKIOO will review it. No payment is required and access is not active yet.','Demande d’essai gratuit envoyée. MYKIOO doit l’examiner. Aucun paiement requis et l’accès n’est pas encore actif.'):
@@ -337,6 +342,18 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
        <textarea id="mykioo-request-notes" maxLength={1000} rows={3} value={notes} onChange={e=>setNotes(e.target.value)}
         placeholder={tr('Anything else we should know?','Autres renseignements utiles ?')}/>
       </details>}
+    {!owner&&requestType!=='trial'&&<section className="mykioo-risk-notice" aria-labelledby="mykioo-risk-notice-heading">
+     <h3 id="mykioo-risk-notice-heading">{tr('Important — Please Read Before Subscribing','Important — À lire avant de vous abonner')}</h3>
+     <p>{tr('MYKIOO offers free trials so you can evaluate the service before purchasing a subscription.','MYKIOO propose des essais gratuits afin de vous permettre d’évaluer le service avant de souscrire un abonnement.')}</p>
+     <p>{tr('IPTV services depend on third-party servers and infrastructure. Temporary interruptions, channel changes, technical difficulties, or permanent service shutdowns may occur without advance notice.','Les services IPTV dépendent de serveurs et d’infrastructures tiers. Des interruptions temporaires, des changements de chaînes, des problèmes techniques ou même un arrêt définitif du service peuvent survenir sans préavis.')}</p>
+     <p>{tr('Once your paid subscription is activated, provider credits are consumed and cannot be recovered. For this reason, MYKIOO does not offer voluntary refunds after activation.','Une fois votre abonnement payant activé, les crédits du fournisseur sont consommés et ne peuvent pas être récupérés. Pour cette raison, MYKIOO n’offre aucun remboursement volontaire après l’activation.')}</p>
+     <p><strong>{tr('A successful free trial does not guarantee future service availability.','Un essai gratuit réussi ne garantit pas la disponibilité future du service.')}</strong></p>
+     <p>{tr('By proceeding, you acknowledge these service limitations and risks. This policy does not affect any rights or remedies that cannot legally be excluded.','En poursuivant, vous reconnaissez ces limitations et risques. Cette politique ne modifie pas les droits et recours auxquels il est légalement impossible de renoncer.')}</p>
+     <label className="mykioo-risk-acceptance">
+      <input type="checkbox" required checked={acceptedServiceRisks} onChange={e=>{setAcceptedServiceRisks(e.target.checked);setError('')}}/>
+      <span>{tr('I have read and understand the service risks, the free-trial limitations, and the no-voluntary-refund policy after activation.','J’ai lu et compris les risques liés au service, les limites de l’essai gratuit et la politique de non-remboursement volontaire après l’activation.')}</span>
+     </label>
+    </section>}
     <button type="submit" disabled={saving||(isBankPayment&&(!bankReady||checkoutLoading))||(requestType==='trial'&&trialRequested)||(requestType==='renewal'&&(!selectedRenewal||pendingRenewals.has(renewalId)))||(owner&&!ownerEmail.trim())}>
      {saving?tr('Sending…','Envoi…'):requestType==='trial'?tr('Request free trial — no payment','Demander l’essai gratuit — sans paiement'):isBankPayment?tr('Submit request — continue to payment','Soumettre — continuer vers le paiement'):requestType==='renewal'?tr('Request renewal — crypto invoice follows','Demander le renouvellement — facture crypto à suivre'):tr('Request subscription — crypto invoice follows','Demander l’abonnement — facture crypto à suivre')}
     </button>
