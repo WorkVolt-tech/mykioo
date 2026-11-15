@@ -294,10 +294,42 @@ Deno.serve(async req=>{
    }
    return respond({ok:true,activation:marked});
   }
+  // Notify the member when the owner declines a request (trial, new or renewal).
+  async function emailDecline(request:{member_id:string;request_type:string;service_name:string;id:string}){
+   try{
+    const {data:recipient,error:recipientError}=await db.from("mykioo_members")
+      .select("email,preferred_language").eq("user_id",request.member_id).single();
+    const apiKey=Deno.env.get("BREVO_API_KEY");
+    if(recipientError||!recipient?.email||!apiKey)throw Error("Missing email prerequisites");
+    const fr=recipient.preferred_language==="fr";
+    const trial=request.request_type==="trial";
+    const name=trial?(fr?"essai gratuit":"free trial"):request.request_type==="renewal"?(fr?"renouvellement":"renewal"):(fr?"abonnement":"subscription");
+    const title=fr?"Votre demande a été refusée":"Your request was declined";
+    const message=fr?
+      "Votre demande de "+name+" pour "+request.service_name+" n’a pas été approuvée. Aucun accès n’a été activé à la suite de cette demande. Si vous avez des questions, veuillez contacter le soutien MYKIOO.":
+      "Your "+name+" request for "+request.service_name+" was not approved. No access was activated from this request. If you have questions, please contact MYKIOO support.";
+    const senderResponse=await fetch("https://api.brevo.com/v3/smtp/templates/"+(fr?2:1),{headers:{"api-key":apiKey}});
+    const senderTemplate=await senderResponse.json().catch(()=>null);
+    if(!senderResponse.ok||!senderTemplate?.sender?.email)throw Error("Email sender unavailable");
+    const escape=(value:string)=>value.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]||c));
+    const html=`<!doctype html><html lang="${fr?"fr":"en"}"><body style="margin:0;background:#090b13;padding:24px;font-family:Arial,sans-serif;color:#f5ecf7"><table role="presentation" style="max-width:560px;width:100%;margin:auto;background:#171422;border:1px solid #574563;border-top:3px solid #dab77c;border-radius:16px"><tr><td style="padding:28px"><img src="${origin}/MYKIOO-Email-Logo.png" width="90" alt="MYKIOO"><h1 style="color:#e6c38d;font-size:25px">${escape(title)}</h1><p style="line-height:1.6">${escape(message)}</p><p style="font-size:13px;color:#b9aabe">${fr?"Référence de la demande":"Request reference"}: ${escape(request.id)}</p><p><a href="${origin}" style="color:#e6c38d">${fr?"Accéder à MYKIOO":"Open MYKIOO"}</a></p></td></tr></table></body></html>`;
+    const sent=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{"api-key":apiKey,"Content-Type":"application/json"},body:JSON.stringify({
+      sender:{email:senderTemplate.sender.email,name:"MYKIOO"},to:[{email:recipient.email}],subject:"MYKIOO | "+title,
+      htmlContent:html,textContent:[title,message,(fr?"Référence":"Reference")+": "+request.id,origin].join("\n"),
+      tags:["mykioo","request-declined"]
+    })});
+    const result=await sent.json().catch(()=>({}));
+    if(!sent.ok||!result.messageId)throw Error("Brevo did not accept the message");
+    return "accepted";
+   }catch(err){
+    console.error("MYKIOO request decline email failed",request.id,err instanceof Error?err.message:"unknown");
+    return "failed";
+   }
+  }
   if(input.action==="change_status"){
    if(member.role!=="owner"||user.app_metadata?.mykioo_role!=="owner")return respond({error:"Owner only"},403);
    if(!uuid(input.request_id)||!["pending","in_review","declined"].includes(input.status))return respond({error:"Invalid request or status"},400);
-   const {data:existing,error:fetchError}=await db.from("mykioo_subscription_requests").select("status,service_activated_at").eq("id",input.request_id).maybeSingle();
+   const {data:existing,error:fetchError}=await db.from("mykioo_subscription_requests").select("id,member_id,request_type,service_name,status,service_activated_at").eq("id",input.request_id).maybeSingle();
    if(fetchError||!existing)return respond({error:"Request not found"},404);
    if(["fulfilled","cancelled"].includes(existing.status))return respond({error:"Completed or withdrawn requests cannot be changed"},409);
    if(existing.service_activated_at&&input.status==="declined")
@@ -305,8 +337,19 @@ Deno.serve(async req=>{
    const {error:changeError}=await db.from("mykioo_subscription_requests")
       .update({status:input.status,updated_at:new Date().toISOString()}).eq("id",input.request_id).not("status","in",'("fulfilled","cancelled")');
    if(changeError)return respond({error:"Unable to update request"},500);
-   await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:"subscription_request_status",entity_type:"subscription_request",entity_id:input.request_id,details:{status:input.status}});
-   return respond({ok:true});
+   let notification:"accepted"|"failed"|"not_required"="not_required";
+   if(input.status==="declined"&&existing.status!=="declined"){
+    const {error:noticeError}=await db.from("mykioo_notifications").upsert({
+      user_id:existing.member_id,kind:"subscription_request",source_id:existing.id,destination:"subscription",
+      title_en:"Your request was declined",title_fr:"Votre demande a été refusée",
+      body_en:"Your "+(existing.request_type==="trial"?"free trial":existing.request_type==="renewal"?"renewal":"subscription")+" request for "+existing.service_name+" was declined.",
+      body_fr:"Votre demande "+(existing.request_type==="trial"?"d’essai gratuit":existing.request_type==="renewal"?"de renouvellement":"d’abonnement")+" pour "+existing.service_name+" a été refusée."
+    },{onConflict:"user_id,kind,source_id"});
+    if(noticeError)console.error("MYKIOO decline in-app notice failed",existing.id,noticeError.code||"unknown");
+    notification=await emailDecline(existing);
+   }
+   await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:"subscription_request_status",entity_type:"subscription_request",entity_id:input.request_id,details:{status:input.status,email_notification:notification}});
+   return respond({ok:true,notification});
   }
   return respond({error:"Unknown action"},400);
  }catch(err){console.error("MYKIOO subscription requests",err instanceof Error?err.message:"unknown");return respond({error:"Request service temporarily unavailable"},500)}
