@@ -12,3 +12,6 @@
 .mykioo-country-picker .mykioo-country-selection button{width:auto;padding:8px 12px;margin:0;background:transparent;color:#e1c38c;border:1px solid #594766;border-radius:8px;font:inherit}
 .mykioo-order-preferences{padding:14px;border:1px solid #594766;border-radius:10px;margin:14px 0;white-space:pre-wrap;overflow-wrap:anywhere;color:#eadbc4}
 @media(max-width:520px){.mykioo-country-picker{padding:12px}.mykioo-country-picker .mykioo-country-grid{grid-template-columns:1fr}}
+
+.mykioo-country-picker .mykioo-country-selection{flex-wrap:wrap}
+.mykioo-country-picker .mykioo-country-selection button:disabled{opacity:.5;cursor:default}

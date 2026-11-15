@@ -4,7 +4,7 @@ import './CountryPackPicker.css';
 
 export function countryPackNotes(selected,notes){
  const names=packs.filter(pack=>selected.includes(pack.name)).map(pack=>pack.name);
- const selection=names.length?'Countries / Pays — '+names.join(', '):'';
+ const selection=names.length===packs.length?'Countries / Pays — All countries and packs / Tous les pays et bouquets':names.length?'Countries / Pays — '+names.join(', '):'';
  return [selection,notes.trim()].filter(Boolean).join('\n\n');
 }
 
@@ -24,10 +24,11 @@ export default function CountryPackPicker({selected,onChange,language='en',disab
   <label htmlFor="mykioo-country-search">{tr('Search countries or channel groups','Rechercher un pays ou un groupe de chaînes')}</label>
   <input id="mykioo-country-search" type="search" value={query} onChange={e=>setQuery(e.target.value)}
    placeholder={tr('Haiti, Quebec, sports…','Haïti, Québec, sports…')}/>
-  {selected.length>0&&<div className="mykioo-country-selection">
+  <div className="mykioo-country-selection">
+   <button type="button" disabled={packs.every(pack=>selected.includes(pack.name))} onClick={()=>onChange(packs.map(pack=>pack.name))}>{tr('Select all countries & packs','Sélectionner tous les pays et bouquets')}</button>
    <span aria-live="polite">{selected.length} {tr('selected','sélectionnés')}</span>
-   <button type="button" onClick={()=>onChange([])}>{tr('Clear selection','Effacer la sélection')}</button>
-  </div>}
+   <button type="button" disabled={!selected.length} onClick={()=>onChange([])}>{tr('Clear selection','Effacer la sélection')}</button>
+  </div>
   <div className="mykioo-country-grid">
    {matching.map(pack=><div className="mykioo-country-option" key={pack.name}>
     <label>

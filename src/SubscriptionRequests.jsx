@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useState} from 'react';
+import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {supabase} from './supabase';
 import SubscriptionHistory from './SubscriptionHistory';
 import {MemberBilling} from './Billing';
@@ -30,7 +30,12 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const [service,setService]=useState(owner?'':'MYKIOO TV'),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
  const [deviceCount,setDeviceCount]=useState(1),[paymentMethod,setPaymentMethod]=useState('interac');
  const [checkout,setCheckout]=useState(null),[checkoutLoading,setCheckoutLoading]=useState(false);
- const [submittedInvoiceId,setSubmittedInvoiceId]=useState(null);
+ const [submittedRequest,setSubmittedRequest]=useState(null);
+ const [showSubmittedHistory,setShowSubmittedHistory]=useState(false);
+ const confirmationRef=useRef(null);
+ useEffect(()=>{
+  if(submittedRequest){confirmationRef.current?.focus();confirmationRef.current?.scrollIntoView({block:'start',behavior:'smooth'});}
+ },[submittedRequest]);
  const [ownRows,setOwnRows]=useState([]),[ownCancellations,setOwnCancellations]=useState([]),[loading,setLoading]=useState(!owner),
   [saving,setSaving]=useState(false),[cancellingId,setCancellingId]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{if(userId&&(!targetId||!owner))setTargetId(userId)},[userId,owner]);
@@ -64,7 +69,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',resume);window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',resume);supabase.removeChannel(channel)};
  },[userId,owner]);
  useEffect(()=>{
-  if(!supabase||view==='history'||requestType==='trial'){setCheckout(null);setCheckoutLoading(false);return;}
+  if(!supabase||submittedRequest||view==='history'||requestType==='trial'){setCheckout(null);setCheckoutLoading(false);return;}
   let live=true;const controller=new AbortController();
   setCheckout(null);setCheckoutLoading(true);
   async function loadCheckout(){
@@ -84,7 +89,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
   }
   loadCheckout();
   return()=>{live=false;controller.abort()};
- },[contractDays,deviceCount,paymentMethod,requestType,view]);
+ },[contractDays,deviceCount,paymentMethod,requestType,view,submittedRequest]);
  const isBankPayment=requestType!=='trial'&&(paymentMethod==='interac'||paymentMethod==='zelle');
  const bankReady=isBankPayment&&checkout?.available===true&&!!checkout?.destination&&Number(checkout?.amount_due)>0;
  const users=useMemo(()=>members.filter(m=>['approved','pending'].includes(m.status)&&(m.role==='member'||(m.role==='owner'&&m.user_id===userId))),[members,userId]);
@@ -198,19 +203,32 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
     isBankPayment?tr('Request submitted. Complete payment in the next step. The owner verifies actual receipt before activation.','Demande envoyée. Effectuez le paiement à la prochaine étape. Le propriétaire vérifiera la réception avant activation.'):
     renewal?tr('Renewal requested. Your existing login will be kept.','Renouvellement demandé. Vos identifiants actuels seront conservés.'):
     tr('Your request was sent for review.','Votre demande a été envoyée pour examen.'));
-   if(!owner&&!trial&&isBankPayment&&result.invoice?.id)setSubmittedInvoiceId(result.invoice.id);
+   setSubmittedRequest({id:result.request?.id,type:requestType,invoiceId:!trial&&isBankPayment?result.invoice?.id:null,bankPayment:isBankPayment,service:renewal?(selected?.service_name||'MYKIOO TV'):service.trim()||'MYKIOO TV',days:trial?1:contractDays,devices:trial?1:deviceCount});
    if(owner)await onSaved?.();
   }catch(err){setError((invitationSent||createdInvite?tr('A site invitation may already have been issued. ','Une invitation a peut-être déjà été envoyée. '):'')+(err.message||tr('Request could not be submitted.','Impossible d’envoyer la demande.')))}
   finally{setSaving(false)}
  }
- if(!owner&&submittedInvoiceId)return <section className="mykioo-request-area mykioo-payment-after-request">
-  <div className="mykioo-support-card mykioo-payment-next-card">
-   <span className="mykioo-payment-success-check">✓</span>
-   <h2>{tr('Request received — now send payment','Demande reçue — effectuez le paiement')}</h2>
-   <p>{tr('Step 1 is complete. Follow the instructions below. After sending payment, select “Confirm I’ve sent payment.” The owner will verify receipt before activating service.','La première étape est terminée. Suivez les instructions ci-dessous. Après le paiement, cliquez sur « Confirmer l’envoi du paiement ». Le propriétaire vérifiera la réception avant l’activation.')}</p>
-   <button type="button" className="mykioo-payment-other-request" onClick={()=>setSubmittedInvoiceId(null)}>{tr('Create another subscription request','Créer une autre demande d’abonnement')}</button>
+ if(submittedRequest)return <section className="mykioo-request-area mykioo-payment-after-request">
+  <div className="mykioo-support-card mykioo-payment-next-card" ref={confirmationRef} tabIndex={-1} role="status" aria-live="polite">
+   <span className="mykioo-payment-success-check" aria-hidden="true">✓</span>
+   <h2>{submittedRequest.type==='trial'?tr('Free trial request received','Demande d’essai gratuit reçue'):submittedRequest.type==='renewal'?tr('Renewal request received','Demande de renouvellement reçue'):tr('Subscription request received','Demande d’abonnement reçue')}</h2>
+   <p><strong>{tr('Your request was submitted successfully. You do not need to submit it again.','Votre demande a bien été envoyée. Vous n’avez pas besoin de la soumettre à nouveau.')}</strong></p>
+   <p>{submittedRequest.service} · {submittedRequest.type==='trial'?tr('24-hour free trial','Essai gratuit de 24 heures'):displayDuration(submittedRequest.days,tr)+' · '+submittedRequest.devices+' '+tr('device(s)','appareil(s)')}</p>
+   {submittedRequest.id&&<p>{tr('Request reference','Référence de la demande')}: <strong>{submittedRequest.id}</strong></p>}
+   <p>{owner?tr('The request is saved. Review and complete it from the subscription manager; verify payment first for paid services.','La demande est enregistrée. Examinez-la et finalisez-la dans le gestionnaire d’abonnements; vérifiez d’abord le paiement des services payants.'):
+    submittedRequest.type==='trial'?
+    tr('No payment is required. MYKIOO will review and activate your trial, then email your service login details. Your trial is not active yet.','Aucun paiement n’est requis. MYKIOO examinera et activera votre essai, puis vous enverra les identifiants du service par courriel. Votre essai n’est pas encore actif.'):
+    submittedRequest.bankPayment?
+    tr('Your request is awaiting payment verification and activation. If you have already sent payment, do not pay again. Use the payment section below to report it.','Votre demande attend la vérification du paiement et l’activation. Si vous avez déjà envoyé votre paiement, ne payez pas à nouveau. Utilisez la section de paiement ci-dessous pour le signaler.'):
+    tr('MYKIOO will review your request and prepare your crypto invoice. Wait for that invoice before paying. Your service is not active yet.','MYKIOO examinera votre demande et préparera votre facture crypto. Attendez cette facture avant de payer. Votre service n’est pas encore actif.')}</p>
+   {!owner&&submittedRequest.bankPayment&&!submittedRequest.invoiceId&&<p>{tr('Open Payments to check your payment instructions.','Ouvrez Paiements pour consulter vos instructions de paiement.')}</p>}
+   <button type="button" className="mykioo-payment-other-request" onClick={()=>setShowSubmittedHistory(value=>!value)}>{showSubmittedHistory?tr('Hide request history','Masquer l’historique'):tr('View request history','Voir l’historique des demandes')}</button>
+   <button type="button" className="mykioo-payment-other-request" onClick={()=>{setSubmittedRequest(null);setShowSubmittedHistory(false);setNotice('');setError('')}}>{tr('Create another request','Créer une autre demande')}</button>
   </div>
-  <MemberBilling userId={userId} language={language} highlightInvoiceId={submittedInvoiceId}/>
+  {!owner&&submittedRequest.invoiceId&&<MemberBilling userId={userId} language={language} highlightInvoiceId={submittedRequest.invoiceId}/>}
+  {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
+  {showSubmittedHistory&&notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
+  {showSubmittedHistory&&<SubscriptionHistory requests={rows} cancellations={cancellationRows} subscriptions={selectedSubs} language={language} owner={owner} onRequestCancellation={owner?undefined:requestCancellation} cancellingId={cancellingId}/>}
  </section>;
  if(view==='history')return <section className="mykioo-request-history-page">
     <SubscriptionHistory requests={rows} cancellations={cancellationRows} subscriptions={selectedSubs} language={language} owner={owner} onRequestCancellation={owner?undefined:requestCancellation} cancellingId={cancellingId}/>
