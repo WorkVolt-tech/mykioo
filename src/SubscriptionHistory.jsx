@@ -131,7 +131,7 @@ export default function SubscriptionHistory({requests=[],cancellations=[],subscr
         {r.service_activated_at&&<div className="mykioo-history-activation-note">
          <strong>{tr('Service activated outside MYKIOO','Service activé en dehors de MYKIOO')}</strong>
          <span>{tr('Activation recorded','Activation enregistrée')}: {dateText(r.service_activated_at)}</span>
-         <small>{tr('Cancellation is no longer available after recorded activation. Subscription processing can still be completed.','L’annulation n’est plus disponible après l’enregistrement de l’activation. Le traitement de l’abonnement peut toujours être terminé.')}</small>
+         <small>{tr('Voluntary cancellation in this form is no longer available after recorded activation. Statutory rights are unaffected; contact support. Subscription processing can still be completed.','L’annulation volontaire dans ce formulaire n’est plus possible après l’activation. Les droits prévus par la loi demeurent applicables; contactez l’assistance. Le traitement de l’abonnement peut toujours être terminé.')}</small>
         </div>}
         {r.notes&&<span className="mykioo-history-notes"><b>{tr('Request notes','Notes de la demande')}:</b> {r.notes}</span>}
         <SubscriptionProgress request={r} cancellation={cancellation} language={language}/>
