@@ -1241,3 +1241,20 @@
 .mykioo-vega-explainer strong{color:#f5d9a7;font-size:15px;line-height:1.45}
 .mykioo-vega-explainer p{color:#e6deea;font-size:13px;line-height:1.65;margin:0;overflow-wrap:anywhere}
 @media(max-width:600px){.mykioo-vega-explainer{padding:12px}.mykioo-vega-explainer strong{font-size:14px}.mykioo-vega-explainer p{font-size:12px}}
+
+/* Paid subscription promo codes: compact bilingual CAD/USD price confirmation. */
+.mykioo-discount-checkout{display:grid;gap:10px;min-width:0;margin:15px 0 18px;padding:16px;border:1px solid #8c754f;border-radius:12px;background:rgba(211,176,115,.065)}
+.mykioo-discount-checkout>label{display:block;color:#efd5a4;font-size:13px;font-weight:750}
+.mykioo-discount-entry{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mykioo-discount-entry input{flex:1 1 155px;min-width:0;width:auto!important;max-width:100%;font:inherit;letter-spacing:.045em;text-transform:uppercase}
+.mykioo-discount-entry button{flex:0 0 auto;min-width:0!important;white-space:normal;border:1px solid #b5996a;background:#c5a16d;color:#18151e;padding:11px 13px;border-radius:9px;font-size:12px;font-weight:800;cursor:pointer}
+.mykioo-discount-entry button:disabled{opacity:.5;cursor:default}
+.mykioo-discount-entry .mykioo-discount-clear{background:transparent;color:#e0c7a4}
+.mykioo-discount-totals{display:grid;gap:8px;padding-top:10px;border-top:1px solid #665342}
+.mykioo-discount-totals>div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.mykioo-discount-totals span{font-size:12px;color:#ddd2df}
+.mykioo-discount-totals strong{font-size:15px;font-weight:800;color:#f5daac;white-space:normal;font-variant-numeric:tabular-nums}
+.mykioo-discount-checkout>small{color:#c3b8c8;font-size:11px;line-height:1.55}
+.mykioo-discount-checkout .mykioo-discount-success{margin:0;color:#b9e7ba;font-size:12px;line-height:1.55}
+.mykioo-discount-checkout .mykioo-discount-error{margin:0;color:#ffb8b8;font-size:12px;line-height:1.55;overflow-wrap:anywhere}
+@media(max-width:600px){.mykioo-discount-checkout{padding:12px}.mykioo-discount-entry button{padding:11px 10px}.mykioo-discount-totals>div{align-items:start}}
