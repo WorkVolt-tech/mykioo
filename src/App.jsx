@@ -157,7 +157,7 @@ return <div className="dashboard">{mobile&&<button type="button" className="myki
    <a href="sms:+19296956116" aria-label={tr('Send a text message to MYKIOO at 929-695-6116','Envoyer un message texte à MYKIOO au 929-695-6116')}>929-695-6116</a>
   </div>
   <p>{tr('Tell us what you need help with. Your request is private and visible to the MYKIOO team.','Expliquez-nous votre problème. Votre demande est privée et visible par l’équipe MYKIOO.')}</p>
-  <p className="mykioo-support-response-policy">{tr('MYKIOO is operated by one person. Please allow up to 24 hours for a first response after submitting your request, including nights and weekends. Resolving the issue may take longer.','MYKIOO est géré par une seule personne. Veuillez prévoir un délai allant jusqu’à 24 heures pour une première réponse après l’envoi de votre demande, y compris les nuits et les fins de semaine. La résolution du problème peut prendre plus de temps.')}</p>
+  <p className="mykioo-support-response-policy">{tr('MYKIOO operates with a small support team. We appreciate your patience and ask that you allow up to 24 hours for an initial response, including nights and weekends. Some issues may take longer to resolve.','MYKIOO dispose d’une petite équipe d’assistance. Nous vous remercions de votre patience et vous invitons à prévoir jusqu’à 24 heures pour une première réponse, y compris les nuits et les fins de semaine. Certains problèmes peuvent nécessiter plus de temps pour être résolus.')}</p>
   <form onSubmit={submitTicket}>
    <label htmlFor="mykioo-ticket-category">{tr('What do you need help with?','Avec quoi avez-vous besoin d’aide ?')}</label>
    <select id="mykioo-ticket-category" value={ticketCategory} onChange={e=>setTicketCategory(e.target.value)} required>
