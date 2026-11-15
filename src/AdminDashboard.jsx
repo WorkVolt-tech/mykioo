@@ -412,7 +412,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      <SubscriptionRequests owner view="form" userId={user.id} members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>
     </div>
    </section>}
-  {tab==='billing'&&<OwnerBilling language={language} requests={rows.subscription_requests||[]} members={rows.members||[]}/>}{tab==='activity'&&<ActivityHistory members={rows.members||[]} language={language}/>}{tab==='notifications'&&<NotificationCenter owner items={notifications} language={language} markRead={markNotificationRead} clearNotifications={clearNotifications} onSelect={section=>setTab(section)}/>}{tab==='guides'&&<section className="admin-workspace-section">
+  {tab==='billing'&&<OwnerBilling language={language} userId={user.id} requests={rows.subscription_requests||[]} members={rows.members||[]}/>}{tab==='activity'&&<ActivityHistory members={rows.members||[]} language={language}/>}{tab==='notifications'&&<NotificationCenter owner items={notifications} language={language} markRead={markNotificationRead} clearNotifications={clearNotifications} onSelect={section=>setTab(section)}/>}{tab==='guides'&&<section className="admin-workspace-section">
   <div className="admin-subnav" role="tablist" aria-label={tr('Help content sections','Sections du contenu d’aide')}>
    {guideViews.map(view=><button type="button" role="tab" key={view.id} aria-selected={guideView===view.id} onClick={()=>setGuideView(view.id)}>
     <view.Icon size={16}/>{tr(view.en,view.fr)}
