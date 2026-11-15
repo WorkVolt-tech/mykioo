@@ -2,21 +2,25 @@ import {useEffect,useRef} from 'react';
 
 // Remember a dashboard's vertical reading position in the current browser tab.
 // This stores a number only, never form contents, tokens or customer details.
-export function useResumeScroll(scope,section){
+export function useResumeScroll(scope,section,ready=true){
  const previousSection=useRef(null);
  useEffect(()=>{
-  if(!scope||!section)return;
+  if(!scope||!section||!ready)return;
   const key='mykioo-ui-scroll:'+scope+':'+String(section).toLowerCase().replace(/\s+/g,'-');
   const changedSection=previousSection.current!==null&&previousSection.current!==section;
   previousSection.current=section;
   let saved=0;
   try{saved=Math.max(0,Number(window.sessionStorage.getItem(key))||0)}catch{}
   saved=Math.min(saved,1000000);
-  let live=true,interacted=false,restoring=true,frame=0;
+  let live=true,interacted=false,restoring=true,frame=0,restoredOnce=false;
   const restore=()=>{
    if(!live||interacted)return;
-   // On the first visit, let Safari's native scroll restoration win if it succeeded.
-   if(changedSection||window.scrollY<3){
+   // Restore on first paint; only retry if saved content was not tall enough.
+   // Never undo a later scrollIntoView action by resetting a page to the top.
+   if(!restoredOnce){
+    if(changedSection||window.scrollY<3)window.scrollTo(0,saved);
+    restoredOnce=true;
+   }else if(saved>0&&window.scrollY<3){
     window.scrollTo(0,saved);
    }
   };
@@ -50,5 +54,5 @@ export function useResumeScroll(scope,section){
    window.removeEventListener('touchstart',onUserAction);
    window.removeEventListener('keydown',onUserAction);
   };
- },[scope,section]);
+ },[scope,section,ready]);
 }
