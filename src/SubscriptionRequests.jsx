@@ -1,5 +1,6 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {supabase} from './supabase';
+import {useRememberedState} from './useRememberedState';
 import SubscriptionHistory from './SubscriptionHistory';
 import {MemberBilling} from './Billing';
 import {priceCAD,PAYMENT_LABELS} from './PackagePricing';
@@ -23,16 +24,22 @@ const displayDuration=(days,tr)=>({
 
 export default function SubscriptionRequests({userId,subscriptions=[],language='en',owner=false,members=[],requests=[],cancellations=[],onSaved,view='all'}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
+ const uiScope='mykioo-ui:'+(owner?'owner:':'member:')+userId+':subscription-draft';
  const [targetId,setTargetId]=useState(userId||'');
  const [ownerEmail,setOwnerEmail]=useState(''),[createdInvite,setCreatedInvite]=useState(null);
- const [requestType,setRequestType]=useState('new');
- const [countryPacks,setCountryPacks]=useState([]);
- const [service,setService]=useState(owner?'':'MYKIOO TV'),[contractDays,setContractDays]=useState(365),[notes,setNotes]=useState(''),[renewalId,setRenewalId]=useState('');
- const [deviceCount,setDeviceCount]=useState(1),[paymentMethod,setPaymentMethod]=useState('interac');
+ const [requestType,setRequestType]=useRememberedState(uiScope+':type','new');
+ const [countryPacks,setCountryPacks]=useRememberedState(uiScope+':countries',[],'session');
+ const [service,setService]=useState(owner?'':'MYKIOO TV');
+ const [contractDays,setContractDays]=useRememberedState(uiScope+':duration',365);
+ const [notes,setNotes]=useState('');
+ const [renewalId,setRenewalId]=useRememberedState(uiScope+':renewal-id','','session');
+ const [deviceCount,setDeviceCount]=useRememberedState(uiScope+':devices',1);
+ const [paymentMethod,setPaymentMethod]=useRememberedState(uiScope+':method','interac');
  const [acceptedServiceRisks,setAcceptedServiceRisks]=useState(false);
- const [discountDraft,setDiscountDraft]=useState(''),[appliedDiscount,setAppliedDiscount]=useState('');
+ const [discountDraft,setDiscountDraft]=useRememberedState(uiScope+':discount-code','','session');
+ const [appliedDiscount,setAppliedDiscount]=useState('');
  const [checkout,setCheckout]=useState(null),[checkoutLoading,setCheckoutLoading]=useState(false);
- const [submittedRequest,setSubmittedRequest]=useState(null);
+ const [submittedRequest,setSubmittedRequest]=useRememberedState(uiScope+':submitted-request',null,'session');
  const [showSubmittedHistory,setShowSubmittedHistory]=useState(false);
  const confirmationRef=useRef(null);
  useEffect(()=>{
