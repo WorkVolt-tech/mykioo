@@ -1,6 +1,7 @@
 import React,{useCallback,useEffect,useState} from 'react';
 import {QRCodeSVG} from 'qrcode.react';
 import {supabase} from './supabase';
+import OwnerDiscountCodes from './DiscountCodes';
 import {Wallet,RefreshCw,Copy,CheckCircle2,ShieldAlert,AlertTriangle,FileText,Receipt,Clock3,Send,Settings,Bitcoin} from 'lucide-react';
 import './Billing.css';
 
@@ -79,8 +80,13 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
    <small>#{invoice.id.slice(0,8).toUpperCase()} · {when(invoice.issued_at,fr)}{memberName?' · '+memberName:''}</small>
    <small>{tr('Request','Demande')}: #{invoice.request_id.slice(0,8)} · {req?.contract_days||'—'} {tr('days','jours')}</small>
   </div><span className={'mykioo-billing-chip '+(paidStatus(invoice)?'paid':invoice.state==='payment_submitted'?'submitted':'')}>{status}</span></div>
-  <div className="mykioo-billing-price-row"><span>{tr('Subscription price','Prix de l’abonnement')}</span>
+  <div className="mykioo-billing-price-row"><span>{tr(invoice.discount_code?'Discounted subscription total':'Subscription price',invoice.discount_code?'Total de l’abonnement après réduction':'Prix de l’abonnement')}</span>
     <strong>{invoice.method==='zelle'&&invoice.amount_usd!=null?money(invoice.amount_usd,'USD'):money(invoice.amount_cad,'CAD')}</strong></div>
+   {invoice.discount_code&&<div className="mykioo-discount-invoice-details">
+    <div className="mykioo-billing-price-row"><span>{tr('Original price','Prix avant réduction')}</span><strong>{invoice.method==='zelle'?money(invoice.gross_amount_usd,'USD'):money(invoice.gross_amount_cad,'CAD')}</strong></div>
+    <div className="mykioo-billing-price-row"><span>{tr('Discount','Réduction')} ({invoice.discount_code})</span><strong>−{invoice.method==='zelle'?money(invoice.discount_amount_usd,'USD'):money(invoice.discount_amount_cad,'CAD')}</strong></div>
+    <small>{tr('The invoice amount reflects your applied code.','Le montant de la facture tient compte de votre code de réduction.')}</small>
+   </div>}
   {invoice.method&&<div className="mykioo-billing-price-row"><span>{tr('Selected method','Mode choisi')}</span><strong>{displayMethods}</strong></div>}
   {invoice.method&&invoice.amount_due!==null&&<div className="mykioo-billing-price-row"><span>{tr('Exact amount to send','Montant exact à envoyer')}</span><strong>{money(invoice.amount_due,invoice.currency)}</strong></div>}
   {invoice.quote_expires_at&&<p className="mykioo-billing-muted">{tr('Crypto quote valid until','Devis crypto valide jusqu’au')} {when(invoice.quote_expires_at,fr)} {quoteExpired&&<strong className="mykioo-billing-danger">{tr('— expired: do not send','— expiré : ne pas envoyer')}</strong>}</p>}
@@ -129,8 +135,8 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
    <strong>{tr('Set payment instructions','Définir les instructions de paiement')}</strong>
    <label>{isCrypto(invoice.method)?tr('Paste Coinbase receiving address for this invoice','Collez l’adresse Coinbase pour cette facture'):tr('Recipient email or payment contact','Courriel ou coordonnées du destinataire')}
      <input value={overrideAddress} onChange={e=>setOverrideAddress(e.target.value)} maxLength={254} placeholder={invoice.method==='btc'?'bc1…':invoice.method==='shib'?'0x…':tr('Recipient contact','Coordonnées du destinataire')} required/></label>
-   {invoice.method==='zelle'&&<label>{tr('Owner-confirmed Zelle amount (USD)','Montant Zelle (USD) confirmé par le propriétaire')}
-      <input type="number" step="0.01" min="0.01" value={usdQuote} onChange={e=>setUsdQuote(e.target.value)}
+   {invoice.method==='zelle'&&<label>{invoice.discount_code?tr('Discounted Zelle total (USD) — locked','Total Zelle réduit (USD) — verrouillé'):tr('Owner-confirmed Zelle amount (USD)','Montant Zelle (USD) confirmé par le propriétaire')}
+      <input type="number" step="0.01" min="0.01" value={invoice.discount_code?String(invoice.amount_usd):usdQuote} readOnly={!!invoice.discount_code} onChange={e=>setUsdQuote(e.target.value)}
        placeholder={invoice.amount_usd!=null?String(invoice.amount_usd):tr('Required before Zelle payment','Requis avant paiement Zelle')}/></label>}
     {isCrypto(invoice.method)&&<>
     <p className="mykioo-billing-muted">{tr('A current CAD crypto quote will be fetched when you save. It is valid for 24 hours.','Une cotation crypto en CAD sera récupérée lors de l’enregistrement. Elle sera valide 24 heures.')}</p>
@@ -286,10 +292,12 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
    <div className="mykioo-owner-billing-tabs" role="tablist" aria-label={tr('Billing sections','Sections de facturation')}>
     <button type="button" role="tab" aria-selected={ownerPage==='payments'} onClick={()=>setOwnerPage('payments')}>{tr('Verify payments','Vérifier les paiements')}{reviewCount>0&&<span className="mykioo-owner-billing-count">{reviewCount}</span>}</button>
     <button type="button" role="tab" aria-selected={ownerPage==='crypto'} onClick={()=>setOwnerPage('crypto')}>{tr('Crypto invoices','Factures crypto')}{cryptoCount>0&&<span className="mykioo-owner-billing-count">{cryptoCount}</span>}</button>
-    <button type="button" role="tab" aria-selected={ownerPage==='settings'} onClick={()=>setOwnerPage('settings')}>{tr('Payment settings','Paramètres de paiement')}</button>
+    <button type="button" role="tab" aria-selected={ownerPage==='discounts'} onClick={()=>setOwnerPage('discounts')}>{tr('Discount codes','Codes de réduction')}</button>
+     <button type="button" role="tab" aria-selected={ownerPage==='settings'} onClick={()=>setOwnerPage('settings')}>{tr('Payment settings','Paramètres de paiement')}</button>
    </div>
    {loading?<p className="mykioo-billing-muted">{tr('Loading billing…','Chargement de la facturation…')}</p>:<>
-    {ownerPage==='settings'&&<div className="mykioo-owner-billing-pane">
+    {ownerPage==='discounts'&&<div className="mykioo-owner-billing-pane"><OwnerDiscountCodes language={language}/></div>}
+     {ownerPage==='settings'&&<div className="mykioo-owner-billing-pane">
      <p className="mykioo-billing-muted">{tr('Set receiving contacts and USD prices for future transactions.','Configurez les coordonnées de réception et les prix USD pour les prochaines transactions.')}</p>
      <form className="mykioo-billing-box" onSubmit={saveSettings}>
     <h3><Settings size={18}/>{tr('Billing defaults & receiving contacts','Tarifs par défaut et coordonnées de réception')}</h3>
@@ -331,7 +339,8 @@ export function OwnerBilling({language='en',requests=[],members=[]}){
       </select></label>
      {payable.length===0&&<p className="mykioo-billing-muted">{tr('No crypto requests awaiting an invoice.','Aucune demande crypto en attente de facture.')}</p>}
      {selectedRequest&&['btc','shib'].includes(selectedRequest.preferred_payment_method)?<>
-      <div className="mykioo-billing-price-row"><span>{tr('Fixed package price','Prix fixe du forfait')}</span><strong>CA$ {Number(selectedRequest.quoted_price_cad).toFixed(2)}</strong></div>
+      <div className="mykioo-billing-price-row"><span>{tr('Amount after discount (CAD)','Montant après réduction (CAD)')}</span><strong>CA$ {Number(selectedRequest.quoted_price_cad).toFixed(2)}</strong></div>
+       {selectedRequest.discount_code&&<p className="mykioo-billing-muted">{tr('Discount code','Code de réduction')}: <strong>{selectedRequest.discount_code}</strong> · {tr('CAD saved','CAD économisés')}: CA$ {Number(selectedRequest.discount_amount_cad||0).toFixed(2)}</p>}
       {networkWarning(selectedRequest.preferred_payment_method,language)}
       <label>{selectedRequest.preferred_payment_method==='btc'?tr('Bitcoin Mainnet bc1 receiving address','Adresse de réception Bitcoin Mainnet bc1'):tr('SHIB Ethereum Mainnet ERC-20 receiving address','Adresse de réception SHIB sur Ethereum Mainnet ERC-20')}
        <input value={cryptoAddress} onChange={e=>setCryptoAddress(e.target.value)} maxLength={254} required placeholder={selectedRequest.preferred_payment_method==='btc'?'bc1…':'0x…'}/>
