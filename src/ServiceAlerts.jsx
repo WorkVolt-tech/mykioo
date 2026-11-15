@@ -96,6 +96,11 @@ export function ServiceAlertEditor({alerts=[],subscriptions=[],language='en',onR
  return <section className="mykioo-alert-editor">
   <h2>{tr('Manage service announcements','Gérer les annonces de service')}</h2>
   <p>{tr('Publish bilingual service outages or scheduled maintenance. Add affected regions and the date you manually checked the provider; active notices appear on member dashboards and Support. The provider does not supply automatic status updates.','Publiez des annonces bilingues sur les pannes et les maintenances. Ajoutez les régions touchées et la date de votre dernière vérification manuelle du fournisseur; les avis actifs apparaissent dans les espaces membres et l’assistance. Le fournisseur ne fournit pas de mises à jour automatiques.')}</p>
+  <div className="mykioo-provider-review-info">
+   <strong>{tr('Manual MyPanel status review','Vérification manuelle de l’état MyPanel')}</strong>
+   <p>{tr('You will receive a private Telegram reminder every Sunday at 10:00 a.m. Eastern time. Review the provider page and update or resolve your announcements here. No automatic synchronization is available.','Vous recevrez un rappel privé sur Telegram chaque dimanche à 10 h, heure de l’Est. Consultez la page du fournisseur, puis actualisez ou clôturez vos annonces ici. Aucune synchronisation automatique n’est disponible.')}</p>
+   <a href="https://reseller.mypanel.cx/status" target="_blank" rel="noopener noreferrer">{tr('Open MyPanel Content Status','Ouvrir l’état des chaînes MyPanel')}</a>
+  </div>
   <form onSubmit={submit} className="mykioo-alert-editor-form">
    <label>{tr('English title','Titre anglais')}<input required minLength={4} maxLength={120} value={form.title_en} onChange={e=>set('title_en',e.target.value)}/></label>
    <label>{tr('French title','Titre français')}<input required minLength={4} maxLength={120} value={form.title_fr} onChange={e=>set('title_fr',e.target.value)}/></label>
