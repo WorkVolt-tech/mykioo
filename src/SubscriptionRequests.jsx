@@ -111,7 +111,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  async function requestCancellation(request){
   if(owner||saving||cancellingId||!['pending','in_review'].includes(request.status)||request.subscription_id||request.completed_at||request.service_activated_at)return;
   if(cancellationRows.some(c=>c.request_id===request.id))return;
-  if(!window.confirm(tr('Ask MYKIOO to cancel this request? Owner approval is required. If the service is completed or activated first, cancellation will be denied and no refund will be given.','Demander à MYKIOO d’annuler cette demande ? L’approbation du propriétaire est obligatoire. Si le service est terminé ou activé avant, l’annulation sera refusée et aucun remboursement ne sera accordé.')))return;
+  if(!window.confirm(tr('Ask MYKIOO to cancel this request? Owner approval is required. If service is activated before approval, this voluntary cancellation request cannot be approved. Any rights required by law still apply.','Demander à MYKIOO d’annuler cette demande ? L’approbation du propriétaire est obligatoire. Si le service est activé avant l’approbation, cette demande d’annulation volontaire ne pourra pas être approuvée. Les droits prévus par la loi demeurent applicables.')))return;
   setCancellingId(request.id);setError('');setNotice('');
   try{
    const {data:{session},error:authError}=await supabase.auth.getSession();
@@ -239,7 +239,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    <p>{owner?
      tr('Create a new subscription, renewal or free trial request for a member. Complete requests using the subscription manager below.','Créez une demande de nouvel abonnement, de renouvellement ou d’essai gratuit pour un membre. Finalisez les demandes dans le gestionnaire ci-dessous.'):
      tr('Choose a subscription or renewal plan, or request a one-time free trial without payment.','Choisissez un abonnement, un renouvellement ou un essai gratuit unique sans paiement.')}</p>
-   {owner&&<p className="mykioo-request-policy-note">{tr('Cancellation requests need owner approval and must be approved before we complete or activate the service. Once the service is activated, no cancellation or refund is offered, subject to applicable law.','Les demandes d’annulation doivent être approuvées par le propriétaire avant la finalisation ou l’activation du service. Une fois le service activé, aucune annulation ni aucun remboursement ne sont offerts, sous réserve des lois applicables.')}</p>}
+   {owner&&<p className="mykioo-request-policy-note">{tr('Cancellation requests need owner approval and must be approved before we complete or activate the service. After activation, voluntary cancellations and refunds are not offered, except where required by applicable law. Contact support to discuss any statutory rights.','Les demandes d’annulation doivent être approuvées par le propriétaire avant la finalisation ou l’activation du service. Après l’activation, les annulations volontaires et remboursements ne sont pas offerts, sauf lorsque la loi l’exige. Communiquez avec l’assistance pour toute question relative à vos droits légaux.')}</p>}
    <form onSubmit={submit}>
     {!owner&&<div className="mykioo-checkout-step"><span>1</span><strong>{tr('Choose your plan','Choisissez votre forfait')}</strong></div>}
     {owner&&<>
@@ -343,7 +343,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    </form>
    {!owner&&<details className="mykioo-checkout-policy">
     <summary>{tr('Cancellation and refund policy','Politique d’annulation et de remboursement')}</summary>
-    <p className="mykioo-request-policy-note">{tr('Cancellation requests need owner approval and must be approved before we complete or activate the service. Once the service is activated, no cancellation or refund is offered, subject to applicable law.','Les demandes d’annulation doivent être approuvées par le propriétaire avant la finalisation ou l’activation du service. Une fois le service activé, aucune annulation ni aucun remboursement ne sont offerts, sous réserve des lois applicables.')}</p>
+    <p className="mykioo-request-policy-note">{tr('Cancellation requests need owner approval and must be approved before we complete or activate the service. After activation, voluntary cancellations and refunds are not offered, except where required by applicable law. Contact support to discuss any statutory rights.','Les demandes d’annulation doivent être approuvées par le propriétaire avant la finalisation ou l’activation du service. Après l’activation, les annulations volontaires et remboursements ne sont pas offerts, sauf lorsque la loi l’exige. Communiquez avec l’assistance pour toute question relative à vos droits légaux.')}</p>
    </details>}
    {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
    {notice&&<p role="status" className="mykioo-profile-success">{notice}</p>}
