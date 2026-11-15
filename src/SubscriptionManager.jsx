@@ -86,7 +86,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
    const result=await response.json().catch(()=>({}));
    if(!response.ok||!result.ok)throw Error(result.error||tr('Unable to record activation.','Impossible d’enregistrer l’activation.'));
    setNotice(tr(
-    'External activation recorded. Cancellation is now unavailable. Finish the subscription details using Complete / add login.',
+    'External activation recorded. Voluntary cancellation is no longer available through this form; statutory rights still apply. Finish the subscription details using Complete / add login.',
     'Activation externe enregistrée. L’annulation volontaire n’est plus possible dans ce formulaire. Les droits prévus par la loi demeurent applicables. Terminez les détails de l’abonnement avec Terminer / ajouter les accès.'
    ));
    await onSaved?.();
