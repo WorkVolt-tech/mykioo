@@ -166,3 +166,6 @@
  .admin-layout .mykioo-manager-filter{width:100%}
  .admin-layout .mykioo-manager-editor-head>.admin-action{width:100%}
 }
+
+/* Label the owner mobile navigation button for members unfamiliar with the icon. */
+@media(max-width:900px){.admin-layout .admin-mobile-toggle{flex-direction:column;gap:2px;width:46px;height:46px;min-width:46px;min-height:46px;padding:3px 4px}.admin-layout .admin-mobile-toggle .mykioo-mobile-menu-label{font-size:10px;line-height:1.1;font-weight:700}}
