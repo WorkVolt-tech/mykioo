@@ -21,6 +21,7 @@ import SupportThread from './SupportThread';
 import React,{useEffect,useState} from 'react';
 import './AdminExperience.css';
 import {usePageSection} from './usePageSection';
+import {useResumeScroll} from './useResumeScroll';
 import {useRememberedState} from './useRememberedState';
 import {Users,MailPlus,ShieldCheck,CalendarDays,Receipt,Headphones,LogOut,RefreshCw,Clock3,LockKeyhole,AlertCircle,CheckCircle2,Bell,BookOpen,History,Menu,X,ClipboardList,BarChart3,SlidersHorizontal,Megaphone,Settings2,Inbox} from 'lucide-react';
 import {supabase} from './supabase';
@@ -81,7 +82,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
   const [supportView,setSupportView]=useRememberedState('mykioo-ui:owner:'+user.id+':support-view','tickets');
   const [subscriptionView,setSubscriptionView]=useRememberedState('mykioo-ui:owner:'+user.id+':subscription-view','queue');
   const [guideView,setGuideView]=useRememberedState('mykioo-ui:owner:'+user.id+':guide-view','faq');
-  const [expandedTickets,setExpandedTickets]=useState([]);const [focusedTicket,setFocusedTicket]=useState(null);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all'),[supportPriorityFilter,setSupportPriorityFilter]=useState('all'),[supportCategoryFilter,setSupportCategoryFilter]=useState('all'),[supportSort,setSupportSort]=useState('priority');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
+  const [expandedTickets,setExpandedTickets]=useState([]);useResumeScroll('owner:'+user.id,tab);const [focusedTicket,setFocusedTicket]=useState(null);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all'),[supportPriorityFilter,setSupportPriorityFilter]=useState('all'),[supportCategoryFilter,setSupportCategoryFilter]=useState('all'),[supportSort,setSupportSort]=useState('priority');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
  async function refresh({silent=false}={}){
   if(!silent){setLoading(true);setError('')}
   try{
