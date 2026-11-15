@@ -167,7 +167,7 @@ export function MemberSetupGuides({language='en',onOpenSupport}){
   <div className="mykioo-guide-intro">
    <BookOpen size={26}/>
    <div><h2>{tr('Setup & help guides','Guides d’installation et d’aide')}</h2>
-    <p>{tr('Find installation instructions and answers to common questions. Select a guide to view its steps.','Trouvez des instructions d’installation et des réponses aux questions fréquentes. Sélectionnez un guide pour voir les étapes.')}</p></div>
+    <p>{tr('New to this? First choose your device below, then open its installation guide. If you use a Fire Stick for the first time, begin with “START HERE — First-time Fire TV Stick setup.” Follow one instruction at a time and press “Done — next step” only after you have completed it.','C’est votre première fois ? Choisissez d’abord votre appareil ci-dessous, puis ouvrez son guide. Pour un premier Fire Stick, commencez par « COMMENCEZ ICI — Première installation Fire TV Stick ». Suivez une instruction à la fois et appuyez sur « Terminé — étape suivante » seulement après l’avoir effectuée.')}</p></div>
   </div>
   <div className="mykioo-guide-filters">
    <label><Search size={16}/><input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder={tr('Search help guides…','Rechercher dans les guides…')} aria-label={tr('Search help guides','Rechercher dans les guides')}/></label>
