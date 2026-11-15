@@ -1235,3 +1235,9 @@
 .mykioo-guide-all-steps button:hover{text-decoration:underline}
 .mykioo-guide-wizard button:focus-visible{outline:2px solid #f6d9a2;outline-offset:3px}
 @media(max-width:600px){.mykioo-guide-wizard{padding:12px;gap:12px}.mykioo-guide-current-step{padding:13px}.mykioo-guide-current-step p{font-size:14px!important}.mykioo-guide-step-actions{grid-template-columns:1fr 1fr;gap:8px}.mykioo-guide-step-actions button{padding:10px 6px!important}}
+
+/* Important compatibility notice for Amazon Vega OS, shown in the Fire TV guide filter. */
+.mykioo-vega-explainer{display:grid;gap:8px;min-width:0;margin:13px 0 18px;padding:15px 17px;border:1px solid #a38356;border-left:4px solid #dfb977;border-radius:11px;background:rgba(217,183,123,.09)}
+.mykioo-vega-explainer strong{color:#f5d9a7;font-size:15px;line-height:1.45}
+.mykioo-vega-explainer p{color:#e6deea;font-size:13px;line-height:1.65;margin:0;overflow-wrap:anywhere}
+@media(max-width:600px){.mykioo-vega-explainer{padding:12px}.mykioo-vega-explainer strong{font-size:14px}.mykioo-vega-explainer p{font-size:12px}}
