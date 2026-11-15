@@ -34,10 +34,9 @@ const apkDownloads=[
 const downloadFor=guide=>apkDownloads.find(app=>(guide.steps_en||'').includes(app.url)||(guide.steps_fr||'').includes(app.url));
 const officialProtonLink=guide=>([guide.steps_en,guide.steps_fr].some(s=>(s||'').includes('https://protonvpn.com/free-vpn'))
  ?'https://protonvpn.com/free-vpn':null);
-const guidePlatformLabel=(guide,fr)=>{
- const app=downloadFor(guide);
- return app?app.platforms.map(id=>titleFor(platformOptions,id,fr)).join(' · '):titleFor(platformOptions,guide.platform,fr);
-};
+// Guide titles now identify exactly one device type, so don't label an
+// Android tutorial as Fire TV just because that APK happens to support both.
+const guidePlatformLabel=(guide,fr)=>titleFor(platformOptions,guide.platform,fr);
 
 const fresh=()=>({id:'',title_en:'',title_fr:'',summary_en:'',summary_fr:'',steps_en:'',steps_fr:'',category:'setup',platform:'general',published:false,sort_order:0});
 const orderGuides=(a,b)=>a.sort_order-b.sort_order||new Date(b.updated_at)-new Date(a.updated_at);
@@ -162,7 +161,7 @@ export function MemberSetupGuides({language='en',onOpenSupport}){
   const term=search.trim().toLocaleLowerCase();
   return (!term||[g.title_en,g.title_fr,g.summary_en,g.summary_fr,g.steps_en,g.steps_fr].some(x=>(x||'').toLocaleLowerCase().includes(term)))
     &&(category==='all'||g.category===category)
-    &&(platform==='all'||g.platform==='general'||(downloadFor(g)?.platforms||[g.platform]).includes(platform));
+    &&(platform==='all'||g.platform==='general'||g.platform===platform);
  }).sort(orderGuides);
  return <section className="mykioo-guide-page">
   <div className="mykioo-guide-intro">
