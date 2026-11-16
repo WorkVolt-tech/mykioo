@@ -2,7 +2,8 @@ import {hashInvitationToken,newInvitationLink} from "./invitation-link.ts";
 import {makeInvitationEmail} from "./email-template.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.0";
 
-const origin = "https://mykioo.pages.dev";
+const origin="https://mykioo.icu";
+const allowedOrigins=new Set([origin,"https://www.mykioo.icu","https://mykioo.pages.dev"]);
 const cors = {
   "Access-Control-Allow-Origin": origin,
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
@@ -57,9 +58,12 @@ async function sendInviteEmail(to:string,subject:string,htmlContent:string,textC
 }
 
 Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+ const requestOrigin=request.headers.get("Origin")||"";
+ const requestCors={...cors,"Access-Control-Allow-Origin":allowedOrigins.has(requestOrigin)?requestOrigin:origin};
+ const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...requestCors,"Content-Type":"application/json","Cache-Control":"no-store"}});
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers:requestCors });
   if (request.method !== "POST") return reply({ error: "Method not allowed" }, 405);
-  if (request.headers.get("Origin") !== origin) return reply({ error: "Origin not allowed" }, 403);
+  if (!allowedOrigins.has(requestOrigin)) return reply({ error: "Origin not allowed" }, 403);
   const bearer = request.headers.get("Authorization") || "";
 
   const url = Deno.env.get("SUPABASE_URL");

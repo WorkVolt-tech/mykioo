@@ -1,12 +1,16 @@
 import {createClient} from "npm:@supabase/supabase-js@2.57.0";
-const origin="https://mykioo.pages.dev";
+const origin="https://mykioo.icu";
+const allowedOrigins=new Set([origin,"https://www.mykioo.icu","https://mykioo.pages.dev"]);
 const cors={"Access-Control-Allow-Origin":origin,"Access-Control-Allow-Headers":"authorization,apikey,content-type,x-client-info","Access-Control-Allow-Methods":"POST,OPTIONS","Vary":"Origin"};
 const respond=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
 const uuid=(s:unknown)=>typeof s==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
-Deno.serve(async req=>{
- if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
+Deno.serve(async (req) => {
+ const requestOrigin=req.headers.get("Origin")||"";
+ const requestCors={...cors,"Access-Control-Allow-Origin":allowedOrigins.has(requestOrigin)?requestOrigin:origin};
+ const respond=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...requestCors,"Content-Type":"application/json","Cache-Control":"no-store"}});
+ if(req.method==="OPTIONS")return new Response(null,{status:204,headers:requestCors});
  if(req.method!=="POST")return respond({error:"Method not allowed"},405);
- if(req.headers.get("Origin")!==origin)return respond({error:"Origin not allowed"},403);
+ if(!allowedOrigins.has(requestOrigin))return respond({error:"Origin not allowed"},403);
  const token=req.headers.get("Authorization")||"";
  if(!token.startsWith("Bearer "))return respond({error:"Sign in to continue"},401);
  const url=Deno.env.get("SUPABASE_URL"),secret=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
