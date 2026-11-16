@@ -14,7 +14,7 @@ export default function ManualInvitePanel({delivery,language='en',onDismiss}){
    await navigator.clipboard.writeText(text);setCopied(which);
   }catch{setCopied('error')}
  }
- return <section className="mykioo-manual-invite" aria-labelledby="mykioo-manual-invite-title">
+ return <section id="mykioo-manual-invite" className="mykioo-manual-invite" aria-labelledby="mykioo-manual-invite-title">
   <div className="mykioo-manual-invite-heading">
    <MailWarning size={21}/>
    <div><h3 id="mykioo-manual-invite-title">{tr('Private invitation ready — send it manually','Invitation privée prête — envoi manuel')}</h3>
