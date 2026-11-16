@@ -1,0 +1,24 @@
+.mykioo-health{display:grid;gap:16px;min-width:0;margin:0 0 22px;padding:21px;border:1px solid #786348;border-radius:14px;background:linear-gradient(140deg,#292230,#1b1928);color:#eee6ef}
+.mykioo-health-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.mykioo-health-kicker{display:inline-flex;align-items:center;gap:7px;color:#e7c38d;font-size:11px;font-weight:800;letter-spacing:.075em}
+.mykioo-health-heading h2{margin:7px 0;font-size:21px;color:#f8e7c9}
+.mykioo-health-heading p{margin:0;color:#cfc2d6;font-size:12px;line-height:1.6}
+.mykioo-health-outline,.mykioo-health-more,.mykioo-health-plan-action,.mykioo-health-empty button{display:inline-flex;justify-content:center;align-items:center;gap:7px;border:1px solid #a68a61;border-radius:8px;padding:10px 12px;background:#30283a;color:#f4dab2;font-size:12px;font-weight:800;cursor:pointer}
+.mykioo-health-outline:hover,.mykioo-health-more:hover,.mykioo-health-plan-action:hover,.mykioo-health-empty button:hover{background:#413349}
+.mykioo-health-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.mykioo-health-stats>div{display:flex;flex-direction:column;gap:6px;min-width:0;padding:14px;border-radius:10px;border:1px solid #504458;background:#201c2a}
+.mykioo-health-stats span{color:#cbbdd0;font-size:11px;line-height:1.5}.mykioo-health-stats strong{color:#f0cf94;font-size:25px;font-weight:800;font-variant-numeric:tabular-nums}
+.mykioo-health-plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:11px}
+.mykioo-health-plan{display:grid;align-content:start;gap:13px;min-width:0;padding:15px;border:1px solid #5c4b62;border-radius:11px;background:#221d2c}
+.mykioo-health-plan.soon,.mykioo-health-plan.expired{border-color:#b48c59}
+.mykioo-health-plan-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}.mykioo-health-plan-top>div{display:grid;gap:5px;min-width:0}
+.mykioo-health-plan-top strong{font-size:15px;color:#f5e6d0;overflow-wrap:anywhere}.mykioo-health-plan-top small{font-size:11px;color:#cbbfd1}
+.mykioo-health-pill{display:inline-flex;padding:5px 8px;border-radius:99px;border:1px solid #637d68;background:#23382f;color:#bdeac9;font-size:10px;font-weight:800}
+.mykioo-health-pill.soon,.mykioo-health-pill.expired{border-color:#b09056;background:#3d3029;color:#f5d69f}
+.mykioo-health-pill.pending{border-color:#756a8e;background:#352b41;color:#e0ccef}
+.mykioo-health-plan-details{display:grid;gap:10px}.mykioo-health-plan-details>div{display:grid;grid-template-columns:17px minmax(0,1fr) auto;gap:7px;align-items:center}
+.mykioo-health-plan-details svg{color:#c5a472}.mykioo-health-plan-details span{color:#d0c4d4;font-size:11px}.mykioo-health-plan-details strong{color:#f0e3ef;text-align:right;font-size:11px;overflow-wrap:anywhere}
+.mykioo-health-track{height:6px;border-radius:30px;background:#493e50;overflow:hidden}.mykioo-health-track span{height:100%;display:block;background:#d6b27d;border-radius:30px}
+.mykioo-health-reminder{display:flex;align-items:flex-start;gap:7px;font-size:11px;line-height:1.5;color:#f1cd9b}.mykioo-health-reminder svg{flex-shrink:0}
+.mykioo-health-plan-action{justify-self:start;margin-top:auto}.mykioo-health-empty{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:15px;border:1px dashed #6f5a68;border-radius:10px}.mykioo-health-empty>svg{color:#dfbb82}.mykioo-health-empty>div{flex:1 1 200px}.mykioo-health-empty strong{font-size:13px}.mykioo-health-empty p,.mykioo-health-footnote{font-size:11px;line-height:1.6;color:#c8bdd0;margin:5px 0 0}.mykioo-health-more{justify-self:start}
+@media(max-width:650px){.mykioo-health{padding:15px}.mykioo-health-heading h2{font-size:18px}.mykioo-health-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.mykioo-health-stats>div{padding:10px}.mykioo-health-stats strong{font-size:21px}.mykioo-health-stats span{font-size:10px}.mykioo-health-outline{width:100%}.mykioo-health-plan-details>div{grid-template-columns:17px minmax(0,1fr) minmax(0,1fr)}}
