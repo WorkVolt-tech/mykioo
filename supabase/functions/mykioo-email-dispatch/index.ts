@@ -32,6 +32,10 @@ Deno.serve(async request=>{
  const expected=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
  if(!expected||request.headers.get("api-key")!==expected)return reply({error:"Unauthorized"},401);
  const url=new URL(request.url);
+ if(request.method==="GET"&&url.searchParams.get("route")==="status"){
+  const ready=Boolean(Deno.env.get("MYKIOO_SMTP_APP_PASSWORD"));
+  return reply({ready},ready?200:503);
+ }
  if(request.method==="GET"&&url.searchParams.get("route")==="template"){
   const id=Number(url.searchParams.get("id"));
   if(![1,2,3,4].includes(id))return reply({error:"Template unavailable"},404);
