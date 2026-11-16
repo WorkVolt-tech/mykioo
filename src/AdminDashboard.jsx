@@ -580,6 +580,13 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
   </section>}
   {tab==='invitations'&&<section className="admin-workspace-section admin-owner-invitations">
    <div className="admin-panel-content">
+    <div className="admin-invite" style={{marginBottom:18,padding:16,border:'1px solid rgba(218,183,124,.35)',borderRadius:12}}>
+      <div><strong>{tr('Test automated MYKIOO emails','Tester les courriels automatiques MYKIOO')}</strong>
+        <p>{tr('Send two branded test emails to ancmarx@gmail.com: an invitation preview and a completion/account-details preview. Test-only links and credentials; no member, invitation, or subscription changes.','Envoyer deux courriels de test à ancmarx@gmail.com : aperçu de l’invitation et aperçu des identifiants de service. Liens et identifiants fictifs; aucune modification des membres ou abonnements.')}</p>
+      </div>
+      <button type="button" className="admin-action primary" disabled={saving}
+        onClick={()=>runAction({action:'test_email_templates',language})}>{saving?tr('Sending tests…','Envoi des tests…'):tr('Send both test emails','Envoyer les deux courriels tests')}</button>
+    </div>
     <ManualInvitePanel delivery={inviteDelivery} language={language} onDismiss={()=>setInviteDelivery(null)}/>
     <OwnerInvitationReviews requests={rows.invitation_requests||[]} invitations={rows.invitations||[]}
      members={rows.members||[]} language={language} saving={saving} onAction={runAction}
