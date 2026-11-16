@@ -19,7 +19,7 @@ export default function OwnerInvitationReviews({requests=[],invitations=[],membe
   <div className="mykioo-invitation-intro">
    <MailPlus size={24}/>
    <div><h2>{tr('Member invitation approvals','Approbation des invitations')}</h2>
-    <p>{tr('Members can recommend someone, but only you can approve the invitation email. Every request records who invited the person.','Les membres peuvent recommander une personne, mais vous seul approuvez l’envoi de l’invitation. Chaque demande indique qui a invité la personne.')}</p></div>
+    <p>{tr('Members can recommend someone, but only you approve new invitations. During the email outage, copy the private link and send it from Gmail. Each request records who referred the person.','Les membres peuvent recommander une personne, mais vous seul approuvez les invitations. Durant la panne des courriels, copiez le lien privé et envoyez-le depuis Gmail. Chaque demande indique qui a invité la personne.')}</p></div>
   </div>
   <div className="mykioo-invitations-list-title">
    <div><h3>{tr('Invitation requests','Demandes d’invitation')} {pending.length>0&&<span className="mykioo-owner-count">{pending.length}</span>}</h3></div>
@@ -47,42 +47,42 @@ export default function OwnerInvitationReviews({requests=[],invitations=[],membe
       </div>
      </div>
      <span className={'mykioo-invitation-status '+item.status}><Icon size={14}/>
-      {item.status==='pending'?tr('Pending','En attente'):item.status==='approved'?tr('Approved / invited','Approuvée / invitation envoyée'):tr('Rejected','Refusée')}
+      {item.status==='pending'?tr('Pending','En attente'):item.status==='approved'?tr('Approved / link prepared','Approuvée / lien préparé'):tr('Rejected','Refusée')}
      </span>
      {item.status==='pending'&&<div className="mykioo-owner-invitation-actions">
-      <button type="button" className="approve" disabled={saving} onClick={()=>onAction?.({action:'review_invite',request_id:item.id,decision:'approve'})}><CheckCircle2 size={16}/>{tr('Approve & email invite','Approuver et envoyer l’invitation')}</button>
+      <button type="button" className="approve" disabled={saving} onClick={()=>onAction?.({action:'review_invite',request_id:item.id,decision:'approve'})}><CheckCircle2 size={16}/>{tr('Approve & create link','Approuver et créer le lien')}</button>
       <button type="button" className="reject" disabled={saving} onClick={()=>onAction?.({action:'review_invite',request_id:item.id,decision:'reject'})}><XCircle size={16}/>{tr('Reject','Refuser')}</button>
      </div>}
      {item.status==='approved'&&item.invited_user_id&&<div className="mykioo-owner-invitation-actions">
       <button type="button" className="approve" disabled={saving}
        onClick={()=>onAction?.({action:'resend_invite_setup',request_id:item.id})}>
-       <MailPlus size={16}/>{tr('Resend account-setup email','Renvoyer le courriel de création de compte')}
+       <MailPlus size={16}/>{tr('Generate new setup link','Générer un nouveau lien d’inscription')}
       </button>
      </div>}
     </article>
    })}</div>}
   <div className="mykioo-invitations-list-title" style={{marginTop:28}}>
-   <h3>{tr('Sent invitations — acceptance & expiry','Invitations envoyées — acceptation et expiration')}</h3>
+   <h3>{tr('Invitation links — acceptance & expiry','Liens d’invitation — acceptation et expiration')}</h3>
    <label>{tr('Show','Afficher')} <select value={deliveryFilter} onChange={e=>setDeliveryFilter(e.target.value)}>
     <option value="all">{tr('All invitations','Toutes les invitations')}</option>
     {['requested','pending','accepted','expired','revoked'].map(status=><option key={status} value={status}>{statusLabel(status)} ({invitations.filter(inv=>invitationStatus(inv)===status).length})</option>)}
    </select></label>
   </div>
-  <p>{tr('Approval and acceptance are separate. Older links may expire before their recorded expiry; resend to issue a fresh 48-hour link.','L’approbation et l’acceptation sont distinctes. Les anciens liens peuvent expirer avant la date enregistrée; renvoyez une invitation pour fournir un nouveau lien de 48 heures.')}</p>
+  <p>{tr('Approval and acceptance are separate. Links expire after 48 hours. Copy the generated link and send it to the invitee yourself.','L’approbation et l’acceptation sont distinctes. Les liens expirent après 48 heures. Copiez le lien créé et envoyez-le vous-même à la personne invitée.')}</p>
   <div className="mykioo-owner-invitation-list">{tracked.map(inv=>{
    const status=invitationStatus(inv),profile=byId.get(inv.accepted_by);
    const complete=Boolean(inv.accepted_at&&profile?.display_name?.trim());
    return <article className="mykioo-owner-invitation-item" key={inv.id}>
     <div className="mykioo-owner-invitation-info"><strong>{inv.email}</strong><div>
      <span>{tr('Invited by','Invité par')}: {labelFor(inv.invited_by)}</span>
-     <span>{tr('Sent','Envoyée')}: {dateText(inv.sent_at||inv.created_at,fr)}</span>
+     <span>{tr('Prepared','Préparée')}: {dateText(inv.sent_at||inv.created_at,fr)}</span>
      {inv.accepted_at&&<span>{tr('Accepted','Acceptée')}: {dateText(inv.accepted_at,fr)} · {complete?tr('Account created','Compte créé'):tr('Setup incomplete','Création à terminer')}</span>}
      {!inv.accepted_at&&<span>{tr('Link expires','Expiration du lien')}: {new Date(inv.expires_at).toLocaleString(fr?'fr-CA':'en-CA')}</span>}
      {inv.renewal_requested_at&&<span>{tr('New link requested','Nouveau lien demandé')}: {new Date(inv.renewal_requested_at).toLocaleString(fr?'fr-CA':'en-CA')}</span>}
     </div></div>
     <span className={'mykioo-invitation-status '+(status==='accepted'?'approved':status==='expired'?'rejected':'pending')}>{statusLabel(status)}</span>
     {status!=='revoked'&&!complete&&<div className="mykioo-owner-invitation-actions"><button type="button" className="approve" disabled={saving}
-     onClick={()=>onAction?.({action:'resend_invite_setup',invitation_id:inv.id})}><MailPlus size={16}/>{tr('Send fresh invitation','Envoyer une nouvelle invitation')}</button></div>}
+     onClick={()=>onAction?.({action:'resend_invite_setup',invitation_id:inv.id})}><MailPlus size={16}/>{tr('Generate new link','Générer un nouveau lien')}</button></div>}
    </article>;
   })}</div>
   {!tracked.length&&<p>{tr('No invitations match this filter.','Aucune invitation pour ce filtre.')}</p>}
