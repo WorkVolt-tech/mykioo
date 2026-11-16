@@ -25,7 +25,7 @@ Deno.serve(async req=>{
  if(queryError)return respond({error:"Could not load due reminders"},500);
  if(dry_run)return respond({ok:true,dry_run:true,due_count:due?.length||0,sent:0});
  const mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
- if(!mailerKeyreturn respond({error:"Transactional mail not configured"},503);
+ if(!mailerKey)return respond({error:"Transactional mail not configured"},503);
  let sent=0,skipped=0,failed=0;
  for(const invoice of due||[]){
   // A cancellation or completed request must never receive an unpaid reminder.
