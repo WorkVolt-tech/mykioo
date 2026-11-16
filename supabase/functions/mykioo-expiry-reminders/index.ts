@@ -39,7 +39,7 @@ Deno.serve(async request=>{
    return respond({ok:true,dry_run:true,active_dated_subscriptions:count||0,email_sent:0,in_app_sent:0});
  }
  const mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
- if(!brevo)return respond({error:"Transactional email is not configured"},503);
+ if(!mailerKey)return respond({error:"Transactional email is not configured"},503);
  const now=new Date();
  const utcToday=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate());
  const horizon=new Date(utcToday+31*86400000).toISOString();
@@ -110,7 +110,7 @@ Deno.serve(async request=>{
    const html='<div style="font-family:Arial,sans-serif;background:#16111d;color:#f5edf8;padding:28px"><h1 style="color:#dfbb7d">MYKIOO</h1>'+body+'<p><a style="color:#dfbb7d" href="https://mykioo.pages.dev/?section=subscription">MYKIOO</a></p></div>';
    try{
     const outbound=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=email"),{
-     method:"POST",headers:{"api-key":brevo,"Content-Type":"application/json","Accept":"application/json"},
+     method:"POST",headers:{"api-key":mailerKey,"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({sender:{name:"MYKIOO",email:"mykiootv@outlook.com"},to:[{email:member.email}],subject,htmlContent:html,
        tags:["mykioo","subscription-expiry"]})
     });
