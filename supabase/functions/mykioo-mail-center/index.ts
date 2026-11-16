@@ -183,6 +183,8 @@ Deno.serve(async request=>{
    const folder=clean(input.folder,160)||"INBOX",id=uid(input.uid);
    if(!id||!validFolder(folder))return json({error:"Invalid message"},400,corsOrigin);
    const boxes=await foldersFor(client);
+   const moveTarget=action==="move"?(input.destination==="archive"?(boxes.archive||await ensureFolder(client,"archive")):input.destination==="trash"?boxes.trash:clean(input.destination,160)):null;
+   if(action==="move"&&(!moveTarget||!validFolder(moveTarget)))return json({error:"Destination unavailable"},400,corsOrigin);
    const lock=await openFolder(client,folder);
    try{
     if(action==="mark"){
@@ -190,8 +192,7 @@ Deno.serve(async request=>{
      if(input.enabled===true)await client.messageFlagsAdd(id,[flag],{uid:true});
      else await client.messageFlagsRemove(id,[flag],{uid:true});
     }else if(action==="move"){
-     const target=input.destination==="archive"?(boxes.archive||await ensureFolder(client,"archive")):input.destination==="trash"?boxes.trash:clean(input.destination,160);
-     if(!target||!validFolder(target))return json({error:"Destination unavailable"},400,corsOrigin);
+     const target=moveTarget as string;
      if(!boxes.items.some(x=>x.path===target)&&target!=="MYKIOO Archive")return json({error:"Invalid destination"},400,corsOrigin);
      await client.messageMove(id,target,{uid:true});
     }else{
