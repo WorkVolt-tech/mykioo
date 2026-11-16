@@ -130,6 +130,28 @@ Deno.serve(async (request) => {
       const inviterName=typeof profile?.display_name==="string"?profile.display_name.trim().slice(0,80):"";
       return {inviterName,inviterIsOwner:profile?.role==="owner"};
     };
+    if(action==="test_email_templates"){
+      if(!owner)return reply({error:"Owner permission required"},403);
+      // Dedicated test, intentionally never creates invitations, subscriptions or real credentials.
+      const recipient="ancmarx@gmail.com";
+      const {data:testMember,error:testError}=await server.from("mykioo_members")
+       .select("user_id,email,status").ilike("email",recipient).maybeSingle();
+      if(testError||!testMember||testMember.status!=="approved")return reply({error:"Test recipient must be an existing approved member"},409);
+      const lang=input.language==="fr"?"fr":"en";
+      const invitation=makeInvitationEmail({language:lang,actionLink:"https://mykioo.icu/",inviterName:"MYKIOO",inviterIsOwner:true});
+      const mark=(content:string)=>'<div style="background:#47304d;padding:14px;color:#fff;font:bold 16px Arial;text-align:center">TEST ONLY — EMAIL PREVIEW — NO LIVE INVITATION OR ACCOUNT</div>'+content;
+      const invitationSent=await sendInviteEmail(recipient,"[TEST / ESSAI] "+invitation.subject,mark(invitation.htmlContent),"[TEST ONLY — No working invitation link]\n\n"+invitation.textContent);
+      const fr=lang==="fr";
+      const title=fr?"Votre commande est terminée":"Your order is complete";
+      const sample=fr?
+       ["Ce courriel est un essai. Ces identifiants ne sont pas réels.","Nom d’utilisateur : DEMO-USER","Mot de passe : DEMO-PASSWORD-NOT-VALID","Adresse du serveur : https://example.invalid"]:
+       ["This is a test message. These credentials are not real.","Username: DEMO-USER","Password: DEMO-PASSWORD-NOT-VALID","Host URL: https://example.invalid"];
+      const escape=(v:string)=>v.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]||c));
+      const html='<!doctype html><html lang="'+lang+'"><body style="background:#090b13;padding:24px;font-family:Arial,sans-serif;color:#f5ecf7"><table style="max-width:560px;margin:auto;width:100%;background:#171422;border:1px solid #574563;border-top:3px solid #dab77c;border-radius:16px"><tr><td style="padding:28px"><img src="https://mykioo.icu/MYKIOO-Email-Logo.png" width="90" alt="MYKIOO"/><h1 style="color:#e6c38d">'+escape(title)+'</h1><p style="font-size:16px;color:#ffe5a3">TEST ONLY / ESSAI SEULEMENT — NO LIVE SUBSCRIPTION</p>'+sample.map(x=>'<p style="padding:8px;background:#211b2d">'+escape(x)+'</p>').join('')+'<p><a href="https://mykioo.icu" style="color:#e6c38d">MYKIOO</a></p></td></tr></table></body></html>';
+      const credentialsSent=await sendInviteEmail(recipient,"[TEST / ESSAI] MYKIOO | "+title,html,"TEST ONLY — No live subscription\n\n"+title+"\n\n"+sample.join("\n"));
+      await server.from("mykioo_audit_logs").insert({actor_id:actor.id,action:"owner_email_template_test",entity_type:"member",entity_id:testMember.user_id,details:{recipient,invitationAccepted:invitationSent,credentialsAccepted:credentialsSent,sampleOnly:true}});
+      return reply({ok:invitationSent&&credentialsSent,invitationAccepted:invitationSent,credentialsAccepted:credentialsSent,recipient,message:invitationSent&&credentialsSent?"SMTP accepted both test templates. Check Inbox and Spam; delivery is not guaranteed.":"One or both email tests failed. Check the SMTP provider and logs."},invitationSent&&credentialsSent?200:503);
+    }
     if(action==="request_invite"){
       if(member.role!=="member")return reply({error:"Member access required"},403);
       const email=emailFor(input.email);
