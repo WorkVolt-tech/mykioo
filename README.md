@@ -8,11 +8,11 @@ Production site: https://mykioo.pages.dev/
 
 - **Frontend:** Cloudflare Pages, Vite; build command `npm run build`, output directory `dist`, root `/`.
 - **Database and authentication:** Supabase project `porpqvphytecuidomcgy`.
-- **Transactional email:** Brevo, including invitation, member-status, subscription, renewal, support and reminder notifications.
+- **Transactional email:** Supabase Auth uses Gmail custom SMTP; MYKIOO Edge Functions call the private `mykioo-email-dispatch` Gmail SMTP service for invitations, membership notices, orders, credentials, declines and reminders. Outlook fallback is not yet configured.
 - **Owner alerts:** `mykioo-telegram-owner` Edge Function; protected owner-only chat destination and scheduled checks.
 - **Provider integration:** MYKIOO's reseller-panel API is used for supported automated trial creation. Keep panel API tokens server-side.
 
-The only frontend build variables are `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Never put `service_role`, Brevo keys, Telegram bot tokens, panel API credentials or account passwords into a `VITE_` variable or commit them to GitHub.
+The only frontend build variables are `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Never put `service_role`, Gmail SMTP app passwords, Telegram bot tokens, panel API credentials or account passwords into a `VITE_` variable or commit them to GitHub.
 
 ## Accounts and permissions
 
@@ -39,9 +39,20 @@ The only frontend build variables are `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUB
 - A member requests a trial, a new paid subscription, or a renewal.
 - The owner reviews the request and verifies payment before completing or activating a paid service.
 - Successful completed subscriptions and renewals are queued in `mykioo_completion_email_log`; `mykioo-completion-emails` processes that queue on the existing schedule.
-- Credential-delivery emails are handled in `mykioo-subscriptions`, using the member's preferred language and a Brevo sender. Their credentials must not appear in logs or Telegram alerts.
+- Credential-delivery emails are handled in `mykioo-subscriptions`, using the member's preferred language and the internal Gmail dispatcher. Their credentials must not appear in logs or Telegram alerts.
 - Expiry reminders are handled by `mykioo-expiry-reminders`; payment reminders use `mykioo-payment-reminders`.
-- A successful Brevo API response means Brevo accepted a send request; it **does not prove inbox delivery**. Confirm delivery in the sender logs and recipient inboxes. Do not trigger actual member email tests without a controlled test recipient.
+- A successful Gmail SMTP response means Gmail accepted a send request; it **does not prove inbox delivery**. Check inbox and spam with a controlled test recipient. Do not trigger real member emails during QA.
+
+## Gmail transactional email configuration
+
+- In **Supabase → Authentication → Emails → SMTP Settings**, Gmail custom SMTP is configured for Auth emails (e.g., password recovery) using `mykiootv@gmail.com`. These credentials are **not** shared with Edge Functions.
+- In **Supabase → Edge Functions → Secrets**, add secret **`MYKIOO_SMTP_APP_PASSWORD`** containing a Gmail app password for `mykiootv@gmail.com`. Paste the value only in Supabase's private dashboard, not into chat, GitHub or Cloudflare Pages.
+- The private `mykioo-email-dispatch` Edge Function authenticates **server-to-server** requests with the built-in `SUPABASE_SERVICE_ROLE_KEY`, uses Gmail TLS on port 465, validates recipients and messages, and never exposes its SMTP secret in client code.
+- It supports MYKIOO's previous transactional payload format, including bilingual membership status templates, so backend functions no longer call Brevo.
+- If Gmail is unavailable or this secret is missing, normal notifications fail safely; **invitation approval and resends fall back to a private 48-hour link** that the owner may copy and deliver manually. Do not mistake generated links for emails actually delivered.
+- Keep the bilingual website email-outage banner visible until Gmail delivery is tested and inbox placement is considered satisfactory. Outlook is not yet an automatic backup.
+- Verify a controlled membership-invitation test, membership status email, subscription completion email, expiring subscription reminder and password reset. Do not test by sending credentials to unrelated recipients.
+- Gmail personal accounts have daily sending limits and may place messages in spam; this integration does not guarantee deliverability.
 
 ## Cancellation and refunds
 
