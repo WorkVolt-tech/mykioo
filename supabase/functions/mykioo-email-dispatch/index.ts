@@ -3,7 +3,8 @@ import nodemailer from "npm:nodemailer@10.5.0";
 // Internal-only transactional mail gateway for MYKIOO.
 // The Gmail app password belongs in Supabase Edge Function secrets,
 // NOT source control or browser environment variables.
-const senderAddress="mykiootv@gmail.com";
+const gmailAddress="mykiootv@gmail.com";
+const ionosAddress="iptv@mykioo.icu";
 const senderName="MYKIOO";
 const reply=(payload:unknown,status=200)=>new Response(JSON.stringify(payload),{
  status,headers:{"Content-Type":"application/json","Cache-Control":"no-store"}
@@ -33,17 +34,22 @@ Deno.serve(async request=>{
  if(!expected||request.headers.get("api-key")!==expected)return reply({error:"Unauthorized"},401);
  const url=new URL(request.url);
  if(request.method==="GET"&&url.searchParams.get("route")==="status"){
-  const ready=Boolean(Deno.env.get("MYKIOO_SMTP_APP_PASSWORD"));
-  return reply({ready},ready?200:503);
+  const provider=Deno.env.get("MYKIOO_IONOS_SMTP_PASSWORD")?"ionos":Deno.env.get("MYKIOO_SMTP_APP_PASSWORD")?"gmail":null;
+  return reply({ready:Boolean(provider),provider},provider?200:503);
  }
  if(request.method==="GET"&&url.searchParams.get("route")==="template"){
   const id=Number(url.searchParams.get("id"));
   if(![1,2,3,4].includes(id))return reply({error:"Template unavailable"},404);
-  return reply({id,sender:{email:senderAddress,name:senderName}});
+  return reply({id,sender:{email:Deno.env.get("MYKIOO_IONOS_SMTP_PASSWORD")?ionosAddress:gmailAddress,name:senderName}});
  }
  if(request.method!=="POST"||url.searchParams.get("route")!=="email")return reply({error:"Unsupported action"},400);
- const password=Deno.env.get("MYKIOO_SMTP_APP_PASSWORD");
- if(!password)return reply({error:"Gmail Edge Function secret is not configured"},503);
+ const ionosPassword=Deno.env.get("MYKIOO_IONOS_SMTP_PASSWORD");
+ const gmailPassword=Deno.env.get("MYKIOO_SMTP_APP_PASSWORD");
+ const provider=ionosPassword?"ionos":"gmail";
+ const password=ionosPassword||gmailPassword;
+ if(!password)return reply({error:"Transactional SMTP secret is not configured"},503);
+ const senderAddress=provider==="ionos"?ionosAddress:gmailAddress;
+ const smtpHost=provider==="ionos"?"smtp.ionos.com":"smtp.gmail.com";
  let body:any;
  try{body=await request.json()}catch{return reply({error:"Invalid JSON"},400)}
  const to=body?.to;
@@ -61,10 +67,10 @@ Deno.serve(async request=>{
   (typeof text==="string"&&text.length>40000))
    return reply({error:"Invalid email content"},400);
  const transport=nodemailer.createTransport({
-  host:"smtp.gmail.com",port:465,secure:true,pool:false,
-  auth:{user:senderAddress,pass:password.replace(/\s/g,"")},
+  host:smtpHost,port:465,secure:true,pool:false,
+  auth:{user:senderAddress,pass:provider==="ionos"?password:password.replace(/\s/g,"")},
   connectionTimeout:12000,greetingTimeout:12000,socketTimeout:15000,
-  tls:{servername:"smtp.gmail.com"}
+  tls:{servername:smtpHost}
  });
  try{
   const sent=await transport.sendMail({
@@ -75,11 +81,11 @@ Deno.serve(async request=>{
   });
   if(!sent.messageId||!sent.accepted?.some((addr:string)=>addr.toLowerCase()===to[0].email.toLowerCase()))
     throw Error("SMTP server did not accept recipient");
-  return reply({messageId:sent.messageId,provider:"gmail"});
+  return reply({messageId:sent.messageId,provider});
  }catch(error){
   // Never log passwords, credentials, message HTML, full recipient addresses or tokens.
   const code=typeof (error as any)?.code==="string"?(error as any).code:"unknown";
-  console.error("MYKIOO Gmail delivery failed",code);
+  console.error("MYKIOO transactional delivery failed",provider,code);
   return reply({error:"Email delivery failed",code},503);
  }finally{transport.close()}
 });
