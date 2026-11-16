@@ -16,7 +16,7 @@ Deno.serve(async req=>{
  if(queueError)return reply({error:"Cannot read queue"},500);
  if(dry_run)return reply({ok:true,dry_run:true,queued:queue?.length||0,sent:0});
  const mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
- if(!mailerKeyreturn reply({error:"Gmail API key unavailable"},503);
+ if(!mailerKey)return reply({error:"Gmail API key unavailable"},503);
  let sent=0,failed=0,skipped=0;
  for(const row of queue||[]){
   const {data:claimed,error:claimError}=await db.from("mykioo_completion_email_log")
