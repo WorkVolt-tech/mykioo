@@ -24,8 +24,8 @@ Deno.serve(async req=>{
   .order("payment_instructions_at",{ascending:true}).limit(100);
  if(queryError)return respond({error:"Could not load due reminders"},500);
  if(dry_run)return respond({ok:true,dry_run:true,due_count:due?.length||0,sent:0});
- const brevo=Deno.env.get("BREVO_API_KEY");
- if(!brevo)return respond({error:"Transactional mail not configured"},503);
+ const mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+ if(!mailerKeyreturn respond({error:"Transactional mail not configured"},503);
  let sent=0,skipped=0,failed=0;
  for(const invoice of due||[]){
   // A cancellation or completed request must never receive an unpaid reminder.
@@ -97,18 +97,18 @@ Deno.serve(async req=>{
    "<p>Your request for <strong>"+service+"</strong> is still awaiting your payment confirmation.</p><p>Open Payments, follow the instructions, and click <strong>I've sent my payment</strong> only after sending it.</p><p>The owner verifies receipt before activating service.</p>";
   const html='<div style="background:#15111d;color:#f8f1fa;font-family:Arial,sans-serif;padding:28px"><h1 style="color:#ddbd85">MYKIOO</h1><p>'+(fr?"Bonjour":"Hello")+(name?" "+name:"")+',</p>'+content+'<p><a href="'+link+'" style="color:#eccb8a;font-weight:700">'+(fr?"Ouvrir Paiements":"Open Payments")+'</a></p></div>';
   try{
-   const response=await fetch("https://api.brevo.com/v3/smtp/email",{
-    method:"POST",headers:{"api-key":brevo,"Content-Type":"application/json","Accept":"application/json"},
+   const response=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=email"),{
+    method:"POST",headers:{"api-key":mailerKey,"Content-Type":"application/json","Accept":"application/json"},
     body:JSON.stringify({sender:{name:"MYKIOO",email:"mykiootv@outlook.com"},
       to:[{email:member.email}],subject,htmlContent:html,textContent:plain,
       tags:["mykioo","payment-confirmation-reminder"]})
    });
-   if(!response.ok)throw new Error("brevo_"+response.status);
+   if(!response.ok)throw new Error("gmail_"+response.status);
    await db.from("mykioo_payment_reminder_log")
     .update({state:"sent",sent_at:new Date().toISOString(),error_code:null}).eq("id",logId);
    sent++;
   }catch(error){
-   failed++;const code=error instanceof Error&&error.message.startsWith("brevo_")?error.message:"network_error";
+   failed++;const code=error instanceof Error&&error.message.startsWith("gmail_")?error.message:"network_error";
    await db.from("mykioo_payment_reminder_log").update({state:"failed",error_code:code}).eq("id",logId);
    console.error("MYKIOO payment reminder failed",invoice.id,code);
   }
