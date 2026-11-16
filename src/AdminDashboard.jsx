@@ -127,7 +127,10 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
        else if(result.notification==='failed')setNotice(tr('Member updated, but the notification email failed. Check Brevo settings.','Membre mis à jour, mais l’envoi du courriel a échoué. Vérifiez les paramètres Brevo.'));
        else setNotice(tr('Member updated.','Membre mis à jour.'));
      }else setNotice(result.message||tr('Updated successfully.','Mise à jour effectuée.'));
-     if(result.delivery?.link&&['invite','review_invite','resend_invite_setup'].includes(payload.action))setInviteDelivery(result.delivery);
+     if(result.delivery?.link&&['invite','review_invite','resend_invite_setup'].includes(payload.action)){
+       setInviteDelivery(result.delivery);
+       window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>document.getElementById('mykioo-manual-invite')?.scrollIntoView({behavior:'smooth',block:'start'})));
+     }
      if(payload.action==='invite')setEmail('');
      await refresh();
    }catch(e){setError(e.message||'Request failed.')}finally{setSaving(false)}
@@ -575,10 +578,10 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
   </section>}
   {tab==='invitations'&&<section className="admin-workspace-section admin-owner-invitations">
    <div className="admin-panel-content">
+    <ManualInvitePanel delivery={inviteDelivery} language={language} onDismiss={()=>setInviteDelivery(null)}/>
     <OwnerInvitationReviews requests={rows.invitation_requests||[]} invitations={rows.invitations||[]}
      members={rows.members||[]} language={language} saving={saving} onAction={runAction}
      onRefresh={()=>refresh({silent:true})}/>
-    <ManualInvitePanel delivery={inviteDelivery} language={language} onDismiss={()=>setInviteDelivery(null)}/>
     <details className="mykioo-owner-direct-invite">
      <summary>{tr('Create a private invitation link as owner','Créer un lien d’invitation privé comme propriétaire')}</summary>
      <form className="admin-invite" onSubmit={invite}>
