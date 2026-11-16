@@ -158,6 +158,15 @@ Deno.serve(async req=>{
  const ownerNotices=await load("mykioo_notifications","id,user_id,kind,source_id,title_en,created_at,destination",
   q=>q.in("user_id",ownerIds).gte("created_at",since).order("created_at",{ascending:true}));
  for(const n of ownerNotices){
+  if(n.kind==="provider_status_review"){
+   // A once-per-Sunday owner reminder. The provider does not expose status through its API.
+   // The existing delivery log prevents repeats when the dispatcher runs each minute.
+   add({key:"owner-notification:"+n.id,kind:"weekly_review",
+    title:"📺 Sunday reminder: Review MyPanel channel issues",
+    details:"Check https://reseller.mypanel.cx/status for current affected channels. Then open MYKIOO Owner → Support → Announcements, update the affected regions and last-checked date, and mark resolved issues when confirmed. The provider is not synchronized automatically.",
+    section:"support",reference:"Weekly channel-status review"});
+   continue;
+  }
   // Other sources above already provide these notifications; avoid sending them twice.
   if(/invit|trial|subscription|payment|support|ticket|cancell|member_approv/i.test(n.kind||""))continue;
   const section=["overview","members","invitations","subscriptions","orders","billing","support","notifications"].includes(n.destination)?n.destination:"notifications";
