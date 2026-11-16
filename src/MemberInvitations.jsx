@@ -51,7 +51,7 @@ export default function MemberInvitations({userId,language='en'}){
   finally{setWorking(false)}
  }
  const statusText={pending:tr('Awaiting owner approval','En attente de l’approbation du propriétaire'),
-  approved:tr('Approved — site invitation issued','Approuvée — invitation envoyée'),
+  approved:tr('Approved — private link prepared','Approuvée — lien privé préparé'),
   rejected:tr('Declined','Refusée')};
  const statusIcon={pending:Clock3,approved:CheckCircle2,rejected:XCircle};
  return <section className="mykioo-member-invitations">
@@ -66,7 +66,7 @@ export default function MemberInvitations({userId,language='en'}){
     placeholder="friend@example.com"/>
     <button type="submit" disabled={working}>{working?tr('Submitting…','Envoi…'):tr('Request invitation','Demander une invitation')}</button>
    </div>
-   <small>{tr('The invitation email is sent only after the owner approves. Up to 10 requests per 24 hours.','Le courriel d’invitation est envoyé uniquement après approbation du propriétaire. Maximum 10 demandes en 24 heures.')}</small>
+   <small>{tr('Only the owner can approve an invitation. During the email interruption, the owner sends approved invitations manually. Up to 10 requests per 24 hours.','Seul le propriétaire approuve les invitations. Durant la panne des courriels, le propriétaire envoie les invitations approuvées manuellement. Maximum 10 demandes en 24 heures.')}</small>
   </form>
   {error&&<p className="mykioo-invitation-error" role="alert">{error}</p>}
   {notice&&<p className="mykioo-invitation-notice" role="status">{notice}</p>}
