@@ -44,7 +44,7 @@ Deno.serve(async req=>{
   const now=Date.now();
   if(input.action==="request_code"){
    const mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-   if(!mailerKeyreturn reply({error:"Email verification service is unavailable."},503);
+   if(!mailerKey)return reply({error:"Email verification service is unavailable."},503);
    const {data:recent,error:recentError}=await db.from("mykioo_credential_challenges")
     .select("created_at").eq("user_id",user.id).gte("created_at",new Date(now-3600000).toISOString()).order("created_at",{ascending:false}).limit(4);
    if(recentError)return reply({error:"Unable to request verification at this time."},503);
