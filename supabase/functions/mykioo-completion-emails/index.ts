@@ -66,7 +66,7 @@ Deno.serve(async req=>{
     detail=escapeHtml(issue?.title||"MYKIOO")+" — "+escapeHtml(issue?.latest_update||issue?.description||"");
    }else{skipped++;continue}
    const name=escapeHtml(member.display_name||"");
-   const html='<div style="font-family:Arial,sans-serif;background:#18121f;color:#f7edf8;padding:28px"><h1 style="color:#e6bd87">MYKIOO</h1><p>'+(fr?"Bonjour ":"Hello ")+name+',</p><p>'+detail+'</p><p><a href="https://mykioo.pages.dev" style="color:#e6bd87">'+(fr?"Ouvrir MYKIOO":"Open MYKIOO")+'</a></p></div>';
+   const html='<div style="font-family:Arial,sans-serif;background:#18121f;color:#f7edf8;padding:28px"><h1 style="color:#e6bd87">MYKIOO</h1><p>'+(fr?"Bonjour ":"Hello ")+name+',</p><p>'+detail+'</p><p><a href="https://mykioo.icu" style="color:#e6bd87">'+(fr?"Ouvrir MYKIOO":"Open MYKIOO")+'</a></p></div>';
    const outgoing=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=email"),{
     method:"POST",headers:{"api-key":mailerKey,"Content-Type":"application/json"},
     body:JSON.stringify({sender:{name:"MYKIOO",email:"mykiootv@outlook.com"},

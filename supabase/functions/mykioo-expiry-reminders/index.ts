@@ -110,7 +110,7 @@ Deno.serve(async request=>{
    const body=french?
      "<p>Bonjour "+safeName+",</p><p>Votre abonnement <strong>"+service+"</strong> "+deadline+".</p><p>Date d’expiration : <strong>"+formatted+"</strong></p><p>Connectez-vous à MYKIOO pour demander un renouvellement de votre service.</p>":
      "<p>Hello "+safeName+",</p><p>Your <strong>"+service+"</strong> subscription "+deadline+".</p><p>Expiration date: <strong>"+formatted+"</strong></p><p>Sign in to MYKIOO to request a renewal of your service.</p>";
-   const html='<div style="font-family:Arial,sans-serif;background:#16111d;color:#f5edf8;padding:28px"><h1 style="color:#dfbb7d">MYKIOO</h1>'+body+'<p><a style="color:#dfbb7d" href="https://mykioo.pages.dev/?section=subscription">MYKIOO</a></p></div>';
+   const html='<div style="font-family:Arial,sans-serif;background:#16111d;color:#f5edf8;padding:28px"><h1 style="color:#dfbb7d">MYKIOO</h1>'+body+'<p><a style="color:#dfbb7d" href="https://mykioo.icu/?section=subscription">MYKIOO</a></p></div>';
    try{
     const outbound=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=email"),{
      method:"POST",headers:{"api-key":mailerKey,"Content-Type":"application/json","Accept":"application/json"},

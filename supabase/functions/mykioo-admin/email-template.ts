@@ -60,7 +60,7 @@ export function makeInvitationEmail({language,actionLink,resend=false,inviterNam
 <tr><td align="center" style="padding:32px 14px 38px">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:560px;border-collapse:separate;border-spacing:0">
  <tr><td align="center" style="padding:0 0 22px">
-  <img src="https://mykioo.pages.dev/MYKIOO-Email-Logo.png" alt="MYKIOO" width="102" height="102" style="display:block;width:102px;height:102px;max-width:102px;border:0;outline:0;text-decoration:none">
+  <img src="https://mykioo.icu/MYKIOO-Email-Logo.png" alt="MYKIOO" width="102" height="102" style="display:block;width:102px;height:102px;max-width:102px;border:0;outline:0;text-decoration:none">
   <div style="font-family:Arial,Helvetica,sans-serif;color:#c8b4d2;font-size:10px;line-height:18px;letter-spacing:3px;font-weight:700;padding-top:4px">MYKIOO TV</div>
  </td></tr>
  <tr><td style="border:1px solid #574563;border-top:3px solid #dab77c;background:#171422;border-radius:17px;overflow:hidden">
@@ -96,13 +96,13 @@ export function makeInvitationEmail({language,actionLink,resend=false,inviterNam
  <tr><td align="center" style="padding:24px 15px 0">
   <div style="font-family:Arial,Helvetica,sans-serif;font-weight:800;font-size:11px;letter-spacing:3px;color:#dfbc81">MYKIOO</div>
   <div style="font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:18px;letter-spacing:1.5px;color:#9990a9;padding-top:7px">${footer}</div>
-  <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;padding-top:9px"><a href="https://mykioo.pages.dev/" style="color:#bd9ed0;text-decoration:none">mykioo.pages.dev</a></div>
+  <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;padding-top:9px"><a href="https://mykioo.icu/" style="color:#bd9ed0;text-decoration:none">mykioo.icu</a></div>
  </td></tr>
 </table>
 </td></tr>
 </table></body></html>`;
  const textContent=fr?
- `${title}\n\n${subtitle}\n\n${inviterLine}\n\n${cta}: ${actionLink}\n\nET ENSUITE ?\n1. Acceptez votre invitation.\n2. Créez votre compte : choisissez un nom et un mot de passe.\n3. Attendez l’approbation du propriétaire avant d’accéder à l’espace membre.\n\n${finePrint}\n\nMYKIOO | https://mykioo.pages.dev/`:
- `${title}\n\n${subtitle}\n\n${inviterLine}\n\n${cta}: ${actionLink}\n\nWHAT HAPPENS NEXT?\n1. Accept your invitation.\n2. Create your account: choose your name and password.\n3. Wait for owner approval before entering the member dashboard.\n\n${finePrint}\n\nMYKIOO | https://mykioo.pages.dev/`;
+ `${title}\n\n${subtitle}\n\n${inviterLine}\n\n${cta}: ${actionLink}\n\nET ENSUITE ?\n1. Acceptez votre invitation.\n2. Créez votre compte : choisissez un nom et un mot de passe.\n3. Attendez l’approbation du propriétaire avant d’accéder à l’espace membre.\n\n${finePrint}\n\nMYKIOO | https://mykioo.icu/`:
+ `${title}\n\n${subtitle}\n\n${inviterLine}\n\n${cta}: ${actionLink}\n\nWHAT HAPPENS NEXT?\n1. Accept your invitation.\n2. Create your account: choose your name and password.\n3. Wait for owner approval before entering the member dashboard.\n\n${finePrint}\n\nMYKIOO | https://mykioo.icu/`;
  return {subject,htmlContent,textContent};
 }

@@ -2,7 +2,7 @@ import {createClient} from "npm:@supabase/supabase-js@2.57.0";
 
 // Server-only dispatcher: called by the existing authenticated MYKIOO cron pattern.
 // Telegram BOT TOKEN never enters browser code or the database; recipient ID is RLS-protected.
-const root="https://mykioo.pages.dev/";
+const root="https://mykioo.icu/";
 const respond=(body:unknown,status=200)=>new Response(JSON.stringify(body),{
  status,headers:{"Content-Type":"application/json","Cache-Control":"no-store"}
 });

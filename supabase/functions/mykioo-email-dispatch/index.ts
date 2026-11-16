@@ -24,7 +24,7 @@ const template=(id:number,params:Record<string,unknown>)=>{
  <table role="presentation" style="max-width:560px;width:100%;margin:auto;background:#1b1727;border:1px solid #594963;border-top:3px solid #dfbd89;border-radius:14px"><tr><td style="padding:30px">
  <h1 style="color:#e6c58e;font-size:26px">MYKIOO</h1><h2 style="color:#fff;font-size:21px">${esc(title)}</h2>
  <p style="color:#f1e5ee;line-height:1.8;white-space:pre-wrap">${esc(text)}</p>
- <p><a style="color:#e4c58c" href="https://mykioo.pages.dev/">${fr?"Ouvrir MYKIOO":"Open MYKIOO"}</a></p>
+ <p><a style="color:#e4c58c" href="https://mykioo.icu/">${fr?"Ouvrir MYKIOO":"Open MYKIOO"}</a></p>
  </td></tr></table></body></html>`;
  return {subject:"MYKIOO | "+title,text,html};
 };

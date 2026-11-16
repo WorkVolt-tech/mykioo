@@ -94,7 +94,7 @@ Deno.serve(async req=>{
     " attend votre paiement ou votre confirmation d'envoi. Veuillez ouvrir MYKIOO > Paiements, vérifier les instructions et cliquer sur « J'ai envoyé mon paiement » uniquement après l'avoir réellement envoyé.\n\nL'équipe MYKIOO vérifiera les fonds avant toute activation.":
    "Hello"+(name?" "+member.display_name:"")+",\n\nYour subscription request for "+order.service_name+
     " is awaiting payment or your confirmation that it was sent. Open MYKIOO > Payments, follow the instructions, and select 'I've sent my payment' only after sending it.\n\nMYKIOO verifies actual receipt before activating service.";
-  const link="https://mykioo.pages.dev/?section=payments";
+  const link="https://mykioo.icu/?section=payments";
   const content=fr?
    "<p>Votre demande pour <strong>"+service+"</strong> attend votre confirmation de paiement.</p><p>Ouvrez la page Paiements, vérifiez les instructions et cliquez sur <strong>J’ai envoyé mon paiement</strong> uniquement après avoir effectué le paiement.</p><p>Le propriétaire vérifiera la réception avant d’activer le service.</p>":
    "<p>Your request for <strong>"+service+"</strong> is still awaiting your payment confirmation.</p><p>Open Payments, follow the instructions, and click <strong>I've sent my payment</strong> only after sending it.</p><p>The owner verifies receipt before activating service.</p>";

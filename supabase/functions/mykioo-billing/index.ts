@@ -1,5 +1,6 @@
 import {createClient} from "npm:@supabase/supabase-js@2.57.0";
-const ORIGIN="https://mykioo.pages.dev";
+const ORIGIN="https://mykioo.icu";
+const allowedOrigins=new Set([ORIGIN,"https://www.mykioo.icu","https://mykioo.pages.dev"]);
 const cors={"Access-Control-Allow-Origin":ORIGIN,"Access-Control-Allow-Headers":"authorization,apikey,content-type,x-client-info","Access-Control-Allow-Methods":"POST,OPTIONS","Vary":"Origin"};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
 const uuid=(v:unknown)=>typeof v==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
@@ -18,10 +19,13 @@ async function getPrice(method:string){
  if(!Number.isFinite(rate)||rate<=0)throw new Error("Unable to verify the current crypto price. Try again.");
  return rate;
 }
-Deno.serve(async req=>{
- if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
+Deno.serve(async (req)=>{
+ const requestOrigin=req.headers.get("Origin")||"";
+ const requestHeaders={...cors,"Access-Control-Allow-Origin":allowedOrigins.has(requestOrigin)?requestOrigin:ORIGIN};
+ const response=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...requestHeaders,"Content-Type":"application/json","Cache-Control":"no-store"}});
+ if(req.method==="OPTIONS")return new Response(null,{status:204,headers:requestHeaders});
  if(req.method!=="POST")return reply({error:"Method not allowed"},405);
- if(req.headers.get("Origin")!==ORIGIN)return reply({error:"Origin not allowed"},403);
+ if(!allowedOrigins.has(requestOrigin))return reply({error:"Origin not allowed"},403);
  const authorization=req.headers.get("Authorization")||"";
  if(!authorization.startsWith("Bearer "))return reply({error:"Sign in to continue"},401);
  const url=Deno.env.get("SUPABASE_URL"),key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -79,7 +83,7 @@ Deno.serve(async req=>{
   if(action==="issue_invoice"){
    if(!owner||!uuid(input.request_id))return reply({error:"Owner and subscription request required"},403);
    const {data:request,error:requestError}=await db.from("mykioo_subscription_requests")
-    .select("id,member_id,status,request_type,service_name,contract_days,device_count,preferred_payment_method,quoted_price_cad").eq("id",input.request_id).maybeSingle();
+    .select("id,member_id,status,request_type,service_name,contract_days,device_count,preferred_payment_method,quoted_price_cad,quoted_price_usd,discount_code,gross_price_cad,gross_price_usd,discount_amount_cad,discount_amount_usd").eq("id",input.request_id).maybeSingle();
    if(requestError||!request)return reply({error:"Subscription request not found"},404);
    if(!["pending","in_review"].includes(request.status))return reply({error:"Only active pending requests can be invoiced"},409);
    if(request.request_type==="trial")return reply({error:"Free trials cannot be invoiced. Review and activate the trial in Subscriptions."},409);
@@ -98,18 +102,28 @@ Deno.serve(async req=>{
    let amount_cad,amount_usd,method=null;
    if(priced){
     const {data:packageRow,error:priceError}=await db.from("mykioo_package_prices")
-      .select("price_cad").eq("contract_days",request.contract_days).eq("device_count",request.device_count).maybeSingle();
+      .select("price_cad,price_usd").eq("contract_days",request.contract_days).eq("device_count",request.device_count).maybeSingle();
     if(priceError||!packageRow)return reply({error:"This subscription package price is unavailable"},409);
-    amount_cad=Number(packageRow.price_cad);
-    if(Math.abs(amount_cad-Number(request.quoted_price_cad))>0.001)
+    const originalCad=Number(request.gross_price_cad??request.quoted_price_cad);
+    if(Math.abs(originalCad-Number(packageRow.price_cad))>0.001)
      return reply({error:"The package price changed. Review the request before invoicing."},409);
+    amount_cad=Number(request.quoted_price_cad);
+    if(!Number.isFinite(amount_cad)||amount_cad<=0)return reply({error:"Invalid quoted CAD amount"},409);
     method=request.preferred_payment_method;
     if(!methods.includes(method))return reply({error:"Payment method on request is invalid"},409);
-    // USD pricing is not finalized for multi-device / 24-month plans.
-    amount_usd=input.amount_usd!==undefined&&String(input.amount_usd).trim()!==""?money(input.amount_usd):
-      (request.contract_days===365&&request.device_count===1?Number(settings.default_usd):null);
-    if(input.amount_usd!==undefined&&String(input.amount_usd).trim()!==""&&amount_usd===null)
-     return reply({error:"Invalid owner-entered USD quote"},400);
+    // Once a code is applied, the USD amount is locked to the request's independently discounted USD catalog price.
+    if(request.discount_code){
+     amount_usd=Number(request.quoted_price_usd);
+     if(!Number.isFinite(amount_usd)||amount_usd<=0)return reply({error:"Discounted USD quote missing"},409);
+     if(input.amount_usd!==undefined&&String(input.amount_usd).trim()!==""&&Number(input.amount_usd)!==amount_usd)
+      return reply({error:"Discounted USD amount is fixed by the promo code"},409);
+    }else{
+     amount_usd=input.amount_usd!==undefined&&String(input.amount_usd).trim()!==""?money(input.amount_usd):
+       (request.quoted_price_usd!=null?Number(request.quoted_price_usd):
+        request.contract_days===365&&request.device_count===1?Number(settings.default_usd):null);
+     if(input.amount_usd!==undefined&&String(input.amount_usd).trim()!==""&&amount_usd===null)
+      return reply({error:"Invalid owner-entered USD quote"},400);
+    }
    }else{
     // Preserve historical requests with their existing manual pricing workflow.
     amount_cad=input.amount_cad===undefined?Number(settings.default_cad):money(input.amount_cad);
@@ -122,6 +136,11 @@ Deno.serve(async req=>{
    const state=priced?(isFiat&&destination&&quoted?"awaiting_payment":"awaiting_instructions"):"awaiting_method";
    const {data:invoice,error:insertError}=await db.from("mykioo_billing_invoices")
     .insert({request_id:request.id,member_id:request.member_id,created_by:user.id,amount_cad,amount_usd,
+      discount_code:request.discount_code||null,
+      gross_amount_cad:request.gross_price_cad??amount_cad,
+      gross_amount_usd:request.gross_price_usd??amount_usd,
+      discount_amount_cad:request.discount_amount_cad??0,
+      discount_amount_usd:request.discount_amount_usd??0,
       method,state,destination:destination||null,amount_due:quoted,
       currency:method==="interac"?"CAD":method==="zelle"?"USD":method?method.toUpperCase():null,
       network:method==="btc"?"Bitcoin Mainnet":method==="shib"?"Ethereum Mainnet (ERC-20)":null,
@@ -182,8 +201,14 @@ Deno.serve(async req=>{
    let amount_due=invoice.amount_due,quote_expires_at=null,rate_cad=null,quote_source=null;
    let updatedUsd=invoice.amount_usd;
    if(invoice.method==="zelle"){
-    updatedUsd=input.amount_usd!==undefined&&String(input.amount_usd).trim()!==""?
-      money(input.amount_usd):money(invoice.amount_usd);
+    if(invoice.discount_code){
+     updatedUsd=money(invoice.amount_usd);
+     if(input.amount_usd!==undefined&&String(input.amount_usd).trim()!==""&&Number(input.amount_usd)!==updatedUsd)
+      return reply({error:"Discounted Zelle amount is locked to the original checkout"},409);
+    }else{
+     updatedUsd=input.amount_usd!==undefined&&String(input.amount_usd).trim()!==""?
+       money(input.amount_usd):money(invoice.amount_usd);
+    }
     if(updatedUsd===null)return reply({error:"Enter and verify the USD price before issuing Zelle instructions"},400);
     amount_due=updatedUsd;
    }
