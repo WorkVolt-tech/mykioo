@@ -87,7 +87,7 @@ const validFolder=(v:unknown)=>typeof v==="string"&&v.length<=160&&!/[\x00-\x1f]
 Deno.serve(async request=>{
  const requestOrigin=request.headers.get("Origin")||"";
  const corsOrigin=allowedOrigins.has(requestOrigin)?requestOrigin:"https://mykioo.icu";
- if(request.method==="OPTIONS")return json({ok:true},204,corsOrigin);
+ if(request.method==="OPTIONS")return new Response(null,{status:204,headers:{"Access-Control-Allow-Origin":corsOrigin,"Access-Control-Allow-Headers":"authorization,apikey,content-type,x-client-info","Access-Control-Allow-Methods":"POST,OPTIONS","Vary":"Origin","Cache-Control":"no-store"}});
  if(!allowedOrigins.has(requestOrigin))return json({error:"Origin not allowed"},403,corsOrigin);
  if(request.method!=="POST")return json({error:"Method not allowed"},405,corsOrigin);
  const auth=request.headers.get("Authorization")||"";
