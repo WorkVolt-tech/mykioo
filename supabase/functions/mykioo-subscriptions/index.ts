@@ -21,12 +21,12 @@ async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionI
   const {data:member,error:memberError}=await db.from("mykioo_members").select("email,preferred_language").eq("user_id",memberId).single();
   const {data:subscription,error:subscriptionError}=await db.from("mykioo_subscriptions").select("service_username,service_host").eq("id",subscriptionId).eq("member_id",memberId).single();
   const {data:credential,error:credentialError}=await db.from("mykioo_subscription_credentials").select("iv,cipher_text").eq("subscription_id",subscriptionId).single();
-  const key=await encryptionKey(),apiKey=Deno.env.get("BREVO_API_KEY");
-  if(memberError||subscriptionError||credentialError||!member?.email||!subscription?.service_username||!credential||!key||!apiKey)throw Error("Email prerequisites unavailable");
+  const key=await encryptionKey(),mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if(memberError||subscriptionError||credentialError||!member?.email||!subscription?.service_username||!credential||!key||!mailerKey)throw Error("Email prerequisites unavailable");
   const password=new TextDecoder().decode(await crypto.subtle.decrypt(
    {name:"AES-GCM",iv:fromB64(credential.iv),additionalData:new TextEncoder().encode(subscriptionId)},key,fromB64(credential.cipher_text)));
   const fr=member.preferred_language==="fr";
-  const templateResponse=await fetch("https://api.brevo.com/v3/smtp/templates/"+(fr?2:1),{headers:{"api-key":apiKey}});
+  const templateResponse=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=template&id=")+(fr?2:1),{headers:{"api-key":mailerKey}});
   const template=await templateResponse.json();
   if(!templateResponse.ok||!template?.sender?.email)throw Error("Sender unavailable");
   const title=fr?"Votre commande est terminée":"Your order is complete";
@@ -37,7 +37,7 @@ async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionI
   const rows=[[fr?"Nom d’utilisateur":"Username",subscription.service_username],[fr?"Mot de passe":"Password",password],[fr?"Adresse du serveur":"Host URL",accountHost]];
   const escape=(value:string)=>value.replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]||char));
   const htmlContent=`<!doctype html><html lang="${fr?"fr":"en"}"><body style="background:#090b13;padding:24px;font-family:Arial,sans-serif;color:#f5ecf7"><table role="presentation" style="max-width:560px;width:100%;margin:auto;background:#171422;border:1px solid #574563;border-top:3px solid #dab77c;border-radius:16px"><tr><td style="padding:28px"><img src="${origin}/MYKIOO-Email-Logo.png" width="90" alt="MYKIOO"><h1 style="color:#e6c38d;font-size:26px">${title}</h1><p>${intro}</p><table style="width:100%;background:#211b2d">${rows.map(([label,value])=>`<tr><td style="padding:12px;vertical-align:top">${label}</td><td style="padding:12px;word-break:break-all;white-space:pre-wrap">${escape(value)}</td></tr>`).join("")}</table><p><a href="${origin}" style="color:#e6c38d">${fr?"Ouvrir MYKIOO et les guides d’installation":"Open MYKIOO and the setup guides"}</a></p></td></tr></table></body></html>`;
-  const sent=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{"api-key":apiKey,"Content-Type":"application/json"},body:JSON.stringify({
+  const sent=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=email"),{method:"POST",headers:{"api-key":mailerKey,"Content-Type":"application/json"},body:JSON.stringify({
    sender:{email:template.sender.email,name:"MYKIOO"},to:[{email:member.email}],subject:"MYKIOO | "+title,
    htmlContent,textContent:[title,intro,...rows.map(([label,value])=>label+": "+value),origin].join("\n"),
    tags:["mykioo","order-completed"]
