@@ -146,7 +146,7 @@ Deno.serve(async (request) => {
     if(!owner)return reply({error:"Owner permission required"},403);
     if(action==="resend_invite_setup"){
       // An already-invited Supabase Auth user cannot be invited a second time.
-      // Send a one-time recovery/setup link using the existing user, via MYKIOO's verified Brevo sender.
+      // Send a one-time recovery/setup link using the existing user, via MYKIOO's verified Gmail sender.
       let invitationId=input.invitation_id;
       if(!validUUID(invitationId)&&validUUID(input.request_id)){
         const {data:referral}=await server.from("mykioo_invitation_requests").select("invitation_id")
@@ -230,7 +230,7 @@ Deno.serve(async (request) => {
       const inviterId=pendingReferral?.requested_by||actor.id;
       const { data: existing } = await server.from("mykioo_members").select("user_id").ilike("email", email).maybeSingle();
       if (existing) return reply({ error: "This email already has a MYKIOO membership." }, 409);
-      // The existing private invitation link is supplied to the owner, not sent via Brevo.
+      // The existing private invitation link is supplied to the owner, not sent via Gmail.
       const {data:invited,error:inviteError}=await server.auth.admin.generateLink({
         type:"invite",email,options:{redirectTo:origin+"/?invite=1"}
       });
@@ -313,20 +313,20 @@ Deno.serve(async (request) => {
         actor_id: actor.id, action: "member_status_changed", entity_type: "member", entity_id: id,
         details: { previous_status: target.status, status }
       });
-      // Send only after a successful membership update. The Brevo API key is a
+      // Send only after a successful membership update. The Gmail API key is a
       // Supabase Edge Function secret, never shipped to a browser.
       let notification = "not_applicable";
       if (status === "approved" || status === "rejected") {
-        const brevoKey = Deno.env.get("BREVO_API_KEY");
-        if (!brevoKey) {
+        const mailerKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        if (!mailerKey) {
           notification = "not_configured";
         } else {
           const language = target.preferred_language === "fr" ? "fr" : "en";
           const templateId = status === "approved" ? (language === "fr" ? 2 : 1) : (language === "fr" ? 4 : 3);
           try {
-            const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+            const emailResponse = await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=email"), {
               method: "POST",
-              headers: { "api-key": brevoKey, "Content-Type": "application/json", "Accept": "application/json" },
+              headers: { "api-key": mailerKey, "Content-Type": "application/json", "Accept": "application/json" },
               body: JSON.stringify({
                 to: [{email:target.email, name:target.display_name || target.email.split("@")[0]}],
                 templateId,
@@ -336,10 +336,10 @@ Deno.serve(async (request) => {
             });
             const emailData = await emailResponse.json().catch(()=>({}));
             notification = emailResponse.ok && emailData.messageId ? "accepted" : "failed";
-            if(notification==="failed")console.error("MYKIOO Brevo mail failed",emailResponse.status);
+            if(notification==="failed")console.error("MYKIOO Gmail mail failed",emailResponse.status);
           } catch (err) {
             notification = "failed";
-            console.error("MYKIOO Brevo mail error",err instanceof Error?err.message:"unknown");
+            console.error("MYKIOO Gmail mail error",err instanceof Error?err.message:"unknown");
           }
         }
         await server.from("mykioo_audit_logs").insert({
