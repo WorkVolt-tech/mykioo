@@ -19,7 +19,7 @@ export default function OwnerInvitationReviews({requests=[],invitations=[],membe
   <div className="mykioo-invitation-intro">
    <MailPlus size={24}/>
    <div><h2>{tr('Member invitation approvals','Approbation des invitations')}</h2>
-    <p>{tr('Members can recommend someone, but only you approve new invitations. During the email outage, copy the private link and send it from Gmail. Each request records who referred the person.','Les membres peuvent recommander une personne, mais vous seul approuvez les invitations. Durant la panne des courriels, copiez le lien privé et envoyez-le depuis Gmail. Chaque demande indique qui a invité la personne.')}</p></div>
+    <p>{tr('Members can recommend someone, but only you approve invitations. MYKIOO tries Gmail first and shows a private link you can send manually if delivery fails.','Les membres peuvent recommander une personne, mais vous seul approuvez les invitations. MYKIOO tente l’envoi par Gmail et fournit un lien privé à envoyer manuellement en cas d’échec.')}</p></div>
   </div>
   <div className="mykioo-invitations-list-title">
    <div><h3>{tr('Invitation requests','Demandes d’invitation')} {pending.length>0&&<span className="mykioo-owner-count">{pending.length}</span>}</h3></div>
@@ -47,10 +47,10 @@ export default function OwnerInvitationReviews({requests=[],invitations=[],membe
       </div>
      </div>
      <span className={'mykioo-invitation-status '+item.status}><Icon size={14}/>
-      {item.status==='pending'?tr('Pending','En attente'):item.status==='approved'?tr('Approved / link prepared','Approuvée / lien préparé'):tr('Rejected','Refusée')}
+      {item.status==='pending'?tr('Pending','En attente'):item.status==='approved'?tr('Approved / invitation prepared','Approuvée / invitation préparée'):tr('Rejected','Refusée')}
      </span>
      {item.status==='pending'&&<div className="mykioo-owner-invitation-actions">
-      <button type="button" className="approve" disabled={saving} onClick={()=>onAction?.({action:'review_invite',request_id:item.id,decision:'approve'})}><CheckCircle2 size={16}/>{tr('Approve & create link','Approuver et créer le lien')}</button>
+      <button type="button" className="approve" disabled={saving} onClick={()=>onAction?.({action:'review_invite',request_id:item.id,decision:'approve'})}><CheckCircle2 size={16}/>{tr('Approve & send invitation','Approuver et inviter')}</button>
       <button type="button" className="reject" disabled={saving} onClick={()=>onAction?.({action:'review_invite',request_id:item.id,decision:'reject'})}><XCircle size={16}/>{tr('Reject','Refuser')}</button>
      </div>}
      {item.status==='approved'&&item.invited_user_id&&<div className="mykioo-owner-invitation-actions">
