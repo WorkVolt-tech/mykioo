@@ -16,7 +16,7 @@ const platformOptions=[
  {id:'apple_tv',en:'Apple TV',fr:'Apple TV'},
  {id:'ios',en:'iPhone / iPad',fr:'iPhone / iPad'},
  {id:'android',en:'Android phone / tablet',fr:'Téléphone / tablette Android'},
- {id:'smart_tv',en:'Smart TV',fr:'Téléviseur intelligent'},
+ {id:'smart_tv',en:'Smart TVs & Apple TV',fr:'Téléviseurs intelligents et Apple TV'},
  {id:'web',en:'Web browser',fr:'Navigateur Web'},
  {id:'other',en:'Other',fr:'Autre'}
 ];
@@ -168,7 +168,7 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId=''}){
   const term=search.trim().toLocaleLowerCase();
   return (!term||[g.title_en,g.title_fr,g.summary_en,g.summary_fr,g.steps_en,g.steps_fr].some(x=>(x||'').toLocaleLowerCase().includes(term)))
     &&(category==='all'||g.category===category)
-    &&(platform==='all'||g.platform==='general'||g.platform===platform);
+    &&(platform==='all'||g.platform==='general'||g.platform===platform||(platform==='smart_tv'&&g.platform==='apple_tv'));
  }).sort(orderGuides);
  return <section className="mykioo-guide-page">
   <div className="mykioo-guide-intro">
@@ -185,6 +185,10 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId=''}){
     <option value="all">{tr('All devices','Tous les appareils')}</option>{platformOptions.filter(opt=>opt.id!=='general').map(opt=><option value={opt.id} key={opt.id}>{fr?opt.fr:opt.en}</option>)}
    </select>
   </div>
+  {platform==='smart_tv'&&<div className="mykioo-vega-explainer" role="note">
+   <strong>{tr('LG, Samsung or Apple TV? Start here.','LG, Samsung ou Apple TV ? Commencez ici.')}</strong>
+   <p>{tr('These devices use MAX OTT from their own official app store, not Android APKs or Downloader. Choose the matching brand guide below. Each television or Apple TV box needs a Smart Code issued for that specific device; MYKIOO manages the code and activation.','Ces appareils utilisent MAX OTT depuis leur propre boutique officielle, et non des APK Android ni Downloader. Choisissez le guide de votre marque ci-dessous. Chaque téléviseur ou boîtier Apple TV nécessite un Smart Code propre à cet appareil; MYKIOO gère le code et son activation.')}</p>
+  </div>}
   {platform==='fire_tv'&&<div className="mykioo-vega-explainer" role="note">
    <strong>{tr('New Fire Stick? Check for Vega OS first.','Nouveau Fire Stick ? Vérifiez d’abord Vega OS.')}</strong>
    <p>{tr('Vega OS cannot run the Android APK players used in these guides. For MYKIOO, we recommend a compatible Android TV / Google TV streaming box instead; you can keep your existing television. Specific recommended box models will be listed only after MYKIOO tests them.','Vega OS ne peut pas exécuter les lecteurs APK Android de ces guides. Pour MYKIOO, nous recommandons plutôt un boîtier de streaming Android TV / Google TV compatible; vous pouvez garder votre téléviseur. Nous proposerons des modèles précis uniquement après les avoir testés.')}</p>
