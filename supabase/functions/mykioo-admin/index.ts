@@ -176,7 +176,7 @@ Deno.serve(async (request) => {
         .eq("entity_type","member").eq("entity_id",requestRow.invited_user_id)
         .gte("created_at",new Date(Date.now()-24*60*60*1000).toISOString());
       if(countError)return reply({error:"Unable to check resend limits"},503);
-      if((count||0)>=3)return reply({error:"This address has received the maximum of three setup emails in 24 hours"},429);
+      if((count||0)>=3)return reply({error:"A maximum of three setup links can be generated for this account in 24 hours"},429);
       const language=invitedMember.preferred_language==="fr"?"fr":"en";
       // The owner will send the 48-hour link from their email account.
       const {actionLink,...linkRecord}=await newInvitationLink(origin);
@@ -184,7 +184,7 @@ Deno.serve(async (request) => {
         .update({...linkRecord,status:"pending",accepted_at:null}).eq("id",invitation.id);
       if(trackingError)return reply({error:"Could not prepare invitation tracking"},503);
       const inviter=await inviterDetails(requestRow.requested_by||invitedMember.invited_by||actor.id);
-      const {subject,htmlContent:html,textContent}=makeInvitationEmail({
+      const {subject,textContent}=makeInvitationEmail({
         language,actionLink,resend:true,...inviter
       });
       await server.from("mykioo_audit_logs").insert({
@@ -283,7 +283,7 @@ Deno.serve(async (request) => {
         await server.from("mykioo_notifications").upsert({
           user_id:inviterId,kind:"membership_invitation_approved",source_id:pendingReferral.id,destination:"Invitations",
           title_en:"Your invitation was approved",title_fr:"Votre invitation a été approuvée",
-          body_en:"MYKIOO has issued an invitation for "+email+".",body_fr:"MYKIOO a envoyé une invitation pour "+email+"."
+          body_en:"MYKIOO has issued an invitation for "+email+".",body_fr:"MYKIOO a préparé une invitation pour "+email+"."
         },{onConflict:"user_id,kind,source_id"});
       }
       await server.from("mykioo_audit_logs").insert({actor_id:actor.id,action:"member_invited",
