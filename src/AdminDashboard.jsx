@@ -12,6 +12,7 @@ import ActivityHistory from './ActivityHistory';
 import {OwnerBilling} from './Billing';
 import OwnerSubscriptionQueue from './OwnerSubscriptionQueue';
 import EmailDeliveryNotice from './EmailDeliveryNotice';
+import OwnerMailCenter from './OwnerMailCenter';
 import OwnerActionCenter from './OwnerActionCenter';
 import OwnerCancellationRequests from './OwnerCancellationRequests';
 import SubscriptionRequests from './SubscriptionRequests';
@@ -28,9 +29,9 @@ import {useResumeScroll} from './useResumeScroll';
 import {useRememberedState} from './useRememberedState';
 import {Users,MailPlus,ShieldCheck,CalendarDays,Receipt,Headphones,LogOut,RefreshCw,Clock3,LockKeyhole,AlertCircle,CheckCircle2,Bell,BookOpen,History,Menu,X,ClipboardList,BarChart3,SlidersHorizontal,Megaphone,Settings2,Inbox} from 'lucide-react';
 import {supabase} from './supabase';
-const tabs=[{id:'overview',name:'Overview',icon:ShieldCheck},{id:'members',name:'Members',icon:Users},{id:'invitations',name:'Invitations',icon:MailPlus},{id:'subscriptions',name:'Subscriptions',icon:CalendarDays},{id:'create-request',name:'Create request',icon:MailPlus},{id:'orders',name:'Orders',icon:Receipt},{id:'billing',name:'Billing',icon:Receipt},{id:'guides',name:'Guides',icon:BookOpen},{id:'support',name:'Support',icon:Headphones},{id:'activity',name:'Activity',icon:History},{id:'notifications',name:'Notifications',icon:Bell},{id:'security',name:'Security',icon:LockKeyhole}];
+const tabs=[{id:'overview',name:'Overview',icon:ShieldCheck},{id:'members',name:'Members',icon:Users},{id:'invitations',name:'Invitations',icon:MailPlus},{id:'subscriptions',name:'Subscriptions',icon:CalendarDays},{id:'create-request',name:'Create request',icon:MailPlus},{id:'orders',name:'Orders',icon:Receipt},{id:'billing',name:'Billing',icon:Receipt},{id:'guides',name:'Guides',icon:BookOpen},{id:'support',name:'Support',icon:Headphones},{id:'activity',name:'Activity',icon:History},{id:'notifications',name:'Notifications',icon:Bell},{id:'security',name:'Security',icon:LockKeyhole},{id:'mail',name:'Mail Center',icon:Inbox}];
 const ownerNavGroups=[
- {name:['WORKSPACE','ESPACE DE TRAVAIL'],ids:['overview','notifications','security']},
+ {name:['WORKSPACE','ESPACE DE TRAVAIL'],ids:['overview','mail','notifications','security']},
  {name:['CUSTOMERS','CLIENTS'],ids:['members','invitations']},
  {name:['SUBSCRIPTIONS & PAYMENTS','ABONNEMENTS ET PAIEMENTS'],ids:['subscriptions','create-request','orders','billing']},
  {name:['SUPPORT & CONTENT','ASSISTANCE ET CONTENU'],ids:['support','guides']},
@@ -40,7 +41,7 @@ const ownerLabels={
  overview:['Overview','Vue d’ensemble'],members:['Members','Membres'],invitations:['Invitations','Invitations'],
  subscriptions:['Subscriptions','Abonnements'],'create-request':['Create request','Créer une demande'],orders:['Orders','Commandes'],billing:['Billing','Facturation'],
  guides:['Help content','Contenu d’aide'],support:['Support','Assistance'],activity:['Activity history','Historique des activités'],
- notifications:['Notifications','Notifications'],security:['Account security','Sécurité du compte']
+ notifications:['Notifications','Notifications'],mail:['Mail Center','Messagerie'],security:['Account security','Sécurité du compte']
 };
 const ownerDescriptions={
  overview:['Your priorities, recent activity and key numbers in one place.','Vos priorités, activités récentes et chiffres clés en un seul endroit.'],
@@ -53,7 +54,7 @@ const ownerDescriptions={
  guides:['Maintain help articles and device setup instructions.','Gérez les articles d’aide et les instructions d’installation.'],
  support:['A focused inbox for tickets, follow-ups and support operations.','Une boîte de réception claire pour les demandes, les suivis et les opérations.'],
  activity:['Review the administration activity log.','Consultez le journal des activités administratives.'],
- notifications:['Review messages and important updates.','Consultez les messages et mises à jour importantes.'],security:['Update the password for your owner account.','Modifiez le mot de passe de votre compte propriétaire.']
+ notifications:['Review messages and important updates.','Consultez les messages et mises à jour importantes.'],mail:['Read, write and organize mail from iptv@mykioo.icu.','Lire, écrire et organiser les courriels de iptv@mykioo.icu.'],security:['Update the password for your owner account.','Modifiez le mot de passe de votre compte propriétaire.']
 };
 const supportViews=[
  {id:'tickets',en:'Ticket inbox',fr:'Demandes',Icon:Inbox},
@@ -573,6 +574,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     <ServiceAlertHistory alerts={serviceAlerts} language={language}/>
    </div>}
   </section>}
+  {tab==='mail'&&<section className="admin-workspace-section admin-owner-mail"><OwnerMailCenter language={language} members={rows.members||[]}/></section>}
   {tab==='security'&&<section className="admin-workspace-section admin-owner-security">
    <PasswordSettings language={language}/>
   </section>}
@@ -586,7 +588,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      <summary>{tr('Invite someone directly as owner','Inviter directement comme propriétaire')}</summary>
      <form className="admin-invite" onSubmit={invite}>
       <div><strong>{tr('Invite a customer','Inviter un client')}</strong>
-       <p>{tr('MYKIOO tries to send the invitation through Gmail. If sending fails, you can copy a private invitation link and email it manually. Membership still requires your approval.','MYKIOO essaie d’envoyer l’invitation par Gmail. En cas d’échec, vous pourrez copier le lien privé et l’envoyer manuellement. L’adhésion nécessite toujours votre approbation.')}</p>
+       <p>{tr('MYKIOO tries to email invitations using the configured provider. If sending fails, you can copy a private invitation link and email it manually. Membership still requires your approval.','MYKIOO tente d’envoyer les invitations avec le fournisseur configuré. En cas d’échec, copiez le lien privé pour l’envoyer manuellement. L’adhésion nécessite votre approbation.')}</p>
       </div>
       <div className="admin-invite-row">
        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="customer@example.com" required maxLength={254} aria-label={tr('Invitee email','Courriel du destinataire')}/>
@@ -596,7 +598,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     </details>
    </div>
   </section>}
-  {tab!=='overview'&&tab!=='support'&&tab!=='subscriptions'&&tab!=='create-request'&&tab!=='invitations'&&tab!=='notifications'&&tab!=='security'&&tab!=='billing'&&tab!=='guides'&&tab!=='activity'&&<><p className="admin-description">{tab==='invitations'?tr('View invitations sent through MYKIOO.','Consultez les invitations envoyées depuis MYKIOO.'):tab==='members'?tr('Approve, reject or suspend customer memberships. Owner accounts are protected.','Approuvez, refusez ou suspendez les membres. Les comptes propriétaires sont protégés.'):tr('View your current MYKIOO records.','Consultez les données MYKIOO.')}</p>{loading?<div className="admin-empty">{tr("Loading records…","Chargement…")}</div>:list.length===0?<div className="admin-empty"><LockKeyhole size={28}/><strong>{tr("No records yet","Aucune donnée")}</strong><span>{tr("Information will appear here when available.","Les informations apparaîtront ici dès qu’elles seront disponibles.")}</span></div>:<div className="admin-table-wrap"><table className="admin-table"><thead><tr>{columns[tab].map(c=><th scope="col" key={c}>{columnLabels[c]?tr(...columnLabels[c]):c.replaceAll('_',' ')}</th>)}{tab==='members'&&<th>{tr("Actions","Actions")}</th>}</tr></thead><tbody>{list.map(row=><tr key={row.id||row.user_id}>{columns[tab].map(c=><td key={c}>{displayTableValue(row,c)}</td>)}{tab==='members'&&<td><div className="admin-controls">{row.role==='member'?<>{row.status!=='approved'&&<button disabled={saving} className="admin-mini positive" onClick={()=>changeStatus(row,'approved')}>{tr("Approve","Approuver")}</button>}{row.status!=='rejected'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'rejected')}>{tr("Reject","Refuser")}</button>}{row.status==='approved'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'suspended')}>{tr("Suspend","Suspendre")}</button>}</>:<span>{tr("Owner","Propriétaire")}</span>}</div></td>}</tr>)}</tbody></table></div>}</>}
+  {tab!=='overview'&&tab!=='support'&&tab!=='subscriptions'&&tab!=='create-request'&&tab!=='invitations'&&tab!=='notifications'&&tab!=='security'&&tab!=='mail'&&tab!=='billing'&&tab!=='guides'&&tab!=='activity'&&<><p className="admin-description">{tab==='invitations'?tr('View invitations sent through MYKIOO.','Consultez les invitations envoyées depuis MYKIOO.'):tab==='members'?tr('Approve, reject or suspend customer memberships. Owner accounts are protected.','Approuvez, refusez ou suspendez les membres. Les comptes propriétaires sont protégés.'):tr('View your current MYKIOO records.','Consultez les données MYKIOO.')}</p>{loading?<div className="admin-empty">{tr("Loading records…","Chargement…")}</div>:list.length===0?<div className="admin-empty"><LockKeyhole size={28}/><strong>{tr("No records yet","Aucune donnée")}</strong><span>{tr("Information will appear here when available.","Les informations apparaîtront ici dès qu’elles seront disponibles.")}</span></div>:<div className="admin-table-wrap"><table className="admin-table"><thead><tr>{columns[tab].map(c=><th scope="col" key={c}>{columnLabels[c]?tr(...columnLabels[c]):c.replaceAll('_',' ')}</th>)}{tab==='members'&&<th>{tr("Actions","Actions")}</th>}</tr></thead><tbody>{list.map(row=><tr key={row.id||row.user_id}>{columns[tab].map(c=><td key={c}>{displayTableValue(row,c)}</td>)}{tab==='members'&&<td><div className="admin-controls">{row.role==='member'?<>{row.status!=='approved'&&<button disabled={saving} className="admin-mini positive" onClick={()=>changeStatus(row,'approved')}>{tr("Approve","Approuver")}</button>}{row.status!=='rejected'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'rejected')}>{tr("Reject","Refuser")}</button>}{row.status==='approved'&&<button disabled={saving} className="admin-mini" onClick={()=>changeStatus(row,'suspended')}>{tr("Suspend","Suspendre")}</button>}</>:<span>{tr("Owner","Propriétaire")}</span>}</div></td>}</tr>)}</tbody></table></div>}</>}
  </main> {pendingChange&&<div className="mykioo-modal-overlay" onMouseDown={e=>{if(e.target===e.currentTarget&&!saving)setPendingChange(null)}}><div className="mykioo-modal" role="alertdialog" aria-modal="true" aria-labelledby="mykioo-confirm-title" aria-describedby="mykioo-confirm-description"><div className="mykioo-modal-icon"><ShieldCheck size={27}/></div><div className="admin-tag">MYKIOO</div><h2 id="mykioo-confirm-title">{tr(({approved:'Approve membership',rejected:'Reject membership',suspended:'Suspend membership',deactivated:'Deactivate membership'})[pendingChange.status]||'Change membership',({approved:'Approuver l’adhésion',rejected:'Refuser l’adhésion',suspended:'Suspendre l’adhésion',deactivated:'Désactiver l’adhésion'})[pendingChange.status]||'Modifier l’adhésion')}</h2><p id="mykioo-confirm-description">{tr('Are you sure you want to change the status of this member?','Voulez-vous vraiment modifier le statut de ce membre?')}</p><div className="mykioo-modal-member"><span>{pendingChange.member.email}</span><div><span className="mykioo-status-chip">{tr(pendingChange.member.status,({pending:'en attente',approved:'approuvé',rejected:'refusé',suspended:'suspendu',deactivated:'désactivé'})[pendingChange.member.status]||pendingChange.member.status)}</span><span className="mykioo-modal-arrow">→</span><span className="mykioo-status-chip target">{tr(pendingChange.status,({pending:'en attente',approved:'approuvé',rejected:'refusé',suspended:'suspendu',deactivated:'désactivé'})[pendingChange.status]||pendingChange.status)}</span></div></div><div className="mykioo-modal-buttons"><button type="button" className="mykioo-modal-cancel" onClick={()=>setPendingChange(null)}>{tr('Cancel','Annuler')}</button><button type="button" className="mykioo-modal-confirm" autoFocus onClick={confirmChange}>{tr('Confirm change','Confirmer')}</button></div></div></div>}
 </div>
 }
