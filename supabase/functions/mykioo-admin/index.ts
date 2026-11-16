@@ -169,27 +169,16 @@ Deno.serve(async (request) => {
         return reply({error:"Unable to verify invited account"},409);
       if(authUser.user.email_confirmed_at&&invitedMember.display_name?.trim())
         return reply({error:"Account setup is already complete. The member can use Forgot password."},409);
-      const brevoKey=Deno.env.get("BREVO_API_KEY");
-      if(!brevoKey)return reply({error:"MYKIOO email service is not configured. Connect a verified Brevo sender."},503);
+      // Owner can issue a link while email-provider delivery is unavailable.
       // Prevent repeated one-time link generation from flooding a recipient.
       const {count,error:countError}=await server.from("mykioo_audit_logs")
-        .select("id",{count:"exact",head:true}).eq("action","member_invite_setup_email_accepted")
+        .select("id",{count:"exact",head:true}).in("action",["member_invite_setup_email_accepted","member_invite_setup_link_generated"])
         .eq("entity_type","member").eq("entity_id",requestRow.invited_user_id)
         .gte("created_at",new Date(Date.now()-24*60*60*1000).toISOString());
       if(countError)return reply({error:"Unable to check resend limits"},503);
       if((count||0)>=3)return reply({error:"This address has received the maximum of three setup emails in 24 hours"},429);
       const language=invitedMember.preferred_language==="fr"?"fr":"en";
-      const templateId=language==="fr"?2:1;
-      let sender:{email:string;name:string};
-      try{
-        const templateResponse=await fetch("https://api.brevo.com/v3/smtp/templates/"+templateId,{
-          headers:{"api-key":brevoKey,"Accept":"application/json"}
-        });
-        const template=await templateResponse.json().catch(()=>({}));
-        if(!templateResponse.ok||!validEmail(template?.sender?.email))
-          return reply({error:"The verified MYKIOO email sender is unavailable. Check Brevo transactional sender settings."},503);
-        sender={email:template.sender.email,name:"MYKIOO"};
-      }catch(_e){return reply({error:"Unable to check MYKIOO's email sender right now"},503)}
+      // The owner will send the 48-hour link from their email account.
       const {actionLink,...linkRecord}=await newInvitationLink(origin);
       const {error:trackingError}=await server.from("mykioo_invitations")
         .update({...linkRecord,status:"pending",accepted_at:null}).eq("id",invitation.id);
@@ -198,31 +187,14 @@ Deno.serve(async (request) => {
       const {subject,htmlContent:html,textContent}=makeInvitationEmail({
         language,actionLink,resend:true,...inviter
       });
-      let mailResponse:Response;
-      try{
-        mailResponse=await fetch("https://api.brevo.com/v3/smtp/email",{
-          method:"POST",headers:{"api-key":brevoKey,"Content-Type":"application/json","Accept":"application/json"},
-          body:JSON.stringify({
-            sender,to:[{email:requestRow.email}],subject,htmlContent:html,textContent,
-            tags:["mykioo","invitation-setup"]
-          })
-        });
-      }catch(_e){
-        console.error("MYKIOO invite resend provider transport error");
-        return reply({error:"Email provider could not be reached. Please try again."},503);
-      }
-      const mailData=await mailResponse.json().catch(()=>({}));
-      if(!mailResponse.ok||!mailData.messageId){
-        console.error("MYKIOO invite resend provider rejected request",mailResponse.status);
-        return reply({error:"Email provider rejected the invitation. Check Brevo sender verification and email logs."},503);
-      }
       await server.from("mykioo_audit_logs").insert({
-        actor_id:actor.id,action:"member_invite_setup_email_accepted",
+        actor_id:actor.id,action:"member_invite_setup_link_generated",
         entity_type:"member",entity_id:requestRow.invited_user_id,
-        details:{request_id:requestRow.id,channel:"brevo",language}
+        details:{request_id:requestRow.id,channel:"manual",language}
       });
-      // Brevo acceptance is not the same as final mailbox delivery.
-      return reply({ok:true,notification:"accepted",message:"Account-setup email accepted by Brevo. Ask the recipient to check Inbox and Junk; delivery is not guaranteed."});
+      return reply({ok:true,notification:"manual",
+        delivery:{to:requestRow.email,link:actionLink,subject,body:textContent},
+        message:"Invitation link ready. Copy and send the prepared email yourself using Gmail; no automatic email was sent."});
     }
     let reviewRequest:null|{id:string;email:string;requested_by:string;language:string;status:string}=null;
     if(action==="review_invite"){
@@ -258,20 +230,7 @@ Deno.serve(async (request) => {
       const inviterId=pendingReferral?.requested_by||actor.id;
       const { data: existing } = await server.from("mykioo_members").select("user_id").ilike("email", email).maybeSingle();
       if (existing) return reply({ error: "This email already has a MYKIOO membership." }, 409);
-      // Verify a working MYKIOO Brevo sender before creating an Auth user.
-      // Supabase generateLink creates the user and a secure one-time link without dispatching email.
-      const brevoKey=Deno.env.get("BREVO_API_KEY");
-      if(!brevoKey)return reply({error:"MYKIOO invitation mail is not configured. No account was created."},503);
-      let sender:{name:string;email:string};
-      try{
-        const response=await fetch("https://api.brevo.com/v3/smtp/templates/"+(language==="fr"?2:1),{
-          headers:{"api-key":brevoKey,"Accept":"application/json"}
-        });
-        const template=await response.json().catch(()=>({}));
-        if(!response.ok||!validEmail(template?.sender?.email))
-          return reply({error:"Brevo sender is unavailable. Check verified sender and transactional email access. No account was created."},503);
-        sender={name:"MYKIOO",email:template.sender.email};
-      }catch(_error){return reply({error:"Could not reach MYKIOO Brevo sender. No account was created."},503)}
+      // The existing private invitation link is supplied to the owner, not sent via Brevo.
       const {data:invited,error:inviteError}=await server.auth.admin.generateLink({
         type:"invite",email,options:{redirectTo:origin+"/?invite=1"}
       });
@@ -312,35 +271,9 @@ Deno.serve(async (request) => {
         if(cleanupError)console.error("MYKIOO invite tracking cleanup failed",uid);
         return reply({error:"Could not track the new account. No email was sent. Please retry or contact support if the address remains registered."},500);
       }
-      // Deliver a first-party acceptance URL. MYKIOO verifies the token only after
-      // a deliberate click, avoiding accidental consumption by email link scanners.
-      // Send with the existing Brevo provider.
+      // Preserve the 48-hour managed invitation used by MYKIOO's acceptance screen.
       const inviter=await inviterDetails(inviterId);
-      const {subject,htmlContent:html,textContent}=makeInvitationEmail({
-        language,actionLink,...inviter
-      });
-      let emailOk=false,emailMessageId="";
-      try{
-        const response=await fetch("https://api.brevo.com/v3/smtp/email",{
-          method:"POST",headers:{"api-key":brevoKey,"Content-Type":"application/json","Accept":"application/json"},
-          body:JSON.stringify({sender,to:[{email}],subject,htmlContent:html,
-            textContent,
-            tags:["mykioo","account-invitation"]})
-        });
-        const result=await response.json().catch(()=>({}));
-        emailOk=response.ok&&Boolean(result.messageId);
-        if(emailOk)emailMessageId=String(result.messageId);
-        if(!emailOk)console.error("MYKIOO invite rejected by Brevo",response.status);
-      }catch(_error){console.error("MYKIOO invite Brevo connection failed")}
-      if(!emailOk){
-        await server.from("mykioo_invitations").delete().eq("id",inviteLog.id);
-        await server.from("mykioo_members").delete().eq("user_id",uid).eq("status","pending");
-        const {error:cleanupError}=await server.auth.admin.deleteUser(uid);
-        if(cleanupError)console.error("MYKIOO invite provider-rejection cleanup failed",uid);
-        return reply({error:cleanupError?
-          "Brevo rejected the email and account cleanup needs attention before retrying.":
-          "Brevo rejected the invitation email. No account remains; check the sender and retry."},503);
-      }
+      const {subject,textContent}=makeInvitationEmail({language,actionLink,...inviter});
       if(pendingReferral){
         const {error:finalizeError}=await server.from("mykioo_invitation_requests")
           .update({status:"approved",reviewed_by:actor.id,reviewed_at:new Date().toISOString(),
@@ -354,9 +287,10 @@ Deno.serve(async (request) => {
         },{onConflict:"user_id,kind,source_id"});
       }
       await server.from("mykioo_audit_logs").insert({actor_id:actor.id,action:"member_invited",
-        entity_type:"member",entity_id:uid,details:{email,language,invited_by:inviterId,review_request_id:pendingReferral?.id||null,email_provider:"brevo",email_message_id:emailMessageId}});
-      return reply({ok:true,member_id:uid,invitation_id:inviteLog.id,notification:"accepted",
-        message:pendingReferral?"Invitation approved; Brevo accepted the setup email (inbox delivery not yet verified).":"Brevo accepted the account-setup email (delivery not yet verified)."});
+        entity_type:"member",entity_id:uid,details:{email,language,invited_by:inviterId,review_request_id:pendingReferral?.id||null,email_provider:"manual"}});
+      return reply({ok:true,member_id:uid,invitation_id:inviteLog.id,notification:"manual",
+        delivery:{to:email,link:actionLink,subject,body:textContent},
+        message:"Invitation link ready. Copy and send the prepared email yourself using Gmail; no automatic email was sent."});
     }
     if (action === "set_status") {
       const id = input.member_id;
