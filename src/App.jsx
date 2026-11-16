@@ -1,5 +1,6 @@
 import InvitationRenewal from './InvitationRenewal';
 import {MemberSupportFAQ} from './SupportFAQ';
+import TroubleshootingAssistant from './TroubleshootingAssistant';
 import {MemberSetupGuides} from './SetupGuides';
 import {uploadSupportScreenshot,validateSupportScreenshots,SCREENSHOT_INITIAL_MAX} from './SupportScreenshots';
 import {RelatedIssue} from './SupportIssues';
@@ -148,8 +149,12 @@ return <div className="dashboard">{mobile&&<button type="button" className="myki
  </section>}{active==='Invitations'&&<MemberInvitations userId={user.id} language={language}/>} {active==='Payments'&&<MemberBilling userId={user.id} language={language}/>}{active==='Notifications'&&<NotificationCenter items={notifications} language={language} markRead={markNotificationRead} clearNotifications={clearNotifications} onSelect={section=>setActive(section==='Subscription'?'My subscriptions':section)}/>}{active==='Support'&&<section className="mykioo-support">
  <ServiceAlertBanner alerts={serviceAlerts} language={language}/>
  <ServiceAlertHistory alerts={serviceAlerts} language={language}/>
+ <TroubleshootingAssistant language={language} onOpenGuides={()=>setActive('Setup guides')} onPrepareTicket={details=>{
+  setTicketCategory(details.category);setTicketDevice(details.device);setTicketApp(details.app);setTicketErrorDetails(details.error);setTicketSubject(details.subject);setTicketMessage(details.message);
+  window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>document.getElementById('mykioo-member-support-form')?.scrollIntoView({behavior:'smooth',block:'start'})));
+ }}/>
  <MemberSupportFAQ language={language} category={ticketCategory} subject={ticketSubject} onOpenGuides={()=>setActive('Setup guides')}/>
- <div className="mykioo-support-card">
+ <div className="mykioo-support-card" id="mykioo-member-support-form">
   <h2>{tr('Contact MYKIOO support','Contacter l’assistance MYKIOO')}</h2>
   <div className="mykioo-support-phone">
    <div className="mykioo-support-phone-label">
