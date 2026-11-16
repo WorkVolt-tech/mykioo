@@ -38,7 +38,7 @@ Deno.serve(async request=>{
    if(error)return respond({error:"Dry-run query failed"},500);
    return respond({ok:true,dry_run:true,active_dated_subscriptions:count||0,email_sent:0,in_app_sent:0});
  }
- const brevo=Deno.env.get("BREVO_API_KEY");
+ const mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
  if(!brevo)return respond({error:"Transactional email is not configured"},503);
  const now=new Date();
  const utcToday=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate());
@@ -109,14 +109,14 @@ Deno.serve(async request=>{
      "<p>Hello "+safeName+",</p><p>Your <strong>"+service+"</strong> subscription "+deadline+".</p><p>Expiration date: <strong>"+formatted+"</strong></p><p>Sign in to MYKIOO to request a renewal of your service.</p>";
    const html='<div style="font-family:Arial,sans-serif;background:#16111d;color:#f5edf8;padding:28px"><h1 style="color:#dfbb7d">MYKIOO</h1>'+body+'<p><a style="color:#dfbb7d" href="https://mykioo.pages.dev/?section=subscription">MYKIOO</a></p></div>';
    try{
-    const outbound=await fetch("https://api.brevo.com/v3/smtp/email",{
+    const outbound=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=email"),{
      method:"POST",headers:{"api-key":brevo,"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({sender:{name:"MYKIOO",email:"mykiootv@outlook.com"},to:[{email:member.email}],subject,htmlContent:html,
        tags:["mykioo","subscription-expiry"]})
     });
     if(!outbound.ok){
      failed++;
-     await db.from("mykioo_expiry_email_log").update({state:"failed",error_code:"brevo_"+outbound.status}).eq("id",logId);
+     await db.from("mykioo_expiry_email_log").update({state:"failed",error_code:"gmail_"+outbound.status}).eq("id",logId);
      console.error("MYKIOO reminder dispatch failed",sub.id,outbound.status);
      continue;
     }
