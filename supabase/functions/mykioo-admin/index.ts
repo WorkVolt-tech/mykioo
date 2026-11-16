@@ -36,6 +36,26 @@ function extractVerificationToken(properties:unknown,expectedType:"invite"|"reco
   if(!token&&typeof p.hashed_token==="string")token=p.hashed_token;
   return /^[A-Za-z0-9_-]{16,512}$/.test(token)?token:null;
 }
+// Attempt transactional delivery through MYKIOO's private Gmail dispatcher.
+// On failure, the owner can still copy/send the secure 48-hour invitation.
+async function sendInviteEmail(to:string,subject:string,htmlContent:string,textContent:string):Promise<boolean>{
+ const apiKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+ const base=Deno.env.get("SUPABASE_URL");
+ if(!apiKey||!base)return false;
+ try{
+  const result=await fetch(base+"/functions/v1/mykioo-email-dispatch?route=email",{
+   method:"POST",
+   headers:{"api-key":apiKey,"Content-Type":"application/json"},
+   body:JSON.stringify({to:[{email:to}],subject,htmlContent,textContent})
+  });
+  const payload=await result.json().catch(()=>null);
+  return result.ok&&typeof payload?.messageId==="string";
+ }catch(error){
+  console.error("MYKIOO invitation mail transport error",error instanceof Error?error.name:"unknown");
+  return false;
+ }
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (request.method !== "POST") return reply({ error: "Method not allowed" }, 405);
@@ -184,17 +204,19 @@ Deno.serve(async (request) => {
         .update({...linkRecord,status:"pending",accepted_at:null}).eq("id",invitation.id);
       if(trackingError)return reply({error:"Could not prepare invitation tracking"},503);
       const inviter=await inviterDetails(requestRow.requested_by||invitedMember.invited_by||actor.id);
-      const {subject,textContent}=makeInvitationEmail({
+      const {subject,htmlContent,textContent}=makeInvitationEmail({
         language,actionLink,resend:true,...inviter
       });
+      const accepted=await sendInviteEmail(requestRow.email,subject,htmlContent,textContent);
       await server.from("mykioo_audit_logs").insert({
-        actor_id:actor.id,action:"member_invite_setup_link_generated",
+        actor_id:actor.id,action:accepted?"member_invite_setup_email_accepted":"member_invite_setup_link_generated",
         entity_type:"member",entity_id:requestRow.invited_user_id,
-        details:{request_id:requestRow.id,channel:"manual",language}
+        details:{request_id:requestRow.id,channel:accepted?"gmail":"manual",language}
       });
-      return reply({ok:true,notification:"manual",
-        delivery:{to:requestRow.email,link:actionLink,subject,body:textContent},
-        message:"Invitation link ready. Copy and send the prepared email yourself using Gmail; no automatic email was sent."});
+      return reply({ok:true,notification:accepted?"accepted":"manual",
+        ...(accepted?{}:{delivery:{to:requestRow.email,link:actionLink,subject,body:textContent}}),
+        message:accepted?"Gmail accepted the new invitation email. Ask the recipient to check Inbox and Spam.":
+         "Gmail could not send the invitation. Copy and email the prepared private link manually."});
     }
     let reviewRequest:null|{id:string;email:string;requested_by:string;language:string;status:string}=null;
     if(action==="review_invite"){
@@ -273,7 +295,8 @@ Deno.serve(async (request) => {
       }
       // Preserve the 48-hour managed invitation used by MYKIOO's acceptance screen.
       const inviter=await inviterDetails(inviterId);
-      const {subject,textContent}=makeInvitationEmail({language,actionLink,...inviter});
+      const {subject,htmlContent,textContent}=makeInvitationEmail({language,actionLink,...inviter});
+      const accepted=await sendInviteEmail(email,subject,htmlContent,textContent);
       if(pendingReferral){
         const {error:finalizeError}=await server.from("mykioo_invitation_requests")
           .update({status:"approved",reviewed_by:actor.id,reviewed_at:new Date().toISOString(),
@@ -287,10 +310,11 @@ Deno.serve(async (request) => {
         },{onConflict:"user_id,kind,source_id"});
       }
       await server.from("mykioo_audit_logs").insert({actor_id:actor.id,action:"member_invited",
-        entity_type:"member",entity_id:uid,details:{email,language,invited_by:inviterId,review_request_id:pendingReferral?.id||null,email_provider:"manual"}});
-      return reply({ok:true,member_id:uid,invitation_id:inviteLog.id,notification:"manual",
-        delivery:{to:email,link:actionLink,subject,body:textContent},
-        message:"Invitation link ready. Copy and send the prepared email yourself using Gmail; no automatic email was sent."});
+        entity_type:"member",entity_id:uid,details:{email,language,invited_by:inviterId,review_request_id:pendingReferral?.id||null,email_provider:accepted?"gmail":"manual"}});
+      return reply({ok:true,member_id:uid,invitation_id:inviteLog.id,notification:accepted?"accepted":"manual",
+        ...(accepted?{}:{delivery:{to:email,link:actionLink,subject,body:textContent}}),
+        message:accepted?"Invitation approved; Gmail accepted the email. Ask the recipient to check Inbox and Spam.":
+        "Invitation link ready, but Gmail could not send it. Copy and send the prepared email yourself."});
     }
     if (action === "set_status") {
       const id = input.member_id;
