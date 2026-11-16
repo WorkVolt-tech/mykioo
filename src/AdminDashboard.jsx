@@ -16,6 +16,7 @@ import OwnerActionCenter from './OwnerActionCenter';
 import OwnerCancellationRequests from './OwnerCancellationRequests';
 import SubscriptionRequests from './SubscriptionRequests';
 import OwnerInvitationReviews from './OwnerInvitationReviews';
+import ManualInvitePanel from './ManualInvitePanel';
 import SubscriptionManager from './SubscriptionManager';
 import PasswordSettings from './PasswordSettings';
 import {useSupportUnread} from './useSupportUnread';
@@ -84,7 +85,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
   const [supportView,setSupportView]=useRememberedState('mykioo-ui:owner:'+user.id+':support-view','tickets');
   const [subscriptionView,setSubscriptionView]=useRememberedState('mykioo-ui:owner:'+user.id+':subscription-view','queue');
   const [guideView,setGuideView]=useRememberedState('mykioo-ui:owner:'+user.id+':guide-view','faq');
-  const [expandedTickets,setExpandedTickets]=useState([]);useResumeScroll('owner:'+user.id,tab,!loading);const [focusedTicket,setFocusedTicket]=useState(null);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all'),[supportPriorityFilter,setSupportPriorityFilter]=useState('all'),[supportCategoryFilter,setSupportCategoryFilter]=useState('all'),[supportSort,setSupportSort]=useState('priority');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null);
+  const [expandedTickets,setExpandedTickets]=useState([]);useResumeScroll('owner:'+user.id,tab,!loading);const [focusedTicket,setFocusedTicket]=useState(null);const [supportSearch,setSupportSearch]=useState(''),[supportStatusFilter,setSupportStatusFilter]=useState('all'),[supportIssueFilter,setSupportIssueFilter]=useState('all'),[supportPriorityFilter,setSupportPriorityFilter]=useState('all'),[supportCategoryFilter,setSupportCategoryFilter]=useState('all'),[supportSort,setSupportSort]=useState('priority');const [email,setEmail]=useState(''),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[pendingChange,setPendingChange]=useState(null),[inviteDelivery,setInviteDelivery]=useState(null);
  async function refresh({silent=false}={}){
   if(!silent){setLoading(true);setError('')}
   try{
@@ -105,6 +106,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  }
  async function runAction(payload) {
    setSaving(true);setError('');setNotice('');
+   if(['invite','review_invite','resend_invite_setup'].includes(payload.action))setInviteDelivery(null);
    try {
      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
      if(sessionError || !sessionData.session) throw new Error('Sign in again to continue.');
@@ -125,6 +127,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
        else if(result.notification==='failed')setNotice(tr('Member updated, but the notification email failed. Check Brevo settings.','Membre mis à jour, mais l’envoi du courriel a échoué. Vérifiez les paramètres Brevo.'));
        else setNotice(tr('Member updated.','Membre mis à jour.'));
      }else setNotice(result.message||tr('Updated successfully.','Mise à jour effectuée.'));
+     if(result.delivery?.link&&['invite','review_invite','resend_invite_setup'].includes(payload.action))setInviteDelivery(result.delivery);
      if(payload.action==='invite')setEmail('');
      await refresh();
    }catch(e){setError(e.message||'Request failed.')}finally{setSaving(false)}
@@ -575,15 +578,16 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     <OwnerInvitationReviews requests={rows.invitation_requests||[]} invitations={rows.invitations||[]}
      members={rows.members||[]} language={language} saving={saving} onAction={runAction}
      onRefresh={()=>refresh({silent:true})}/>
+    <ManualInvitePanel delivery={inviteDelivery} language={language} onDismiss={()=>setInviteDelivery(null)}/>
     <details className="mykioo-owner-direct-invite">
-     <summary>{tr('Send an invitation directly as owner','Envoyer une invitation directement comme propriétaire')}</summary>
+     <summary>{tr('Create a private invitation link as owner','Créer un lien d’invitation privé comme propriétaire')}</summary>
      <form className="admin-invite" onSubmit={invite}>
       <div><strong>{tr('Invite a customer','Inviter un client')}</strong>
-       <p>{tr('The invitation email is sent immediately. The new member still needs membership approval before entering MYKIOO.','Le courriel d’invitation est envoyé immédiatement. Le nouveau membre doit encore être approuvé avant d’accéder à MYKIOO.')}</p>
+       <p>{tr('No email is sent automatically. Copy the prepared message and send it from Gmail. The member still requires your approval before accessing MYKIOO.','Aucun courriel n’est envoyé automatiquement. Copiez le message préparé et envoyez-le depuis Gmail. Le membre doit toujours être approuvé avant d’accéder à MYKIOO.')}</p>
       </div>
       <div className="admin-invite-row">
        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="customer@example.com" required maxLength={254} aria-label={tr('Invitee email','Courriel du destinataire')}/>
-       <button className="admin-action primary" type="submit" disabled={saving}>{saving?tr('Sending…','Envoi…'):tr('Send invitation','Envoyer l’invitation')}</button>
+       <button className="admin-action primary" type="submit" disabled={saving}>{saving?tr('Preparing…','Préparation…'):tr('Create invitation link','Créer un lien d’invitation')}</button>
       </div>
      </form>
     </details>
