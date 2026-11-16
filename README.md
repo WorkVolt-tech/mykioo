@@ -2,7 +2,7 @@
 
 A private, invitation-only, bilingual (English/French) entertainment-membership portal. The site is built with React + Vite, published on Cloudflare Pages, and backed by Supabase.
 
-Production site: https://mykioo.pages.dev/
+Custom site: https://mykioo.icu/ (Cloudflare Pages SSL validation must complete before announcing the cutover). Legacy site: https://mykioo.pages.dev/
 
 ## Hosting and configuration
 
@@ -28,7 +28,7 @@ The only frontend build variables are `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUB
 ## Password recovery and account security
 
 - Select **Forgot password** on the login page and request a reset for the account's email address.
-- Recovery emails use Supabase Auth and redirect to `https://mykioo.pages.dev/?reset_password=1`. The link must be allowlisted in the Supabase Auth redirect URL configuration.
+- Recovery emails use Supabase Auth, with the website requesting a redirect to its current origin (`https://mykioo.icu/?reset_password=1` on the new domain, `https://mykioo.pages.dev/?reset_password=1` on the legacy domain). Configure **Authentication → URL Configuration** in Supabase: Site URL `https://mykioo.icu/`, and allowlist both `https://mykioo.icu/**` and `https://mykioo.pages.dev/**` (plus `https://www.mykioo.icu/**` if retaining www).
 - A valid recovery session opens the bilingual **Create a new password** form. After saving, the user is signed out and can sign in with the new password.
 - A signed-in owner or member can select **Change password** under account security. The current password is reauthenticated before `updateUser({password})` is called.
 - For a complete real-world test, check inbox/spam delivery, the exact reset URL, one-time link consumption, and sign-in with the new password on **one controlled member test account and the owner account**. Do not reset other members' credentials as part of QA.
@@ -45,12 +45,12 @@ The only frontend build variables are `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUB
 
 ## Gmail transactional email configuration
 
-- In **Supabase → Authentication → Emails → SMTP Settings**, Gmail custom SMTP is configured for Auth emails (e.g., password recovery) using `mykiootv@gmail.com`. These credentials are **not** shared with Edge Functions.
-- In **Supabase → Edge Functions → Secrets**, add secret **`MYKIOO_SMTP_APP_PASSWORD`** containing a Gmail app password for `mykiootv@gmail.com`. Paste the value only in Supabase's private dashboard, not into chat, GitHub or Cloudflare Pages.
-- The private `mykioo-email-dispatch` Edge Function authenticates **server-to-server** requests with the built-in `SUPABASE_SERVICE_ROLE_KEY`, uses Gmail TLS on port 465, validates recipients and messages, and never exposes its SMTP secret in client code.
+- **Separate Auth SMTP setup required:** In **Supabase → Authentication → Emails → SMTP Settings**, set Sender `iptv@mykioo.icu`, sender name `MYKIOO`, host `smtp.ionos.com`, port `465`, username `iptv@mykioo.icu`, password = private IONOS Mail Basic mailbox password. Supabase Auth SMTP is separate from the Edge Function SMTP secret. Confirm delivery with a controlled password-reset test. Until completed, Auth mail may still use the prior Gmail configuration.
+- In **Supabase → Edge Functions → Secrets**, add `MYKIOO_IONOS_SMTP_PASSWORD` with the IONOS mailbox password for `iptv@mykioo.icu` to enable professional outgoing transactional email. The existing `MYKIOO_SMTP_APP_PASSWORD` for `mykiootv@gmail.com` remains as continuity-only fallback when the IONOS secret is absent. Never commit either password or paste it into chat.
+- The private `mykioo-email-dispatch` Edge Function authenticates **server-to-server** requests with the built-in `SUPABASE_SERVICE_ROLE_KEY`, uses IONOS or Gmail SMTP with TLS on port 465 depending on the configured secret, validates recipients and messages, and never exposes its SMTP secret in client code.
 - It supports MYKIOO's previous transactional payload format, including bilingual membership status templates, so backend functions no longer call Brevo.
 - If Gmail is unavailable or this secret is missing, normal notifications fail safely; **invitation approval and resends fall back to a private 48-hour link** that the owner may copy and deliver manually. Do not mistake generated links for emails actually delivered.
-- Keep the bilingual website email-outage banner visible until Gmail delivery is tested and inbox placement is considered satisfactory. Outlook is not yet an automatic backup.
+- Keep the bilingual website email-outage banner visible until IONOS transactional delivery and Supabase Auth password-reset emails have both been tested end-to-end. A successful SMTP acceptance does not guarantee inbox placement.
 - Verify a controlled membership-invitation test, membership status email, subscription completion email, expiring subscription reminder and password reset. Do not test by sending credentials to unrelated recipients.
 - Gmail personal accounts have daily sending limits and may place messages in spam; this integration does not guarantee deliverability.
 
