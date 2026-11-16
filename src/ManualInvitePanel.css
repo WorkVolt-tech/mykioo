@@ -1,0 +1,12 @@
+.mykioo-manual-invite{border:1px solid #b18c54;border-left:4px solid #dfba82;border-radius:13px;background:#251f2e;color:#f1e7f1;padding:18px 19px;display:grid;gap:13px;min-width:0;margin:14px 0}
+.mykioo-manual-invite-heading{display:flex;gap:11px;align-items:flex-start}.mykioo-manual-invite-heading>svg{color:#e9c98c;flex:0 0 auto}.mykioo-manual-invite-heading>div{min-width:0;flex:1}
+.mykioo-manual-invite-heading h3{margin:0 0 5px;font-size:16px;color:#f4dba9}.mykioo-manual-invite-heading p,.mykioo-manual-invite-foot{margin:0;color:#d4c9db;font-size:12px;line-height:1.7}
+.mykioo-manual-invite-close{padding:6px;border:1px solid #65546a;color:#f4dba9;background:#302638;border-radius:7px;cursor:pointer}
+.mykioo-manual-invite-recipient{font-size:12px;color:#eee1eb;overflow-wrap:anywhere}.mykioo-manual-invite-recipient strong{color:#e9c98c}
+.mykioo-manual-invite-actions{display:flex;flex-wrap:wrap;gap:9px}.mykioo-manual-invite-actions button,.mykioo-manual-invite-actions a{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 12px;border:1px solid #cba66f;border-radius:8px;background:#3a2c3b;color:#f7e3c1;font-size:12px;font-weight:800;cursor:pointer;text-decoration:none}
+.mykioo-manual-invite-actions button:first-child{background:#dfbd89;color:#282030}
+.mykioo-manual-invite-link{display:grid;gap:6px;font-weight:700;font-size:11px;color:#e6c58c}
+.mykioo-manual-invite-link input{width:100%;min-width:0;box-sizing:border-box;background:#181521;color:#efe5f1;border:1px solid #6e5a72;border-radius:8px;padding:12px;font-size:12px}
+.mykioo-manual-invite-success,.mykioo-manual-invite-error{display:flex;gap:7px;align-items:center;margin:0;color:#c5e6be;font-size:12px}.mykioo-manual-invite-error{color:#ffb6ad}
+.mykioo-manual-invite button:focus-visible,.mykioo-manual-invite a:focus-visible{outline:2px solid #f0d7a4;outline-offset:3px}
+@media(max-width:600px){.mykioo-manual-invite{padding:14px}.mykioo-manual-invite-actions button,.mykioo-manual-invite-actions a{width:100%}}
