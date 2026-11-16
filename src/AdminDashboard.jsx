@@ -122,9 +122,9 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      const result=await response.json().catch(()=>({}));
      if(!response.ok || !result.ok) throw new Error(result.error||'Action failed.');
      if(payload.action==='set_status'){
-       if(result.notification==='accepted')setNotice(tr('Member updated. Brevo accepted the notification email.','Membre mis à jour. Brevo a accepté le courriel de notification.'));
-       else if(result.notification==='not_configured')setNotice(tr('Member updated. Email not sent: Brevo API key still needs to be configured in Supabase.','Membre mis à jour. Courriel non envoyé : la clé API Brevo doit être configurée dans Supabase.'));
-       else if(result.notification==='failed')setNotice(tr('Member updated, but the notification email failed. Check Brevo settings.','Membre mis à jour, mais l’envoi du courriel a échoué. Vérifiez les paramètres Brevo.'));
+       if(result.notification==='accepted')setNotice(tr('Member updated. Gmail accepted the notification email (inbox delivery not guaranteed).','Membre mis à jour. Gmail a accepté le courriel de notification (réception non garantie).'));
+       else if(result.notification==='not_configured')setNotice(tr('Member updated. Email not sent: configure the Gmail SMTP secret in Supabase Edge Functions.','Membre mis à jour. Courriel non envoyé : configurez le secret SMTP de Gmail dans les fonctions Edge de Supabase.'));
+       else if(result.notification==='failed')setNotice(tr('Member updated, but the notification email failed. Check the Gmail mailer configuration.','Membre mis à jour, mais l’envoi du courriel a échoué. Vérifiez la configuration du service Gmail.'));
        else setNotice(tr('Member updated.','Membre mis à jour.'));
      }else setNotice(result.message||tr('Updated successfully.','Mise à jour effectuée.'));
      if(result.delivery?.link&&['invite','review_invite','resend_invite_setup'].includes(payload.action)){
@@ -583,14 +583,14 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      members={rows.members||[]} language={language} saving={saving} onAction={runAction}
      onRefresh={()=>refresh({silent:true})}/>
     <details className="mykioo-owner-direct-invite">
-     <summary>{tr('Create a private invitation link as owner','Créer un lien d’invitation privé comme propriétaire')}</summary>
+     <summary>{tr('Invite someone directly as owner','Inviter directement comme propriétaire')}</summary>
      <form className="admin-invite" onSubmit={invite}>
       <div><strong>{tr('Invite a customer','Inviter un client')}</strong>
-       <p>{tr('No email is sent automatically. Copy the prepared message and send it from Gmail. The member still requires your approval before accessing MYKIOO.','Aucun courriel n’est envoyé automatiquement. Copiez le message préparé et envoyez-le depuis Gmail. Le membre doit toujours être approuvé avant d’accéder à MYKIOO.')}</p>
+       <p>{tr('MYKIOO tries to send the invitation through Gmail. If sending fails, you can copy a private invitation link and email it manually. Membership still requires your approval.','MYKIOO essaie d’envoyer l’invitation par Gmail. En cas d’échec, vous pourrez copier le lien privé et l’envoyer manuellement. L’adhésion nécessite toujours votre approbation.')}</p>
       </div>
       <div className="admin-invite-row">
        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="customer@example.com" required maxLength={254} aria-label={tr('Invitee email','Courriel du destinataire')}/>
-       <button className="admin-action primary" type="submit" disabled={saving}>{saving?tr('Preparing…','Préparation…'):tr('Create invitation link','Créer un lien d’invitation')}</button>
+       <button className="admin-action primary" type="submit" disabled={saving}>{saving?tr('Processing…','Traitement…'):tr('Create invitation','Créer l’invitation')}</button>
       </div>
      </form>
     </details>
