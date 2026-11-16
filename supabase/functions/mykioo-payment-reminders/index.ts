@@ -26,6 +26,9 @@ Deno.serve(async req=>{
  if(dry_run)return respond({ok:true,dry_run:true,due_count:due?.length||0,sent:0});
  const mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
  if(!mailerKey)return respond({error:"Transactional mail not configured"},503);
+ const mailerReady=await fetch(url+"/functions/v1/mykioo-email-dispatch?route=status",{headers:{"api-key":mailerKey}})
+  .then(r=>r.ok).catch(()=>false);
+ if(!mailerReady)return respond({error:"Gmail mailer is not ready; no email attempts were consumed"},503);
  let sent=0,skipped=0,failed=0;
  for(const invoice of due||[]){
   // A cancellation or completed request must never receive an unpaid reminder.
