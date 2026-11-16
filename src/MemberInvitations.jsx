@@ -66,7 +66,7 @@ export default function MemberInvitations({userId,language='en'}){
     placeholder="friend@example.com"/>
     <button type="submit" disabled={working}>{working?tr('Submitting…','Envoi…'):tr('Request invitation','Demander une invitation')}</button>
    </div>
-   <small>{tr('Only the owner can approve an invitation. During the email interruption, the owner sends approved invitations manually. Up to 10 requests per 24 hours.','Seul le propriétaire approuve les invitations. Durant la panne des courriels, le propriétaire envoie les invitations approuvées manuellement. Maximum 10 demandes en 24 heures.')}</small>
+   <small>{tr('Only the owner approves invitations. MYKIOO tries to email approved invitations; if delivery fails, the owner can send the link manually. Up to 10 requests per 24 hours.','Seul le propriétaire approuve les invitations. MYKIOO essaie de les envoyer par courriel et le propriétaire peut transmettre le lien manuellement en cas d’échec. Maximum 10 demandes en 24 heures.')}</small>
   </form>
   {error&&<p className="mykioo-invitation-error" role="alert">{error}</p>}
   {notice&&<p className="mykioo-invitation-notice" role="status">{notice}</p>}
