@@ -35,6 +35,8 @@ const apkDownloads=[
 const downloadFor=guide=>apkDownloads.find(app=>(guide.steps_en||'').includes(app.url)||(guide.steps_fr||'').includes(app.url));
 const officialProtonLink=guide=>([guide.steps_en,guide.steps_fr].some(s=>(s||'').includes('https://protonvpn.com/free-vpn'))
  ?'https://protonvpn.com/free-vpn':null);
+const xciptvPlayUrl='https://play.google.com/store/apps/details?id=com.nathnetwork.xciptv';
+const officialXciptvLink=guide=>guide.platform==='android_tv'&&(guide.steps_en||'').includes(xciptvPlayUrl)?xciptvPlayUrl:null;
 // Guide titles now identify exactly one device type, so don't label an
 // Android tutorial as Fire TV just because that APK happens to support both.
 const guidePlatformLabel=(guide,fr)=>titleFor(platformOptions,guide.platform,fr);
@@ -87,6 +89,7 @@ function GuideCard({guide,language='en',owner=false,userId=''}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const app=downloadFor(guide);
  const protonLink=officialProtonLink(guide);
+ const xciptvLink=officialXciptvLink(guide);
  const instructions=(fr?guide.steps_fr:guide.steps_en)||'';
  const steps=instructions.split(/\r?\n/).map(s=>s.trim()).filter(Boolean)
   .filter(step=>!(app&&step.endsWith(app.url)&&/^(download url|lien de téléchargement)\s*:/i.test(step)));
@@ -126,6 +129,13 @@ function GuideCard({guide,language='en',owner=false,userId=''}){
     <button type="button" className="mykioo-guide-show-all" aria-expanded={showAll} onClick={()=>setShowAll(v=>!v)}>{showAll?tr('Hide complete checklist','Masquer la liste complète'):tr('See all steps together','Voir toutes les étapes')}</button>
     {showAll&&<ol className="mykioo-guide-all-steps">{steps.map((step,i)=><li key={i}><button type="button" onClick={()=>{setCurrentStep(i);setShowAll(false)}}>{step.replace(/^\d+[.)]\s*/, '')}</button></li>)}</ol>}
    </div>
+   {xciptvLink&&<div className="mykioo-guide-app-download">
+    <strong className="mykioo-guide-app-heading"><Download size={17}/>{tr('XCIPTV PLAYER — official Google Play listing','XCIPTV PLAYER — fiche officielle Google Play')}</strong>
+    <p>{tr('Look for XCIPTV PLAYER by OTTRUN in Google Play on your television. Install it directly from the store; no Downloader or developer settings are needed.','Recherchez XCIPTV PLAYER du développeur OTTRUN dans Google Play sur votre téléviseur. Installez-le depuis la boutique, sans Downloader ni options développeur.')}</p>
+    <div className="mykioo-guide-download-actions">
+     <a href={xciptvLink} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/>{tr('View official Google Play app','Voir l’application officielle Google Play')}</a>
+    </div>
+   </div>}
    {protonLink&&<div className="mykioo-guide-app-download">
     <strong className="mykioo-guide-app-heading"><Download size={17}/>{tr('Official Proton VPN website','Site officiel de Proton VPN')}</strong>
     <p>{tr('Choose the app for your device from Proton’s official website or app store. A free Proton account is separate from your MYKIOO login.','Choisissez l’application correspondant à votre appareil depuis le site officiel ou sa boutique d’applications. Le compte Proton gratuit est distinct de votre compte MYKIOO.')}</p>
@@ -185,9 +195,14 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId=''}){
     <option value="all">{tr('All devices','Tous les appareils')}</option>{platformOptions.filter(opt=>opt.id!=='general').map(opt=><option value={opt.id} key={opt.id}>{fr?opt.fr:opt.en}</option>)}
    </select>
   </div>
+  {platform==='android_tv'&&<div className="mykioo-vega-explainer" role="note">
+   <strong>{tr('Google TV / Android TV — any television brand','Google TV / Android TV — toutes les marques')}</strong>
+   <p>{tr('If your television has Google TV or Android TV with Google Play, you can try XCIPTV PLAYER by OTTRUN when MAX OTT is unavailable. This also applies to compatible streaming boxes; no APK or Developer Mode is needed for apps available directly in Google Play. Open the XCIPTV guide below. It requires service login credentials or an M3U playlist, not just a MAX OTT Smart Code.','Si votre téléviseur utilise Google TV ou Android TV avec Google Play, vous pouvez essayer XCIPTV PLAYER d’OTTRUN lorsque MAX OTT est indisponible. Cela fonctionne aussi sur les boîtiers compatibles; aucune installation APK ni mode développeur n’est nécessaire pour une application de Google Play. Ouvrez le guide XCIPTV ci-dessous. Il faut des identifiants de service ou une liste M3U, pas seulement un Smart Code MAX OTT.')}</p>
+  </div>}
   {platform==='smart_tv'&&<div className="mykioo-vega-explainer" role="note">
    <strong>{tr('LG, Samsung or Apple TV? Start here.','LG, Samsung ou Apple TV ? Commencez ici.')}</strong>
-   <p>{tr('These devices use MAX OTT from their own official app store, not Android APKs or Downloader. Choose the matching brand guide below. Each television or Apple TV box needs a Smart Code issued for that specific device; MYKIOO manages the code and activation.','Ces appareils utilisent MAX OTT depuis leur propre boutique officielle, et non des APK Android ni Downloader. Choisissez le guide de votre marque ci-dessous. Chaque téléviseur ou boîtier Apple TV nécessite un Smart Code propre à cet appareil; MYKIOO gère le code et son activation.')}</p>
+   <p>{tr('LG webOS, Samsung Tizen and Apple TV use their own app stores and device-specific Smart Codes. If your television instead runs Google TV or Android TV with Google Play — whatever its brand — choose the Google TV / Android TV guides, including the XCIPTV PLAYER alternative.','LG webOS, Samsung Tizen et Apple TV utilisent leurs propres boutiques et des Smart Codes propres à chaque appareil. Si votre téléviseur utilise plutôt Google TV ou Android TV avec Google Play — peu importe la marque — choisissez les guides Google TV / Android TV, dont l’alternative XCIPTV PLAYER.')}</p>
+   <button type="button" className="mykioo-vega-switch" onClick={()=>{setPlatform('android_tv');setCategory('all');setSearch('')}}>{tr('Show Google TV / Android TV guides','Voir les guides Google TV / Android TV')}</button>
   </div>}
   {platform==='fire_tv'&&<div className="mykioo-vega-explainer" role="note">
    <strong>{tr('New Fire Stick? Check for Vega OS first.','Nouveau Fire Stick ? Vérifiez d’abord Vega OS.')}</strong>
