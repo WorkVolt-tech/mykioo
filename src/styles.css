@@ -1258,3 +1258,9 @@
 .mykioo-discount-checkout .mykioo-discount-success{margin:0;color:#b9e7ba;font-size:12px;line-height:1.55}
 .mykioo-discount-checkout .mykioo-discount-error{margin:0;color:#ffb8b8;font-size:12px;line-height:1.55;overflow-wrap:anywhere}
 @media(max-width:600px){.mykioo-discount-checkout{padding:12px}.mykioo-discount-entry button{padding:11px 10px}.mykioo-discount-totals>div{align-items:start}}
+
+/* Direct navigation from Smart TV guides to Google TV/Android TV alternatives. */
+.mykioo-vega-switch{justify-self:start;display:inline-flex;align-items:center;justify-content:center;max-width:100%;padding:10px 13px;border:1px solid #c5a46f;border-radius:9px;background:#d6b680;color:#211a25;font-size:12px;font-weight:800;line-height:1.5;white-space:normal;cursor:pointer}
+.mykioo-vega-switch:hover{filter:brightness(1.08)}
+.mykioo-vega-switch:focus-visible{outline:2px solid #f5d6a0;outline-offset:3px}
+@media(max-width:600px){.mykioo-vega-switch{width:100%}}
