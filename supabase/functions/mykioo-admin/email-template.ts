@@ -60,7 +60,7 @@ export function makeInvitationEmail({language,actionLink,resend=false,inviterNam
 <tr><td align="center" style="padding:32px 14px 38px">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:560px;border-collapse:separate;border-spacing:0">
  <tr><td align="center" style="padding:0 0 22px">
-  <img src="https://mykioo.icu/MYKIOO-Email-Logo.png" alt="MYKIOO" width="102" height="102" style="display:block;width:102px;height:102px;max-width:102px;border:0;outline:0;text-decoration:none">
+  <img src="https://mykioo.pages.dev/MYKIOO-Email-Logo.png" alt="MYKIOO" width="102" height="102" style="display:block;width:102px;height:102px;max-width:102px;border:0;outline:0;text-decoration:none">
   <div style="font-family:Arial,Helvetica,sans-serif;color:#c8b4d2;font-size:10px;line-height:18px;letter-spacing:3px;font-weight:700;padding-top:4px">MYKIOO TV</div>
  </td></tr>
  <tr><td style="border:1px solid #574563;border-top:3px solid #dab77c;background:#171422;border-radius:17px;overflow:hidden">
