@@ -79,6 +79,7 @@ Deno.serve(async req=>{
      return respond({error:"Please wait a minute before sending another request."},429);
    return await createTrial(user.id,serviceName,notes);
   }
+
   if(input.action==="get_checkout"){
    const days=Number(input.contract_days),devices=Number(input.device_count),method=input.preferred_payment_method;
    if(![365,730].includes(days)||!Number.isInteger(devices)||devices<1||devices>5||
@@ -87,37 +88,71 @@ Deno.serve(async req=>{
    const {data:price,error:priceError}=await db.from("mykioo_package_prices")
       .select("price_cad,price_usd").eq("contract_days",days).eq("device_count",devices).maybeSingle();
    if(priceError||!price)return respond({error:"Package unavailable"},503);
+   const grossCad=Number(price.price_cad),grossUsd=Number(price.price_usd);
+   if(!Number.isFinite(grossUsd)||grossUsd<=0)return respond({error:"USD package pricing is not configured"},503);
+   const promo=typeof input.discount_code==="string"?input.discount_code.trim().toUpperCase():"";
+   let discountCad=0,discountUsd=0,discountType:null|string=null,discountPercent:null|number=null;
+   if(promo){
+    if(!/^[A-Z0-9][A-Z0-9_-]{2,31}$/.test(promo))return respond({error:"Enter a valid discount code"},400);
+    const {data:coupon,error:couponError}=await db.from("mykioo_discount_codes")
+      .select("id,active,starts_at,expires_at,max_uses,used_count,per_member_limit,discount_type,percent_off,amount_cad,amount_usd")
+      .eq("code",promo).maybeSingle();
+    if(couponError)return respond({error:"Unable to check discount right now"},503);
+    const now=Date.now();
+    if(!coupon||!coupon.active||(coupon.starts_at&&Date.parse(coupon.starts_at)>now)||
+       (coupon.expires_at&&Date.parse(coupon.expires_at)<=now)||
+       (coupon.max_uses!==null&&coupon.used_count>=coupon.max_uses))
+      return respond({error:"Discount code is invalid, unavailable or expired"},400);
+    const targetId=member.role==="member"?user.id:(uuid(input.member_id)?input.member_id:null);
+    if(targetId){
+     const {count,error:limitError}=await db.from("mykioo_discount_redemptions")
+       .select("id",{count:"exact",head:true}).eq("code_id",coupon.id).eq("member_id",targetId);
+     if(limitError)return respond({error:"Unable to check discount eligibility"},503);
+     if((count||0)>=coupon.per_member_limit)return respond({error:"This account has already used this discount code"},400);
+    }
+    discountType=coupon.discount_type;
+    discountPercent=discountType==="percent"?Number(coupon.percent_off):null;
+    const round=(v:number)=>Math.round((v+Number.EPSILON)*100)/100;
+    discountCad=discountType==="percent"?round(grossCad*Number(discountPercent)/100):Number(coupon.amount_cad);
+    discountUsd=discountType==="percent"?round(grossUsd*Number(discountPercent)/100):Number(coupon.amount_usd);
+   }
+   const netCad=Math.round((grossCad-discountCad+Number.EPSILON)*100)/100;
+   const netUsd=Math.round((grossUsd-discountUsd+Number.EPSILON)*100)/100;
+   if(netCad<0.01||netUsd<0.01)return respond({error:"This discount is too large for the selected plan"},400);
+   const base={ok:true,amount_cad:netCad,amount_usd:netUsd,gross_amount_cad:grossCad,gross_amount_usd:grossUsd,
+    discount_code:promo||null,discount_amount_cad:discountCad,discount_amount_usd:discountUsd,
+    discount_type:discountType,discount_percent:discountPercent};
    if(method==="btc"||method==="shib")
-     return respond({ok:true,available:true,requires_crypto_invoice:true,amount_cad:Number(price.price_cad)});
+     return respond({...base,available:true,requires_crypto_invoice:true});
    const {data:settings,error:settingsError}=await db.from("mykioo_billing_settings")
       .select("interac_destination,zelle_destination").eq("id",1).maybeSingle();
    if(settingsError||!settings)return respond({error:"Payment settings unavailable"},503);
    const destination=method==="interac"?settings.interac_destination:settings.zelle_destination;
-   const amount_due=method==="interac"?Number(price.price_cad):
-      price.price_usd==null?null:Number(price.price_usd);
-   const available=Boolean(destination&&String(destination).trim()&&amount_due&&amount_due>0);
-   return respond({ok:true,available,method,currency:method==="interac"?"CAD":"USD",
-     amount_cad:Number(price.price_cad),amount_due:available?amount_due:null,
-     destination:available?String(destination).trim():null,
-     reason:available?null:!destination?"Receiving details not configured":
-       "USD price for this package has not been configured"});
+   const amount_due=method==="interac"?netCad:netUsd;
+   const available=Boolean(destination&&String(destination).trim()&&amount_due>0);
+   return respond({...base,available,method,currency:method==="interac"?"CAD":"USD",
+    amount_due:available?amount_due:null,destination:available?String(destination).trim():null,
+    reason:available?null:"Receiving details not configured"});
   }
-  async function submitBankPayment(params:{member_id:string;request_type:string;renewal_subscription_id:string|null;service_name:string;notes:string;contract_days:number;device_count:number;preferred_payment_method:string}){
-   // Atomic pending request plus unpaid invoice; payment confirmation is a separate action.
-   const {data:created,error:createError}=await db.rpc("mykioo_submit_unpaid_bank_subscription_request",{
+
+  async function submitPricedRequest(params:{member_id:string;request_type:string;renewal_subscription_id:string|null;service_name:string;notes:string;contract_days:number;device_count:number;preferred_payment_method:string}){
+   const promo=typeof input.discount_code==="string"?input.discount_code.trim().toUpperCase():"";
+   if(promo&&!/^[A-Z0-9][A-Z0-9_-]{2,31}$/.test(promo))return respond({error:"Invalid discount code"},400);
+   const {data:created,error:createError}=await db.rpc("mykioo_create_priced_request",{
     p_member_id:params.member_id,p_actor_id:user.id,p_request_type:params.request_type,
     p_renewal_subscription_id:params.renewal_subscription_id,
     p_service_name:params.service_name,p_contract_days:params.contract_days,
     p_device_count:params.device_count,p_payment_method:params.preferred_payment_method,
-    p_notes:params.notes
+    p_notes:params.notes,p_discount_code:promo||null
    });
    if(createError){
     const reason=String(createError.message||"");
-    const known=["Bank payment method not configured for this package","Renewal already pending",
-     "Subscription cannot be renewed","Package not available","Invalid subscription or bank payment selection",
-     "Account must be approved","Select an existing subscription"].find(x=>reason.includes(x));
-    if(!known)console.error("MYKIOO unpaid checkout",createError.code||"unknown");
-    return respond({error:known||"Could not create the unpaid subscription request. Nothing was charged or collected."},known?409:500);
+    const known=["Bank payment method not configured","Renewal already pending","Subscription cannot be renewed",
+     "Package pricing is not configured","Invalid discount code","Discount code is unavailable",
+     "Discount code use limit","This discount is too large","Invalid subscription package",
+     "Invalid new service name","Account must be approved","Select an existing subscription"].find(x=>reason.includes(x));
+    if(!known)console.error("MYKIOO subscription checkout",createError.code||"unknown");
+    return respond({error:known?reason:"Unable to create subscription request; nothing was charged."},known?409:500);
    }
    return respond({ok:true,request:created.request,invoice:created.invoice,payment_submitted:false});
   }
@@ -136,15 +171,9 @@ Deno.serve(async req=>{
    if(recentError)return respond({error:"Unable to verify request limits"},503);
    if((recent||[]).length>=5)return respond({error:"Daily request limit reached. Contact support if you need more services."},429);
    if(recent?.[0]&&Date.now()-Date.parse(recent[0].created_at)<60000)return respond({error:"Please wait a minute before sending another request."},429);
-   if(["interac","zelle"].includes(packageSelection.preferred_payment_method))
-    return await submitBankPayment({member_id:user.id,request_type:"new",renewal_subscription_id:null,
+   return await submitPricedRequest({member_id:user.id,request_type:"new",renewal_subscription_id:null,
       service_name,notes,contract_days,device_count:packageSelection.device_count,
       preferred_payment_method:packageSelection.preferred_payment_method});
-   const {data:created,error:createError}=await db.from("mykioo_subscription_requests")
-     .insert({member_id:user.id,service_name,contract_days,notes,...packageSelection}).select("id,status,created_at").single();
-   if(createError)return respond({error:"Could not submit subscription request"},500);
-   await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:"subscription_requested",entity_type:"subscription_request",entity_id:created.id,details:{service_name,contract_days}});
-   return respond({ok:true,request:created});
   }
   if(input.action==="renew"){
    if(member.role!=="member"||!uuid(input.subscription_id))return respond({error:"Invalid renewal request"},400);
@@ -168,18 +197,9 @@ Deno.serve(async req=>{
    if(recentError)return respond({error:"Could not check request limits"},503);
    if((recent||[]).length>=5)return respond({error:"Daily request limit reached"},429);
    if(recent?.[0]&&Date.now()-Date.parse(recent[0].created_at)<60000)return respond({error:"Please wait a minute before sending another request"},429);
-   if(["interac","zelle"].includes(packageSelection.preferred_payment_method))
-    return await submitBankPayment({member_id:user.id,request_type:"renewal",renewal_subscription_id:sub.id,
+   return await submitPricedRequest({member_id:user.id,request_type:"renewal",renewal_subscription_id:sub.id,
       service_name:sub.service_name||"Subscription renewal",notes,contract_days:days,
       device_count:packageSelection.device_count,preferred_payment_method:packageSelection.preferred_payment_method});
-   const {data:created,error:insertError}=await db.from("mykioo_subscription_requests").insert({
-     member_id:user.id,service_name:sub.service_name||"Subscription renewal",contract_days:days,notes,request_type:"renewal",
-     renewal_subscription_id:sub.id,...packageSelection
-   }).select("id,status,created_at").single();
-   if(insertError)return respond({error:"Could not submit renewal request"},500);
-   await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:"subscription_renewal_requested",
-     entity_type:"subscription_request",entity_id:created.id,details:{subscription_id:sub.id,contract_days:days}});
-   return respond({ok:true,request:created});
   }
   if(input.action==="owner_create"){
    if(member.role!=="owner"||user.app_metadata?.mykioo_role!=="owner")
@@ -223,19 +243,8 @@ Deno.serve(async req=>{
      service_name=sub.service_name||"Subscription renewal";
      renewal_subscription_id=sub.id;
    }
-   if(["interac","zelle"].includes(packageSelection.preferred_payment_method))
-    return await submitBankPayment({member_id,request_type,renewal_subscription_id,service_name,notes,contract_days,
+   return await submitPricedRequest({member_id,request_type,renewal_subscription_id,service_name,notes,contract_days,
       device_count:packageSelection.device_count,preferred_payment_method:packageSelection.preferred_payment_method});
-   const {data:created,error:createError}=await db.from("mykioo_subscription_requests")
-     .insert({member_id,service_name,contract_days,notes,request_type,renewal_subscription_id,...packageSelection})
-     .select("id,status,created_at,request_type,member_id").single();
-   if(createError)return respond({error:"Could not submit owner subscription request"},500);
-   await db.from("mykioo_audit_logs").insert({
-     actor_id:user.id,action:request_type==="renewal"?"owner_subscription_renewal_requested":"owner_subscription_requested",
-     entity_type:"subscription_request",entity_id:created.id,
-     details:{member_id,service_name,contract_days,request_type,renewal_subscription_id}
-   });
-   return respond({ok:true,request:created});
   }
   if(input.action==="request_cancellation"){
    if(member.role!=="member")return respond({error:"Only the member who submitted the request may ask for cancellation"},403);
@@ -299,8 +308,8 @@ Deno.serve(async req=>{
    try{
     const {data:recipient,error:recipientError}=await db.from("mykioo_members")
       .select("email,preferred_language").eq("user_id",request.member_id).single();
-    const apiKey=Deno.env.get("BREVO_API_KEY");
-    if(recipientError||!recipient?.email||!apiKey)throw Error("Missing email prerequisites");
+    const mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if(recipientError||!recipient?.email||!mailerKey)throw Error("Missing email prerequisites");
     const fr=recipient.preferred_language==="fr";
     const trial=request.request_type==="trial";
     const name=trial?(fr?"essai gratuit":"free trial"):request.request_type==="renewal"?(fr?"renouvellement":"renewal"):(fr?"abonnement":"subscription");
@@ -308,18 +317,18 @@ Deno.serve(async req=>{
     const message=fr?
       "Votre demande de "+name+" pour "+request.service_name+" n’a pas été approuvée. Aucun accès n’a été activé à la suite de cette demande. Si vous avez des questions, veuillez contacter le soutien MYKIOO.":
       "Your "+name+" request for "+request.service_name+" was not approved. No access was activated from this request. If you have questions, please contact MYKIOO support.";
-    const senderResponse=await fetch("https://api.brevo.com/v3/smtp/templates/"+(fr?2:1),{headers:{"api-key":apiKey}});
+    const senderResponse=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=template&id=")+(fr?2:1),{headers:{"api-key":mailerKey}});
     const senderTemplate=await senderResponse.json().catch(()=>null);
     if(!senderResponse.ok||!senderTemplate?.sender?.email)throw Error("Email sender unavailable");
     const escape=(value:string)=>value.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]||c));
     const html=`<!doctype html><html lang="${fr?"fr":"en"}"><body style="margin:0;background:#090b13;padding:24px;font-family:Arial,sans-serif;color:#f5ecf7"><table role="presentation" style="max-width:560px;width:100%;margin:auto;background:#171422;border:1px solid #574563;border-top:3px solid #dab77c;border-radius:16px"><tr><td style="padding:28px"><img src="${origin}/MYKIOO-Email-Logo.png" width="90" alt="MYKIOO"><h1 style="color:#e6c38d;font-size:25px">${escape(title)}</h1><p style="line-height:1.6">${escape(message)}</p><p style="font-size:13px;color:#b9aabe">${fr?"Référence de la demande":"Request reference"}: ${escape(request.id)}</p><p><a href="${origin}" style="color:#e6c38d">${fr?"Accéder à MYKIOO":"Open MYKIOO"}</a></p></td></tr></table></body></html>`;
-    const sent=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{"api-key":apiKey,"Content-Type":"application/json"},body:JSON.stringify({
+    const sent=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=email"),{method:"POST",headers:{"api-key":mailerKey,"Content-Type":"application/json"},body:JSON.stringify({
       sender:{email:senderTemplate.sender.email,name:"MYKIOO"},to:[{email:recipient.email}],subject:"MYKIOO | "+title,
       htmlContent:html,textContent:[title,message,(fr?"Référence":"Reference")+": "+request.id,origin].join("\n"),
       tags:["mykioo","request-declined"]
     })});
     const result=await sent.json().catch(()=>({}));
-    if(!sent.ok||!result.messageId)throw Error("Brevo did not accept the message");
+    if(!sent.ok||!result.messageId)throw Error("Gmail did not accept the message");
     return "accepted";
    }catch(err){
     console.error("MYKIOO request decline email failed",request.id,err instanceof Error?err.message:"unknown");
