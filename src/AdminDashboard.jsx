@@ -11,6 +11,7 @@ import ReminderSettings from './ReminderSettings';
 import ActivityHistory from './ActivityHistory';
 import {OwnerBilling} from './Billing';
 import OwnerSubscriptionQueue from './OwnerSubscriptionQueue';
+import EmailDeliveryNotice from './EmailDeliveryNotice';
 import OwnerActionCenter from './OwnerActionCenter';
 import OwnerCancellationRequests from './OwnerCancellationRequests';
 import SubscriptionRequests from './SubscriptionRequests';
@@ -360,6 +361,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     <button type="button" onClick={()=>refresh()} title={tr('Refresh data','Actualiser les données')} aria-label={tr('Refresh data','Actualiser les données')}><RefreshCw size={18}/></button>
    </div>
   </header>
+  <EmailDeliveryNotice language={language} audience="owner"/>
  {error&&<div className="admin-error" role="alert"><AlertCircle size={18}/>{error}</div>}{notice&&<div className="admin-success" role="status"><CheckCircle2 size={18}/>{notice}</div>}
   {tab==='overview'&&<div className="admin-overview-stack">
    <OwnerActionCenter rows={rows} followups={followups} language={language} loading={loading} onRefresh={()=>refresh()} onOpenTicket={viewSupportTicket} onNavigate={(section,sub)=>{if(section==='subscriptions'&&sub)setSubscriptionView(sub);if(section==='support'&&sub)setSupportView(sub);navigate(section)}}/>
