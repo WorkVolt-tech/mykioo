@@ -1,0 +1,11 @@
+/* Visible even when outbound email and server-side notifications are unavailable. */
+.mykioo-email-delivery-notice{box-sizing:border-box;width:100%;min-width:0;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin:0 0 22px;padding:16px 18px;border:1px solid #b18c52;border-left:4px solid #dfb67c;border-radius:11px;background:linear-gradient(125deg,#342a32,#221d29);color:#eee2e8}
+.mykioo-email-delivery-icon{color:#f3cd93;flex:0 0 22px;margin-top:2px}
+.mykioo-email-delivery-copy{flex:1 1 260px;min-width:0}
+.mykioo-email-delivery-copy strong{display:block;color:#f7dba9;font-size:15px;line-height:1.4}
+.mykioo-email-delivery-copy p{margin:6px 0 0;color:#ede1eb;font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+.mykioo-email-delivery-action{display:inline-flex;align-items:center;justify-content:center;gap:8px;align-self:center;min-width:0;max-width:100%;padding:11px 13px;border:1px solid #e5c48d;border-radius:8px;background:#dfbd82;color:#241c2b;font-size:12px;font-weight:800;cursor:pointer}
+.mykioo-email-delivery-action:hover{filter:brightness(1.08)}
+.mykioo-email-delivery-action:focus-visible{outline:2px solid #f6e0b6;outline-offset:3px}
+.mykioo-email-delivery-notice.is-guest{max-width:540px;margin:0 auto 22px;text-align:left}
+@media(max-width:600px){.mykioo-email-delivery-notice{padding:13px;gap:10px}.mykioo-email-delivery-copy strong{font-size:14px}.mykioo-email-delivery-copy p{font-size:12px}.mykioo-email-delivery-action{flex:1 1 100%;width:100%}}
