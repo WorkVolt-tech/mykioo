@@ -11,6 +11,7 @@ import ReminderSettings from './ReminderSettings';
 import ActivityHistory from './ActivityHistory';
 import {OwnerBilling} from './Billing';
 import OwnerSubscriptionQueue from './OwnerSubscriptionQueue';
+import OwnerActionCenter from './OwnerActionCenter';
 import OwnerCancellationRequests from './OwnerCancellationRequests';
 import SubscriptionRequests from './SubscriptionRequests';
 import OwnerInvitationReviews from './OwnerInvitationReviews';
@@ -361,6 +362,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
   </header>
  {error&&<div className="admin-error" role="alert"><AlertCircle size={18}/>{error}</div>}{notice&&<div className="admin-success" role="status"><CheckCircle2 size={18}/>{notice}</div>}
   {tab==='overview'&&<div className="admin-overview-stack">
+   <OwnerActionCenter rows={rows} followups={followups} language={language} loading={loading} onRefresh={()=>refresh()} onOpenTicket={viewSupportTicket} onNavigate={(section,sub)=>{if(section==='subscriptions'&&sub)setSubscriptionView(sub);if(section==='support'&&sub)setSupportView(sub);navigate(section)}}/>
    <section className="admin-overview-block">
     <div className="admin-section-heading"><div><h2>{tr('At a glance','En un coup d’œil')}</h2><p>{tr('Current membership, subscriptions and support volume.','Membres, abonnements et assistance en cours.')}</p></div></div>
     <div className="admin-stats">{cards.map(([label,n,Icon])=><div className="admin-stat" key={label}><Icon size={21}/><small>{label}</small><strong>{loading?'…':n}</strong></div>)}</div>
