@@ -40,6 +40,9 @@ Deno.serve(async request=>{
  }
  const mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
  if(!mailerKey)return respond({error:"Transactional email is not configured"},503);
+ const mailerReady=await fetch(url+"/functions/v1/mykioo-email-dispatch?route=status",{headers:{"api-key":mailerKey}})
+  .then(r=>r.ok).catch(()=>false);
+ if(!mailerReady)return respond({error:"Gmail mailer is not ready; no email attempts were consumed"},503);
  const now=new Date();
  const utcToday=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate());
  const horizon=new Date(utcToday+31*86400000).toISOString();
