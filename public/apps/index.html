@@ -59,7 +59,7 @@ footer>div{max-width:1180px;margin:auto}
 (function(){
 'use strict';
 var endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-app-directory';
-var data={apps:[],downloader_code:''},language='en';
+var data={apps:[],downloader_code:''},language='en',loaded=false,loadFailed=false;
 var names={fire_tv:'Fire TV / Fire Stick',android_tv:'Android TV / Google TV',android:'Android phone / tablet',ios:'iPhone / iPad',apple_tv:'Apple TV',smart_tv:'Smart TV',web:'Web'};
 var translations={
  en:{tagline:'DEVICE SETUP',title:'App Downloads',intro:'Find official app-store and publisher download links shared by MYKIOO. Choose your device below. Downloads are hosted by the linked providers, not by MYKIOO.',
@@ -83,6 +83,8 @@ function setLanguage(lang){language=lang;document.documentElement.lang=lang;
  render();
 }
 function render(){
+ if(!loaded){$('status').style.display='block';text($('status'),translated('loading'));return}
+ if(loadFailed){$('apps').textContent='';$('status').style.display='block';$('status').className='alert';text($('status'),translated('error'));return}
  var filter=$('device-filter').value,list=$('apps');
  list.textContent='';
  text($('status'),data.apps.length===0?translated('empty'):'');
@@ -105,7 +107,7 @@ $('en').addEventListener('click',function(){setLanguage('en')});
 $('fr').addEventListener('click',function(){setLanguage('fr')});
 $('device-filter').addEventListener('change',render);
 setLanguage((navigator.language||'en').toLowerCase().indexOf('fr')===0?'fr':'en');
-fetch(endpoint,{headers:{'Accept':'application/json'},cache:'no-store'}).then(function(r){if(!r.ok)throw Error('Unavailable');return r.json()}).then(function(result){if(!result.ok)throw Error('Unavailable');data=result;setLanguage(language)}).catch(function(){ $('apps').textContent='';$('status').style.display='block';$('status').className='alert';text($('status'),translated('error'))});
+fetch(endpoint,{headers:{'Accept':'application/json'},cache:'no-store'}).then(function(r){if(!r.ok)throw Error('Unavailable');return r.json()}).then(function(result){if(!result.ok)throw Error('Unavailable');data=result;loaded=true;setLanguage(language)}).catch(function(){loaded=true;loadFailed=true;render()});
 })();
 </script>
 </body>
