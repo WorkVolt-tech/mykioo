@@ -115,15 +115,33 @@ const announcement={
  ].join("\n\n")}
 };
 const mailEsc=(s:string)=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]||c));
-const mailHtml=(lang:"en"|"fr")=>'<html lang="'+lang+'"><body style="background:#0e1020;color:#f4edf5;padding:24px;font-family:Arial,sans-serif"><div style="max-width:600px;margin:auto;background:#1d1929;border:1px solid #66516c;border-top:4px solid #d9b87e;border-radius:12px;padding:28px"><h1 style="color:#e7c18b">MYKIOO</h1><h2>'+mailEsc(announcement[lang].subject.replace("MYKIOO | ",""))+'</h2><div style="white-space:pre-wrap;line-height:1.7">'+mailEsc(announcement[lang].body)+'</div><p><a style="color:#e7c18b" href="https://mykioo.icu">mykioo.icu</a></p></div></body></html>';
+const mailHtml=(lang:"en"|"fr",templates:typeof announcement)=>'<html lang="'+lang+'"><body style="background:#0e1020;color:#f4edf5;padding:24px;font-family:Arial,sans-serif"><div style="max-width:600px;margin:auto;background:#1d1929;border:1px solid #66516c;border-top:4px solid #d9b87e;border-radius:12px;padding:28px"><h1 style="color:#e7c18b">MYKIOO</h1><h2>'+mailEsc(templates[lang].subject.replace("MYKIOO | ",""))+'</h2><div style="white-space:pre-wrap;line-height:1.7">'+mailEsc(templates[lang].body)+'</div><p><a style="color:#e7c18b" href="https://mykioo.icu">mykioo.icu</a></p></div></body></html>';
+const validTemplate=(v:any)=>v&&typeof v.subject==="string"&&v.subject.trim().length>=5&&v.subject.trim().length<=220&&typeof v.body==="string"&&v.body.trim().length>=20&&v.body.trim().length<=15000;
 async function announcementState(db:any){
- const {data:members,error:me}=await db.from("mykioo_members").select("user_id,email,preferred_language").eq("role","member").eq("status","approved").order("user_id",{ascending:true}).limit(1000);
- const {data:history,error:he}=await db.from("mykioo_audit_logs").select("entity_id").eq("action","member_announcement_sent").eq("entity_type","member").contains("details",{campaign_id:CAMPAIGN}).limit(1000);
- if(me||he)throw Error("Cannot check member announcement status");
- const sent=new Set((history||[]).map((r:any)=>r.entity_id));
- const recipients=(members||[]).filter((r:any)=>address(r.email));
- return {total:recipients.length,sent:recipients.filter((m:any)=>sent.has(m.user_id)).length,pending:recipients.filter((m:any)=>!sent.has(m.user_id))};
+ const [saved,reset,people]=await Promise.all([
+  db.from("mykioo_audit_logs").select("id,details,created_at").eq("action","member_announcement_template_saved").eq("entity_type","email_template").eq("entity_id",CAMPAIGN).order("id",{ascending:false}).limit(1).maybeSingle(),
+  db.from("mykioo_audit_logs").select("id,details").eq("action","member_announcement_recipients_reset").eq("entity_type","email_template").eq("entity_id",CAMPAIGN).order("id",{ascending:false}).limit(1).maybeSingle(),
+  db.from("mykioo_members").select("user_id,email,preferred_language").eq("role","member").eq("status","approved").order("user_id",{ascending:true}).limit(1000)
+ ]);
+ if(saved.error||reset.error||people.error)throw Error("Cannot load announcement template or recipient status");
+ const templates=saved.data?.details?.templates??announcement;
+ if(!validTemplate(templates?.en)||!validTemplate(templates?.fr))throw Error("Saved announcement template is invalid");
+ const template_version=saved.data?.id?String(saved.data.id):"default";
+ const cycle_id=reset.data?.details?.cycle_id||"initial";
+ const q=db.from("mykioo_audit_logs").select("entity_id,details")
+  .eq("action","member_announcement_sent").eq("entity_type","member")
+  .contains("details",cycle_id==="initial"?{campaign_id:CAMPAIGN}:{campaign_id:CAMPAIGN,cycle_id})
+  .order("id",{ascending:false}).limit(1000);
+ const {data:history,error:historyError}=await q;
+ if(historyError)throw Error("Cannot load announcement delivery history");
+ const sent=new Set((history||[]).filter((r:any)=>(r.details?.cycle_id||"initial")===cycle_id).map((r:any)=>r.entity_id));
+ const recipients=(people.data||[]).filter((r:any)=>address(r.email));
+ return {total:recipients.length,sent:recipients.filter((m:any)=>sent.has(m.user_id)).length,
+  pending:recipients.filter((m:any)=>!sent.has(m.user_id)),
+  previews:templates,template_version,cycle_id,last_saved_at:saved.data?.created_at||null};
 }
+const publicAnnouncement=(s:any)=>({ok:true,campaign_id:CAMPAIGN,total:s.total,sent:s.sent,remaining:s.pending.length,
+ previews:s.previews,template_version:s.template_version,cycle_id:s.cycle_id,last_saved_at:s.last_saved_at});
 
 Deno.serve(async request=>{
  const requestOrigin=request.headers.get("Origin")||"";
@@ -148,27 +166,52 @@ Deno.serve(async request=>{
  const password=Deno.env.get("MYKIOO_IONOS_SMTP_PASSWORD");
  if(action==="status")return json({ok:true,configured:Boolean(password),mailbox:ACCOUNT},200,corsOrigin);
  if(!password)return json({error:"IONOS mailbox password is not configured in private Supabase secrets"},503,corsOrigin);
- if(action==="announcement_status"||action==="announcement_send"){
+ if(["announcement_status","announcement_send","announcement_save","announcement_reset"].includes(action)){
   const a=await announcementState(db);
-  if(action==="announcement_status")return json({ok:true,campaign_id:CAMPAIGN,total:a.total,sent:a.sent,remaining:a.pending.length,previews:announcement},200,corsOrigin);
-  if(input.confirm!==true||input.campaign_id!==CAMPAIGN)return json({error:"Explicit confirmation required"},400,corsOrigin);
-  if(!a.pending.length)return json({ok:true,campaign_id:CAMPAIGN,total:a.total,sent:a.sent,remaining:0,accepted:0,failed:0},200,corsOrigin);
+  if(action==="announcement_status")return json(publicAnnouncement(a),200,corsOrigin);
+  if(input.campaign_id!==CAMPAIGN&&action!=="announcement_status")return json({error:"Unknown announcement"},400,corsOrigin);
+  if(action==="announcement_save"){
+   if(input.expected_version!==a.template_version)return json({error:"Template changed. Refresh before saving."},409,corsOrigin);
+   const templates=input.templates;
+   if(!validTemplate(templates?.en)||!validTemplate(templates?.fr))return json({error:"Both languages need a subject and message."},400,corsOrigin);
+   const cleaned={en:{subject:templates.en.subject.trim(),body:templates.en.body.trim()},fr:{subject:templates.fr.subject.trim(),body:templates.fr.body.trim()}};
+   const {error:saveError}=await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:"member_announcement_template_saved",
+    entity_type:"email_template",entity_id:CAMPAIGN,details:{campaign_id:CAMPAIGN,templates:cleaned,previous_version:a.template_version}});
+   if(saveError)return json({error:"Could not save announcement template"},503,corsOrigin);
+   const fresh=await announcementState(db);
+   return json(publicAnnouncement(fresh),200,corsOrigin);
+  }
+  if(action==="announcement_reset"){
+   if(input.confirm!==true||input.expected_cycle!==a.cycle_id||input.expected_version!==a.template_version)
+    return json({error:"Template or recipient list changed. Refresh before resetting."},409,corsOrigin);
+   const cycle_id=crypto.randomUUID();
+   const {error:resetError}=await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:"member_announcement_recipients_reset",
+    entity_type:"email_template",entity_id:CAMPAIGN,
+    details:{campaign_id:CAMPAIGN,cycle_id,previous_cycle:a.cycle_id,previous_sent:a.sent,template_version:a.template_version}});
+   if(resetError)return json({error:"Recipient reset could not be saved"},503,corsOrigin);
+   const fresh=await announcementState(db);
+   return json(publicAnnouncement(fresh),200,corsOrigin);
+  }
+  if(input.confirm!==true||input.campaign_id!==CAMPAIGN||input.template_version!==a.template_version||input.cycle_id!==a.cycle_id)
+   return json({error:"Template or recipient list changed. Refresh before sending."},409,corsOrigin);
+  if(!a.pending.length)return json({...publicAnnouncement(a),accepted:0,failed:0},200,corsOrigin);
   const smtp=nodemailer.createTransport({host:"smtp.ionos.com",port:465,secure:true,auth:{user:ACCOUNT,pass:password},connectionTimeout:12000,greetingTimeout:12000,socketTimeout:18000});
   let accepted=0,failed=0;
   try{
    for(const member of a.pending.slice(0,8)){
-    const language=member.preferred_language==="fr"?"fr":"en",d=announcement[language];
+    const language=member.preferred_language==="fr"?"fr":"en",d=a.previews[language];
     try{
-     const result=await smtp.sendMail({from:{name:"MYKIOO",address:ACCOUNT},to:member.email,subject:d.subject,text:d.body,html:mailHtml(language)});
+     const result=await smtp.sendMail({from:{name:"MYKIOO",address:ACCOUNT},to:member.email,subject:d.subject,text:d.body,html:mailHtml(language,a.previews)});
      if(!result.accepted?.some((x:string)=>x.toLowerCase()===member.email.toLowerCase()))throw Error("SMTP did not accept recipient");
-     const {error:logError}=await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:"member_announcement_sent",entity_type:"member",entity_id:member.user_id,details:{campaign_id:CAMPAIGN,language}});
+     const {error:logError}=await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:"member_announcement_sent",entity_type:"member",
+      entity_id:member.user_id,details:{campaign_id:CAMPAIGN,cycle_id:a.cycle_id,template_version:a.template_version,language}});
      if(logError)throw Error("tracking_failed_after_send");
      accepted++;
     }catch(error){failed++;console.error("MYKIOO member announcement delivery error",(error as Error)?.name||"unknown");if((error as Error)?.message==="tracking_failed_after_send")break;}
    }
   }finally{smtp.close()}
   const after=await announcementState(db);
-  return json({ok:failed===0,campaign_id:CAMPAIGN,total:after.total,sent:after.sent,remaining:after.pending.length,accepted,failed,...(failed?{error:"Some messages were not accepted. Check counts before retrying."}:{})},failed?207:200,corsOrigin);
+  return json({...publicAnnouncement(after),ok:failed===0,accepted,failed,...(failed?{error:"Some messages were not accepted. Check counts before retrying."}:{})},failed?207:200,corsOrigin);
  }
  if(action==="members"){
    const term=clean(input.search,100);
