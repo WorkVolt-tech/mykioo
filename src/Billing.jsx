@@ -227,6 +227,7 @@ export function OwnerBilling({language='en',userId='',requests=[],members=[]}){
    }
    return next;
   });
+  setError('');
  },[]);
  useEffect(()=>{let active=true;reload().then(()=>{if(active)setLoading(false)}).catch(()=>{if(active){setError(tr('Billing data could not be loaded.','Impossible de charger les données de facturation.'));setLoading(false)}});
   const timer=setInterval(()=>{if(document.visibilityState==='visible')reload().catch(()=>{})},30000);return()=>{active=false;clearInterval(timer)}
