@@ -205,10 +205,32 @@ export default function OwnerMailCenter({language='en',members=[]}){
      <div className="mykioo-mail-toolbar"><h3>{tr('Member announcement','Annonce aux membres')}</h3><button type="button" disabled={sendingAnnouncement} onClick={()=>setAnnouncementOpen(false)}>{tr('Close','Fermer')}</button></div>
      {!announcement?<p className="mykioo-mail-placeholder">{tr('Checking member recipients…','Vérification des destinataires…')}</p>:<>
       <p><strong>{announcement.total}</strong> {tr('approved members','membres approuvés')} · <strong>{announcement.sent}</strong> {tr('already emailed','déjà contactés')} · <strong>{announcement.remaining}</strong> {tr('remaining','restants')}</p>
-      <p>{tr('Private emails will be sent individually in each approved member’s preferred language. Pending applicants and owners are excluded. Previously emailed members will not receive a duplicate.','Les courriels seront envoyés individuellement dans la langue de chaque membre approuvé. Les demandes en attente et les propriétaires sont exclus. Aucun doublon ne sera envoyé aux membres déjà contactés.')}</p>
+      <p>{tr('English and French are previews of one announcement. Each approved member receives an individual email in their preferred language.',
+       'Les versions anglaise et française sont les aperçus d’une seule annonce. Chaque membre approuvé reçoit un courriel individuel dans sa langue préférée.')}</p>
+      {announcement.last_saved_at&&<p className="mykioo-mail-template-saved">{tr('Template last saved','Dernière modification du modèle')}: {localeDate(announcement.last_saved_at,fr)}</p>}
       <div className="mykioo-mail-announcement-languages"><button type="button" className={announcementLanguage==='en'?'active':''} onClick={()=>setAnnouncementLanguage('en')}>English</button><button type="button" className={announcementLanguage==='fr'?'active':''} onClick={()=>setAnnouncementLanguage('fr')}>Français</button></div>
-      <div className="mykioo-mail-announcement-preview"><strong>{announcement.previews?.[announcementLanguage]?.subject}</strong><p>{announcement.previews?.[announcementLanguage]?.body}</p></div>
-      <div className="mykioo-mail-actions"><button type="button" className="primary" disabled={sendingAnnouncement||!announcement.remaining} onClick={sendAnnouncement}><Send size={17}/>{sendingAnnouncement?tr('Sending…','Envoi…'):!announcement.remaining?tr('Announcement already sent','Annonce déjà envoyée'):tr('Send to all remaining members','Envoyer à tous les membres restants')}</button><button type="button" disabled={sendingAnnouncement} onClick={openAnnouncement}><RefreshCw size={16}/>{tr('Refresh count','Actualiser le nombre')}</button></div>
+      {editingAnnouncement?<div className="mykioo-mail-announcement-edit">
+       <label>{tr('Email subject','Objet du courriel')}
+        <input maxLength={220} value={announcementDraft?.[announcementLanguage]?.subject||''} onChange={e=>changeAnnouncement('subject',e.target.value)}/></label>
+       <label>{tr('Email message','Message du courriel')}
+        <textarea rows={16} maxLength={15000} value={announcementDraft?.[announcementLanguage]?.body||''} onChange={e=>changeAnnouncement('body',e.target.value)}/></label>
+       <p>{tr('Edits in both language tabs are saved together. Saving does not email anyone or reset recipients.',
+        'Les modifications des deux langues sont enregistrées ensemble. Enregistrer n’envoie aucun courriel et ne réinitialise aucun destinataire.')}</p>
+       <div className="mykioo-mail-actions">
+        <button type="button" className="primary" disabled={savingAnnouncement||!announcementDraft?.en?.subject?.trim()||!announcementDraft?.en?.body?.trim()||!announcementDraft?.fr?.subject?.trim()||!announcementDraft?.fr?.body?.trim()} onClick={saveAnnouncement}><Save size={17}/>{savingAnnouncement?tr('Saving…','Enregistrement…'):tr('Save bilingual template','Enregistrer le modèle bilingue')}</button>
+        <button type="button" disabled={savingAnnouncement} onClick={()=>{setAnnouncementDraft(JSON.parse(JSON.stringify(announcement.previews)));setEditingAnnouncement(false)}}>{tr('Cancel edits','Annuler les modifications')}</button>
+       </div>
+      </div>:<>
+       <div className="mykioo-mail-announcement-preview"><strong>{announcement.previews?.[announcementLanguage]?.subject}</strong><p>{announcement.previews?.[announcementLanguage]?.body}</p></div>
+       <div className="mykioo-mail-actions">
+        <button type="button" disabled={sendingAnnouncement||resettingAnnouncement} onClick={()=>setEditingAnnouncement(true)}><FilePenLine size={17}/>{tr('Edit template','Modifier le modèle')}</button>
+        <button type="button" className="primary" disabled={sendingAnnouncement||resettingAnnouncement||!announcement.remaining} onClick={sendAnnouncement}><Send size={17}/>{sendingAnnouncement?tr('Sending…','Envoi…'):!announcement.remaining?tr('Announcement already sent','Annonce déjà envoyée'):tr('Send to all remaining members','Envoyer à tous les membres restants')}</button>
+        <button type="button" disabled={sendingAnnouncement||resettingAnnouncement||!announcement.sent} onClick={resetAnnouncementRecipients}><RefreshCw size={16}/>{resettingAnnouncement?tr('Resetting…','Réinitialisation…'):tr('Reset sent recipients','Réinitialiser les destinataires')}</button>
+        <button type="button" disabled={sendingAnnouncement||resettingAnnouncement} onClick={openAnnouncement}><RefreshCw size={16}/>{tr('Refresh count','Actualiser le nombre')}</button>
+       </div>
+       <p className="mykioo-mail-announcement-help">{tr('Reset changes only who is eligible for the next send. It never sends emails automatically or erases the previous delivery history.',
+        'La réinitialisation modifie uniquement les destinataires du prochain envoi. Elle n’envoie rien automatiquement et ne supprime pas l’historique.')}</p>
+      </>}
      </>}
     </div>:compose?<form className="mykioo-mail-compose" onSubmit={e=>{e.preventDefault();submitMail('send')}}>
      <div className="mykioo-mail-toolbar"><h3>{tr('New message','Nouveau message')}</h3><button type="button" onClick={()=>setCompose(false)}>{tr('Close','Fermer')}</button></div>
