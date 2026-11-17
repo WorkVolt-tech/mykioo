@@ -45,6 +45,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  useEffect(()=>{
   if(submittedRequest){confirmationRef.current?.focus();confirmationRef.current?.scrollIntoView({block:'start',behavior:'smooth'});}
  },[submittedRequest]);
+ const [previousTrialFound,setPreviousTrialFound]=useState(false);
  const [ownRows,setOwnRows]=useState([]),[ownCancellations,setOwnCancellations]=useState([]),[loading,setLoading]=useState(!owner),
   [saving,setSaving]=useState(false),[cancellingId,setCancellingId]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{if(userId&&(!targetId||!owner))setTargetId(userId)},[userId,owner]);
@@ -103,7 +104,20 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  const bankReady=isBankPayment&&checkout?.available===true&&!!checkout?.destination&&Number(checkout?.amount_due)>0;
  const users=useMemo(()=>members.filter(m=>['approved','pending'].includes(m.status)&&(m.role==='member'||(m.role==='owner'&&m.user_id===userId))),[members,userId]);
  const rows=owner?requests.filter(r=>r.member_id===targetId):ownRows;
- const trialRequested=rows.some(r=>r.request_type==='trial');
+ // Existing requests can exceed the 50 rows shown in history; check eligibility independently.
+ const trialRequested=rows.some(r=>r.request_type==='trial')||(!owner&&previousTrialFound);
+ useEffect(()=>{
+  if(owner||!userId||!supabase)return;
+  let active=true;
+  setPreviousTrialFound(false);
+  supabase.from('mykioo_subscription_requests').select('id')
+   .eq('member_id',userId).eq('request_type','trial').limit(1)
+   .then(({data,error})=>{if(active&&!error)setPreviousTrialFound((data||[]).length>0)});
+  return ()=>{active=false};
+ },[userId,owner]);
+ useEffect(()=>{
+  if(requestType==='trial'&&trialRequested)setRequestType('new');
+ },[requestType,trialRequested,setRequestType]);
  const cancellationRows=owner?cancellations.filter(c=>c.member_id===targetId):ownCancellations;
  const selectedSubs=subscriptions.filter(s=>s.member_id===(owner?targetId:userId));
  const eligible=selectedSubs.filter(s=>['active','expired'].includes(s.status));
@@ -275,8 +289,9 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
     <select id="mykioo-request-kind" value={requestType} onChange={e=>chooseType(e.target.value)}>
      <option value="new">{tr('New subscription','Nouvel abonnement')}</option>
      <option value="renewal">{tr('Renew existing subscription','Renouveler un abonnement existant')}</option>
-      <option value="trial">{tr('Request free trial','Demander un essai gratuit')}</option>
+      <option value="trial" disabled={trialRequested}>{trialRequested?tr('Free trial already requested — unavailable','Essai gratuit déjà demandé — indisponible'):tr('Request free trial','Demander un essai gratuit')}</option>
     </select>
+    {trialRequested&&<p className="mykioo-request-hint" role="status">{tr('This account has already requested its one free trial. A second trial is not available, even if the previous request was declined, cancelled or completed. You can still choose a paid subscription.','Ce compte a déjà demandé son unique essai gratuit. Un deuxième essai n’est pas disponible, même si la demande précédente a été refusée, annulée ou terminée. Vous pouvez toujours choisir un abonnement payant.')}</p>}
     {requestType!=='renewal'?<>{owner&&<>
      <label htmlFor="mykioo-request-service">{tr('Service or package requested','Service ou forfait demandé')}</label>
      <input id="mykioo-request-service" required minLength={3} maxLength={80} value={service}
