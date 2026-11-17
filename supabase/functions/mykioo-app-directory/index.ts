@@ -15,22 +15,26 @@ const respond=(data:unknown,status=200,origin="*")=>new Response(status===204?nu
  "Access-Control-Allow-Origin":origin,"Access-Control-Allow-Headers":"authorization,apikey,content-type,x-client-info",
  "Access-Control-Allow-Methods":"GET,POST,OPTIONS","Vary":"Origin"}});
 type Entry={id:string;name_en:string;name_fr:string;description_en:string;description_fr:string;url:string;
- source:"store"|"publisher"|"apk";platforms:string[];blocked_platforms:string[];blocked_reason_en:string;blocked_reason_fr:string;downloader_code:string;published:boolean;rights_confirmed:boolean};
+ source:"store"|"publisher"|"apk";logo_url:string;guide_id:string;install_notes_en:string;install_notes_fr:string;platforms:string[];blocked_platforms:string[];blocked_reason_en:string;blocked_reason_fr:string;downloader_code:string;published:boolean;rights_confirmed:boolean};
 function sanitizeEntry(raw:any):Entry|null{
  if(!raw||typeof raw!=="object")return null;
  const id=text(raw.id,70),name_en=text(raw.name_en,95),name_fr=text(raw.name_fr,95);
  const description_en=text(raw.description_en,480),description_fr=text(raw.description_fr,480);
  const url=text(raw.url,1600),source=text(raw.source,20);
+ const logo_url=text(raw.logo_url,1600),guide_id=text(raw.guide_id,80);
+ const install_notes_en=text(raw.install_notes_en,600),install_notes_fr=text(raw.install_notes_fr,600);
  const downloader_code=text(raw.downloader_code,12);
  const deviceTypes=Array.isArray(raw.platforms)?[...new Set(raw.platforms.filter((x:unknown)=>typeof x==="string"&&platforms.has(x)))]:[];
  const blockedTypes=Array.isArray(raw.blocked_platforms)?[...new Set(raw.blocked_platforms.filter((x:unknown)=>typeof x==="string"&&platforms.has(x)))]:[];
  const reasonEn=text(raw.blocked_reason_en,360),reasonFr=text(raw.blocked_reason_fr,360);
  if(!/^[A-Za-z0-9_-]{8,70}$/.test(id)||name_en.length<2||name_fr.length<2||!isHttpsUrl(url)||
     !kindOptions.has(source)||!isCode(downloader_code)||!(deviceTypes.length||blockedTypes.length)||
+    (logo_url&&!isHttpsUrl(logo_url))||(guide_id&&!/^[0-9a-f-]{36}$/i.test(guide_id))||
     description_en.length>480||description_fr.length>480||reasonEn.length>360||reasonFr.length>360||
     deviceTypes.some(id=>blockedTypes.includes(id)))return null;
  if(source==="apk"&&raw.rights_confirmed!==true)return null;
  return {id,name_en,name_fr,description_en,description_fr,url,source:source as Entry["source"],
+  logo_url,guide_id,install_notes_en,install_notes_fr,
   platforms:deviceTypes,blocked_platforms:blockedTypes,blocked_reason_en:reasonEn,blocked_reason_fr:reasonFr,
   downloader_code,published:raw.published===true,rights_confirmed:raw.rights_confirmed===true};
 }
@@ -57,7 +61,7 @@ Deno.serve(async request=>{
    return respond({ok:true,apps:current.apps.filter((a:Entry)=>a.published===true).map((a:Entry)=>({
     id:a.id,name_en:a.name_en,name_fr:a.name_fr,description_en:a.description_en,
     description_fr:a.description_fr,url:a.url,source:a.source,platforms:a.platforms,
-    blocked_platforms:a.blocked_platforms||[],blocked_reason_en:a.blocked_reason_en||"",blocked_reason_fr:a.blocked_reason_fr||"",downloader_code:a.downloader_code
+    blocked_platforms:a.blocked_platforms||[],blocked_reason_en:a.blocked_reason_en||"",blocked_reason_fr:a.blocked_reason_fr||"",logo_url:a.logo_url||"",guide_id:a.guide_id||"",install_notes_en:a.install_notes_en||"",install_notes_fr:a.install_notes_fr||"",downloader_code:a.downloader_code
    })),downloader_code:current.downloader_code,updated_at:current.updated_at},200,"*");
   }
   if(!ORIGINS.has(origin))return respond({error:"Origin not allowed"},403,ownOrigin);
