@@ -96,6 +96,7 @@ const announcement={
  "This transition has brought a few unexpected technical hiccups. We are continuously improving the experience and resolving remaining problems as quickly as possible.",
  "MYKIOO is run by a small, dedicated team. Despite our limited resources, we remain committed to giving you reliable service.",
  "Please check your Inbox and Spam/Junk folders. If you're still missing your login information, contact us through the Support section at https://mykioo.icu.",
+ "As a thank-you for your patience, use discount code MYKIOO2026 at checkout to save CA$5 on a paid subscription or renewal (US$3 when paying with Zelle). This offer is valid until December 31, 2026, at 11:59 PM Toronto time. Free trials are excluded.",
  "Thank you for your patience, understanding and continued support. We truly appreciate having you in the MYKIOO community.",
  "Warm regards,\nThe MYKIOO Team"
  ].join("\n\n")},
@@ -108,6 +109,7 @@ const announcement={
  "Cette transition a provoqué quelques difficultés techniques imprévues. Nous travaillons continuellement à améliorer la plateforme et à corriger les problèmes restants.",
  "MYKIOO est géré par une petite équipe dévouée. Malgré nos ressources limitées, nous nous engageons à vous offrir un service fiable.",
  "Veuillez vérifier votre boîte de réception et vos courriels indésirables. Si vos identifiants sont toujours manquants, contactez l'assistance depuis https://mykioo.icu.",
+ "Pour vous remercier de votre patience, utilisez le code promo MYKIOO2026 lors de votre commande pour obtenir un rabais de 5 $ CA sur un abonnement payant ou un renouvellement (3 $ US pour les paiements par Zelle). Cette offre est valable jusqu’au 31 décembre 2026 à 23 h 59, heure de Toronto. Les essais gratuits sont exclus.",
  "Merci de votre patience, de votre compréhension et de votre confiance. Votre soutien compte beaucoup pour notre équipe.",
  "Cordialement,\nL'équipe MYKIOO"
  ].join("\n\n")}
