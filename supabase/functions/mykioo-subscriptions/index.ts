@@ -207,8 +207,8 @@ Deno.serve(async (req) => {
          known?409:500);
      }
      if(!renewed?.subscription)return response({error:"Renewal result was unavailable. Please refresh before retrying."},500);
-     const notification=await emailCredentials(db,id,member_id);
-     return response({ok:true,subscription:renewed.subscription,notification});
+     // The database completion trigger queues one retryable credential email.
+     return response({ok:true,subscription:renewed.subscription,notification:"queued"});
    }
    // Complete new requests atomically with the same row lock used for cancellation
    // approval. Encrypt credentials before starting the database transaction.
@@ -236,8 +236,8 @@ Deno.serve(async (req) => {
        return response({error:"Could not complete the request. No subscription was created."},500);
      }
      if(data.service_host)await db.from("mykioo_subscriptions").update({service_host:data.service_host}).eq("id",subscriptionId);
-     const notification=await emailCredentials(db,subscriptionId,member_id);
-     return response({ok:true,subscription:completed?.subscription,notification});
+     // Prevent a second, competing message: the completion queue sends login details.
+     return response({ok:true,subscription:completed?.subscription,notification:"queued"});
    }
    const payload={...(requestedHost?{service_host:requestedHost}:{}),member_id,service_name,contract_days,device_count,device_label:null,service_username:service_username||null,
       supplier_reference:supplier_reference||null,status,starts_at:subscriptionStart,expires_at:finalExpiry,updated_at:new Date().toISOString()};
@@ -268,7 +268,11 @@ Deno.serve(async (req) => {
    }
    await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:isRenewal?"subscription_renewed":id?"subscription_updated":"subscription_created",
     entity_type:"subscription",entity_id:record.id,details:{member_id,service_name,status}});
-   return response({ok:true,subscription:record});
+   // Manual owner-created accounts do not have a completion-queue event.
+   // Email new active accounts once; ordinary edits must not resend passwords.
+   const notification=!id&&status==="active"&&Boolean(service_username)&&Boolean(password)
+    ?await emailCredentials(db,record.id,member_id):null;
+   return response({ok:true,subscription:record,...(notification?{notification}:{})});
   }
   return response({error:"Unknown action"},400);
  }catch(err){console.error("MYKIOO subscription error",err instanceof Error?err.message:"unknown");
