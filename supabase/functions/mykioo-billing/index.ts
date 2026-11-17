@@ -2,7 +2,6 @@ import {createClient} from "npm:@supabase/supabase-js@2.57.0";
 const ORIGIN="https://mykioo.icu";
 const allowedOrigins=new Set([ORIGIN,"https://www.mykioo.icu","https://mykioo.pages.dev"]);
 const cors={"Access-Control-Allow-Origin":ORIGIN,"Access-Control-Allow-Headers":"authorization,apikey,content-type,x-client-info","Access-Control-Allow-Methods":"POST,OPTIONS","Vary":"Origin"};
-const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
 const uuid=(v:unknown)=>typeof v==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 const eth=/^0x[a-fA-F0-9]{40}$/;
 const btc=/^bc1[023456789acdefghjklmnpqrstuvwxyz]{20,85}$/i;
@@ -22,7 +21,7 @@ async function getPrice(method:string){
 Deno.serve(async (req)=>{
  const requestOrigin=req.headers.get("Origin")||"";
  const requestHeaders={...cors,"Access-Control-Allow-Origin":allowedOrigins.has(requestOrigin)?requestOrigin:ORIGIN};
- const response=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...requestHeaders,"Content-Type":"application/json","Cache-Control":"no-store"}});
+ const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...requestHeaders,"Content-Type":"application/json","Cache-Control":"no-store"}});
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:requestHeaders});
  if(req.method!=="POST")return reply({error:"Method not allowed"},405);
  if(!allowedOrigins.has(requestOrigin))return reply({error:"Origin not allowed"},403);
