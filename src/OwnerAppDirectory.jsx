@@ -12,7 +12,7 @@ const platforms=[
 ];
 const makeEntry=()=>({id:'app_'+crypto.randomUUID(),name_en:'',name_fr:'',
  description_en:'',description_fr:'',url:'',source:'store',platforms:['android_tv'],
- downloader_code:'',published:false,rights_confirmed:false});
+ downloader_code:'',published:false,rights_confirmed:false,blocked_platforms:[],blocked_reason_en:'',blocked_reason_fr:''});
 async function api(payload){
  const {data:{session},error}=await supabase.auth.getSession();
  if(error||!session?.access_token)throw Error('Sign in as owner again.');
@@ -50,7 +50,10 @@ export default function OwnerAppDirectory({language='en'}){
  const remove=id=>{if(!window.confirm(tr('Remove this app from the library? Save to confirm.','Retirer cette application de la bibliothèque ? Enregistrez pour confirmer.')))return;
   setApps(rows=>rows.filter(a=>a.id!==id));setChanged(true);setExpanded(null)};
  const move=(id,delta)=>{setApps(rows=>{const a=[...rows],i=a.findIndex(x=>x.id===id),j=i+delta;if(i<0||j<0||j>=a.length)return rows;[a[i],a[j]]=[a[j],a[i]];return a});setChanged(true)};
- function changePlatform(row,id,on){edit(row.id,{platforms:on?[...new Set([...row.platforms,id])]:row.platforms.filter(p=>p!==id)})}
+ function changePlatform(row,id,on){edit(row.id,{platforms:on?[...new Set([...row.platforms,id])]:row.platforms.filter(p=>p!==id),
+  blocked_platforms:on?(row.blocked_platforms||[]).filter(p=>p!==id):(row.blocked_platforms||[])})}
+ function changeBlocked(row,id,on){edit(row.id,{blocked_platforms:on?[...new Set([...(row.blocked_platforms||[]),id])]: (row.blocked_platforms||[]).filter(p=>p!==id),
+  platforms:on?row.platforms.filter(p=>p!==id):row.platforms})}
  async function save(){
   if(saving||loading)return;
   setSaving(true);setError('');setNotice('');
@@ -96,7 +99,7 @@ export default function OwnerAppDirectory({language='en'}){
   {loading?<p>{tr('Loading links…','Chargement des liens…')}</p>:apps.length===0?<div className="app-editor-empty">{tr('No app links added. Select Add app link to start.','Aucun lien. Cliquez sur Ajouter un lien pour commencer.')}</div>:
    <div className="app-editor-list">{apps.map((app,i)=><article className="app-editor-card" key={app.id}>
     <div className="app-editor-cardbar"><button type="button" className="app-editor-row-title" onClick={()=>setExpanded(expanded===app.id?null:app.id)}>
-     <span><strong>{fr?app.name_fr||app.name_en||tr('Untitled app','Application sans titre'):app.name_en||app.name_fr||'Untitled app'}</strong><small>{app.source} · {app.published?tr('Published','Publiée'):tr('Draft','Brouillon')}</small></span>
+     <span><strong>{fr?app.name_fr||app.name_en||tr('Untitled app','Application sans titre'):app.name_en||app.name_fr||'Untitled app'}</strong><small>{app.source} · {app.published?tr('Published','Publiée'):tr('Draft','Brouillon')}{(app.blocked_platforms||[]).length?' · '+tr('Blocked on','Bloqué sur')+' '+app.blocked_platforms.map(p=>platforms.find(x=>x[0]===p)?.[1]||p).join(', '):''}</small></span>
      <span>{expanded===app.id?'−':'+'}</span></button>
      <button type="button" aria-label={tr('Move up','Monter')} disabled={!i} onClick={()=>move(app.id,-1)}><ArrowUp size={16}/></button>
      <button type="button" aria-label={tr('Move down','Descendre')} disabled={i===apps.length-1} onClick={()=>move(app.id,1)}><ArrowDown size={16}/></button>
@@ -121,6 +124,15 @@ export default function OwnerAppDirectory({language='en'}){
      </div>
      <fieldset><legend>{tr('Compatible devices','Appareils compatibles')}</legend>
       <div className="app-editor-platforms">{platforms.map(([key,label])=><label key={key}><input type="checkbox" checked={app.platforms.includes(key)} onChange={e=>changePlatform(app,key,e.target.checked)}/>{label}</label>)}</div>
+     </fieldset>
+     <fieldset className="app-editor-blocked-devices"><legend>{tr('Blocked / download not working on','Bloqué / téléchargement impossible sur')}</legend>
+      <p>{tr('Check devices where the app download does not work. Those members will see a warning instead of a download button. Other devices remain available.',
+       'Cochez les appareils où le téléchargement ne fonctionne pas. Ces membres verront un avertissement à la place du bouton de téléchargement. Les autres appareils restent disponibles.')}</p>
+      <div className="app-editor-platforms">{platforms.map(([key,label])=><label key={key}><input type="checkbox" checked={(app.blocked_platforms||[]).includes(key)} onChange={e=>changeBlocked(app,key,e.target.checked)}/>{label}</label>)}</div>
+      {!!(app.blocked_platforms||[]).length&&<div className="app-editor-grid">
+       <label>{tr('Blocked reason (English)','Raison du blocage (anglais)')}<textarea rows={2} maxLength={360} value={app.blocked_reason_en||''} onChange={e=>edit(app.id,{blocked_reason_en:e.target.value})} placeholder="Download does not work on this device."/></label>
+       <label>{tr('Blocked reason (French)','Raison du blocage (français)')}<textarea rows={2} maxLength={360} value={app.blocked_reason_fr||''} onChange={e=>edit(app.id,{blocked_reason_fr:e.target.value})} placeholder="Le téléchargement ne fonctionne pas sur cet appareil."/></label>
+      </div>}
      </fieldset>
      {app.source==='apk'&&<label className="app-editor-check"><input type="checkbox" checked={app.rights_confirmed} onChange={e=>edit(app.id,{rights_confirmed:e.target.checked})}/>
       {tr('I confirm I have permission to share this APK link, and the source is trustworthy.',
