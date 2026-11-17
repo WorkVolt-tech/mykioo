@@ -214,13 +214,21 @@ Deno.serve(async (req) => {
      if(!contract_days||!expires_at)return response({error:"Please select a contract duration and expiry date."},400);
      if(previous.expires_at&&Date.parse(expires_at)<=Date.parse(previous.expires_at))
        return response({error:"Renewal must extend the existing expiry date."},400);
-     if(password)return response({error:"Renewal keeps the original password; edit the subscription separately if it needs changing."},400);
      subscriptionStart=previous.starts_at||starts_at;
    }
    // Complete renewals atomically: update the original subscription, capture both expiry
    // dates, fulfill the request and record the audit event in one database transaction.
    if(isRenewal){
-     const {data:renewed,error:renewalError}=await db.rpc("mykioo_complete_subscription_with_details",{p_details:{kind:"renewal",service_host:requestedHost,epg_url:epgUrl,
+     let replacementCredential: {p_credential_iv:string,p_credential_cipher:string}|undefined;
+     if(password&&key){
+       const nonce=crypto.getRandomValues(new Uint8Array(12));
+       const encrypted=await crypto.subtle.encrypt(
+         {name:"AES-GCM",iv:nonce,additionalData:new TextEncoder().encode(id)},
+         key,new TextEncoder().encode(password)
+       );
+       replacementCredential={p_credential_iv:b64(nonce),p_credential_cipher:b64(new Uint8Array(encrypted))};
+     }
+     const {data:renewed,error:renewalError}=await db.rpc("mykioo_complete_subscription_with_details",{p_details:{kind:"renewal",service_host:requestedHost,epg_url:epgUrl,...replacementCredential,
        p_request_id:requestId,p_member_id:member_id,p_subscription_id:id,p_actor_id:user.id,
        p_service_name:service_name,p_service_username:service_username,
        p_supplier_reference:supplier_reference||null,p_status:status,
