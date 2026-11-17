@@ -117,7 +117,7 @@ export default function OwnerAppDirectory({language='en'}){
       <label>{tr('Description (English)','Description (anglais)')}<textarea rows={3} maxLength={480} value={app.description_en} onChange={e=>edit(app.id,{description_en:e.target.value})}/></label>
       <label>{tr('Description (French)','Description (français)')}<textarea rows={3} maxLength={480} value={app.description_fr} onChange={e=>edit(app.id,{description_fr:e.target.value})}/></label>
      </div>
-     <label>{tr('Download or official store link (HTTPS only)','Lien de téléchargement ou boutique officielle (HTTPS uniquement)')}
+     <label>{tr('Download or official store link (HTTP or HTTPS)','Lien de téléchargement ou boutique officielle (HTTP ou HTTPS)')}
       <input type="url" placeholder="https://..." maxLength={1600} value={app.url} onChange={e=>edit(app.id,{url:e.target.value})}/></label>
      <div className="app-editor-grid">
       <label>{tr('Link type','Type de lien')}<select value={app.source} onChange={e=>edit(app.id,{source:e.target.value,rights_confirmed:false})}>

@@ -8,8 +8,8 @@ const kindOptions=new Set(["store","publisher","apk"]);
 const platforms=new Set(["fire_tv","android_tv","android","ios","apple_tv","smart_tv","web"]);
 const text=(s:unknown,max:number)=>typeof s==="string"?s.trim().slice(0,max+1):"";
 const isCode=(s:string)=>!s||/^[0-9]{4,10}$/.test(s);
-function isHttpsUrl(s:string){
- try{const u=new URL(s);return u.protocol==="https:"&&!u.username&&!u.password&&!["localhost","127.0.0.1","::1"].includes(u.hostname.toLowerCase())&&u.hostname.includes(".")&&u.href.length<=1600}catch{return false}
+function isWebUrl(s:string,allowedProtocols=["https:"]){
+ try{const u=new URL(s);return allowedProtocols.includes(u.protocol)&&!u.username&&!u.password&&!["localhost","127.0.0.1","::1"].includes(u.hostname.toLowerCase())&&u.hostname.includes(".")&&u.href.length<=1600}catch{return false}
 }
 const respond=(data:unknown,status=200,origin="*")=>new Response(status===204?null:JSON.stringify(data),{status,headers:{"Content-Type":"application/json","Cache-Control":"no-store",
  "Access-Control-Allow-Origin":origin,"Access-Control-Allow-Headers":"authorization,apikey,content-type,x-client-info",
@@ -27,9 +27,9 @@ function sanitizeEntry(raw:any):Entry|null{
  const deviceTypes=Array.isArray(raw.platforms)?[...new Set(raw.platforms.filter((x:unknown)=>typeof x==="string"&&platforms.has(x)))]:[];
  const blockedTypes=Array.isArray(raw.blocked_platforms)?[...new Set(raw.blocked_platforms.filter((x:unknown)=>typeof x==="string"&&platforms.has(x)))]:[];
  const reasonEn=text(raw.blocked_reason_en,360),reasonFr=text(raw.blocked_reason_fr,360);
- if(!/^[A-Za-z0-9_-]{8,70}$/.test(id)||name_en.length<2||name_fr.length<2||!isHttpsUrl(url)||
+ if(!/^[A-Za-z0-9_-]{8,70}$/.test(id)||name_en.length<2||name_fr.length<2||!isWebUrl(url,["http:","https:"])||
     !kindOptions.has(source)||!isCode(downloader_code)||!(deviceTypes.length||blockedTypes.length)||
-    (logo_url&&!isHttpsUrl(logo_url))||(guide_id&&!/^[0-9a-f-]{36}$/i.test(guide_id))||
+    (logo_url&&!isWebUrl(logo_url))||(guide_id&&!/^[0-9a-f-]{36}$/i.test(guide_id))||
     description_en.length>480||description_fr.length>480||reasonEn.length>360||reasonFr.length>360||
     deviceTypes.some(id=>blockedTypes.includes(id)))return null;
  if(source==="apk"&&raw.rights_confirmed!==true)return null;
@@ -82,7 +82,7 @@ Deno.serve(async request=>{
   const seen=new Set<string>();
   for(const raw of input.apps){
    const cleaned=sanitizeEntry(raw);
-   if(!cleaned||seen.has(cleaned.id))return respond({error:"A link is invalid. Use HTTPS URLs, complete both languages, and verify APK redistribution rights."},400,ownOrigin);
+   if(!cleaned||seen.has(cleaned.id))return respond({error:"A link is invalid. Use HTTP or HTTPS download links, HTTPS logo URLs, complete both languages, and verify APK redistribution rights."},400,ownOrigin);
    seen.add(cleaned.id);apps.push(cleaned);
   }
   const downloader_code=text(input.downloader_code,12);
