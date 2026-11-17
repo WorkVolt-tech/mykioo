@@ -112,9 +112,10 @@ async function ownerAction(payload){
  return result;
 }
 
-function GuideCard({guide,language='en',owner=false,userId=''}){
+function GuideCard({guide,language='en',owner=false,userId='',linkedGuide=false}){
  const guideScope='mykioo-ui:member:'+userId+':guide:'+guide.id;
- const [expanded,setExpanded]=useRememberedState(guideScope+':expanded',false);
+ const [expanded,setExpanded]=useRememberedState(guideScope+':expanded',linkedGuide);
+ useEffect(()=>{if(linkedGuide)setExpanded(true)},[linkedGuide,setExpanded]);
  const [currentStep,setCurrentStep]=useRememberedState(guideScope+':step',0);
  const [copied,setCopied]=useState(''),[showAll,setShowAll]=useState(false);
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
@@ -130,7 +131,7 @@ function GuideCard({guide,language='en',owner=false,userId=''}){
   try{await navigator.clipboard.writeText(value);setCopied(kind)}
   catch(_error){setCopied('')}
  }
- return <article className="mykioo-guide-card">
+ return <article className="mykioo-guide-card" id={"mykioo-setup-guide-"+guide.id}>
   <button type="button" className="mykioo-guide-summary-button" onClick={()=>setExpanded(v=>!v)} aria-expanded={expanded}>
    <span className="mykioo-guide-card-icon">{guide.platform==='ios'||guide.platform==='android'?<Smartphone size={20}/>:guide.platform==='account'?<HelpCircle size={20}/>:<Monitor size={20}/>}</span>
    <span className="mykioo-guide-description">
@@ -210,13 +211,16 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId=''}){
  const [search,setSearch]=useRememberedState(scope+':search','', 'session');
  const [category,setCategory]=useRememberedState(scope+':category','all');
  const [platform,setPlatform]=useRememberedState(scope+':platform','all');
- const showDownloaderGuide=(category==='all'||category==='setup')&&['all','fire_tv','android_tv','android'].includes(platform);
+ const linkedId=new URLSearchParams(window.location.search).get('guide')||'';
+ const hasLinkedGuide=linkedId===androidDownloaderGuide.id||guides.some(g=>g.published&&g.id===linkedId);
+ const showDownloaderGuide=hasLinkedGuide?linkedId===androidDownloaderGuide.id:
+  (category==='all'||category==='setup')&&['all','fire_tv','android_tv','android'].includes(platform);
  const visible=guides.filter(g=>g.published).filter(g=>{
+  if(hasLinkedGuide)return g.id===linkedId;
   const term=search.trim().toLocaleLowerCase();
   return (!term||[g.title_en,g.title_fr,g.summary_en,g.summary_fr,g.steps_en,g.steps_fr].some(x=>(x||'').toLocaleLowerCase().includes(term)))
     &&(category==='all'||g.category===category)
-    &&(platform==='all'||g.platform==='general'||g.platform===platform||(platform==='smart_tv'&&g.platform==='apple_tv'));
- }).sort(orderGuides);
+    &&(platform==='all'||g.platform==='general'||g.platform===platform||(platform==='smart_tv'&&g.platform==='apple_tv')); }).sort(orderGuides);
  return <section className="mykioo-guide-page">
   <div className="mykioo-guide-intro">
    <BookOpen size={26}/>
@@ -250,7 +254,7 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId=''}){
    (visible.length===0&&!showDownloaderGuide)?<div className="mykioo-guide-empty">
     <BookOpen size={24}/><strong>{guides.length===0?tr('Guides are being prepared.','Les guides sont en préparation.'):tr('No guides match your search.','Aucun guide ne correspond à votre recherche.')}</strong>
     <p>{tr('Need assistance? You can contact MYKIOO Support.','Besoin d’aide ? Vous pouvez contacter l’assistance MYKIOO.')}</p>
-   </div>:<div className="mykioo-guide-list">{showDownloaderGuide&&<GuideCard key={androidDownloaderGuide.id} guide={androidDownloaderGuide} language={language} userId={userId}/>} {visible.map(g=><GuideCard key={g.id} guide={g} language={language} userId={userId}/>)}</div>}
+   </div>:<div className="mykioo-guide-list">{showDownloaderGuide&&<GuideCard key={androidDownloaderGuide.id} guide={androidDownloaderGuide} language={language} userId={userId} linkedGuide={linkedId===androidDownloaderGuide.id}/>} {visible.map(g=><GuideCard key={g.id} guide={g} language={language} userId={userId} linkedGuide={linkedId===g.id}/>)}</div>}
   <div className="mykioo-guide-help">
    <div><strong>{tr('Still need help?','Vous avez encore besoin d’aide ?')}</strong>
     <p>{tr('Send a support request. Please allow up to 24 hours for an initial reply.','Envoyez une demande d’assistance. Veuillez prévoir jusqu’à 24 heures pour une première réponse.')}</p></div>
