@@ -31,6 +31,10 @@ select{padding:11px 14px;background:#211c2d;color:#fff;border:1px solid #63526d;
 .card .visit{padding:13px 15px;text-align:center;border-radius:9px;background:#dfba7c;color:#271a29;text-decoration:none;font-weight:800;margin-top:auto;overflow-wrap:anywhere}
 .card .visit:hover{background:#f1cf96}
 .card .code{background:#120f1b;border:1px dashed #685576;border-radius:8px;padding:10px 12px}
+.blocked-warning{background:#44242d;border:1px solid #bf7685;border-radius:9px;padding:12px;color:#ffe3e3;line-height:1.5;font-size:.88rem}
+.blocked-warning strong{display:block;color:#ffc1cc;margin-bottom:4px}
+.platforms span.blocked-platform{background:#59303b;border-color:#af6578;color:#ffd9df}
+.blocked-visit{display:block;text-align:center;padding:13px 15px;border-radius:9px;background:#432831;border:1px solid #ad6879;color:#ffd7de;font-weight:750;margin-top:auto}
 .card .code strong{font-size:1.35rem;letter-spacing:.08em;color:#fff}
 .empty{border:1px dashed #786783;border-radius:12px;padding:28px;text-align:center;color:#d4c5db}
 .alert{color:#ffd0d0;background:#5b2d3c;border:1px solid #965a6c;border-radius:9px;padding:14px}
@@ -64,10 +68,10 @@ var names={fire_tv:'Fire TV / Fire Stick',android_tv:'Android TV / Google TV',an
 var translations={
  en:{tagline:'DEVICE SETUP',title:'App Downloads',intro:'Find official app-store and publisher download links shared by MYKIOO. Choose your device below. Downloads are hosted by the linked providers, not by MYKIOO.',
  label:'OPEN THIS PAGE IN DOWNLOADER',instructions:'Enter this address in Downloader on a compatible TV device. A numeric short code can also be used after the owner creates one through AFTVnews.',
- help:'Create a Downloader code',account:'Member sign-in',library:'Available apps',filter:'Your device:',all:'All devices',loading:'Loading app links…',empty:'No app links have been published for this device yet.',error:'Unable to load app links right now. Please try again.',link:'Open download source',code:'Downloader app code',store:'App store',publisher:'Official publisher website',apk:'External APK link — verify source',foot:'Use only apps from sources you trust and check compatibility with your device. External links may change. Android APKs cannot run on Apple TV, iOS, or Vega OS. Some Fire TV Downloader versions restrict webpage browsing.'},
+ help:'Create a Downloader code',account:'Member sign-in',library:'Available apps',filter:'Your device:',all:'All devices',loading:'Loading app links…',empty:'No app links have been published for this device yet.',error:'Unable to load app links right now. Please try again.',link:'Open download source',blocked:'Blocked on this device',blockedAll:'Download unavailable on',blockedDefault:'Download not working on this device.',code:'Downloader app code',store:'App store',publisher:'Official publisher website',apk:'External APK link — verify source',foot:'Use only apps from sources you trust and check compatibility with your device. External links may change. Android APKs cannot run on Apple TV, iOS, or Vega OS. Some Fire TV Downloader versions restrict webpage browsing.'},
  fr:{tagline:'CONFIGURATION DES APPAREILS',title:'Téléchargement des applications',intro:'Retrouvez les liens vers les boutiques officielles et les éditeurs sélectionnés par MYKIOO. Choisissez votre appareil. Les fichiers sont hébergés par les sites liés, pas par MYKIOO.',
  label:'OUVRIR CETTE PAGE DANS DOWNLOADER',instructions:'Entrez cette adresse dans Downloader sur un appareil compatible. Un code numérique peut aussi être utilisé après sa création par le propriétaire avec AFTVnews.',
- help:'Créer un code Downloader',account:'Connexion membre',library:'Applications disponibles',filter:'Votre appareil :',all:'Tous les appareils',loading:'Chargement des liens…',empty:'Aucun lien publié pour cet appareil.',error:'Impossible de charger les liens. Réessayez.',link:'Ouvrir la source',code:'Code Downloader de l’application',store:'Boutique d’applications',publisher:'Site officiel de l’éditeur',apk:'Lien APK externe — vérifier la source',foot:'Utilisez seulement des applications provenant de sources fiables et vérifiez leur compatibilité. Les liens externes peuvent changer. Les APK Android ne fonctionnent pas sur Apple TV, iOS ou Vega OS. Certaines versions de Downloader sur Fire TV limitent la navigation Web.'}
+ help:'Créer un code Downloader',account:'Connexion membre',library:'Applications disponibles',filter:'Votre appareil :',all:'Tous les appareils',loading:'Chargement des liens…',empty:'Aucun lien publié pour cet appareil.',error:'Impossible de charger les liens. Réessayez.',link:'Ouvrir la source',blocked:'Bloqué sur cet appareil',blockedAll:'Téléchargement impossible sur',blockedDefault:'Le téléchargement ne fonctionne pas sur cet appareil.',code:'Code Downloader de l’application',store:'Boutique d’applications',publisher:'Site officiel de l’éditeur',apk:'Lien APK externe — vérifier la source',foot:'Utilisez seulement des applications provenant de sources fiables et vérifiez leur compatibilité. Les liens externes peuvent changer. Les APK Android ne fonctionnent pas sur Apple TV, iOS ou Vega OS. Certaines versions de Downloader sur Fire TV limitent la navigation Web.'}
 };
 function $(id){return document.getElementById(id)}
 function translated(id){return translations[language][id]||id}
@@ -88,7 +92,7 @@ function render(){
  var filter=$('device-filter').value,list=$('apps');
  list.textContent='';
  text($('status'),data.apps.length===0?translated('empty'):'');
- var shown=(data.apps||[]).filter(function(a){return filter==='all'||Array.isArray(a.platforms)&&a.platforms.indexOf(filter)!==-1});
+ var shown=(data.apps||[]).filter(function(a){return filter==='all'||Array.isArray(a.platforms)&&a.platforms.indexOf(filter)!==-1||Array.isArray(a.blocked_platforms)&&a.blocked_platforms.indexOf(filter)!==-1});
  if(!shown.length){$('status').style.display='block';text($('status'),translated('empty'));return}
  $('status').style.display='none';
  shown.forEach(function(a){
@@ -98,9 +102,20 @@ function render(){
   var desc=document.createElement('p');text(desc,language==='fr'?(a.description_fr||a.description_en):a.description_en);card.appendChild(desc);
   var pl=document.createElement('div');pl.className='platforms';
   (a.platforms||[]).forEach(function(k){var span=document.createElement('span');text(span,names[k]||k);pl.appendChild(span)});
+  (a.blocked_platforms||[]).forEach(function(k){var span=document.createElement('span');span.className='blocked-platform';text(span,(names[k]||k)+' — '+translated('blocked'));pl.appendChild(span)});
   card.appendChild(pl);
-  if(a.downloader_code){var code=document.createElement('div');code.className='code';var label=document.createElement('small');text(label,translated('code'));code.appendChild(label);var br=document.createElement('br');code.appendChild(br);var strong=document.createElement('strong');text(strong,a.downloader_code);code.appendChild(strong);card.appendChild(code)}
-  var link=document.createElement('a');link.className='visit';link.href=a.url;link.target='_blank';link.rel='noopener noreferrer';text(link,translated('link'));card.appendChild(link);list.appendChild(card);
+  var blockedDevices=Array.isArray(a.blocked_platforms)?a.blocked_platforms:[];
+  var onBlockedDevice=filter!=='all'&&blockedDevices.indexOf(filter)!==-1;
+  if(blockedDevices.length){
+   var warning=document.createElement('div');warning.className='blocked-warning';warning.setAttribute('role','note');
+   var label=document.createElement('strong');text(label,(onBlockedDevice?translated('blocked'):translated('blockedAll'))+(onBlockedDevice?'':': '+blockedDevices.map(function(p){return names[p]||p}).join(', ')));warning.appendChild(label);
+   var detail=document.createElement('span');text(detail,(language==='fr'?a.blocked_reason_fr:a.blocked_reason_en)||(language==='fr'?a.blocked_reason_en:a.blocked_reason_fr)||translated('blockedDefault'));
+   warning.appendChild(detail);card.appendChild(warning);
+  }
+  if(!onBlockedDevice&&a.downloader_code){var code=document.createElement('div');code.className='code';var label=document.createElement('small');text(label,translated('code'));code.appendChild(label);var br=document.createElement('br');code.appendChild(br);var strong=document.createElement('strong');text(strong,a.downloader_code);code.appendChild(strong);card.appendChild(code)}
+  if(onBlockedDevice){var unavailable=document.createElement('div');unavailable.className='blocked-visit';text(unavailable,translated('blocked'));card.appendChild(unavailable)}
+  else{var link=document.createElement('a');link.className='visit';link.href=a.url;link.target='_blank';link.rel='noopener noreferrer';text(link,translated('link'));card.appendChild(link)}
+  list.appendChild(card);
  });
 }
 $('en').addEventListener('click',function(){setLanguage('en')});
