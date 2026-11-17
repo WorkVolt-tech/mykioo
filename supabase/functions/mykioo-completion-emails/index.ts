@@ -1,6 +1,16 @@
 import {createClient} from "npm:@supabase/supabase-js@2.57.0";
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{"Content-Type":"application/json","Cache-Control":"no-store"}});
 const escapeHtml=(text:unknown)=>String(text??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]||c));
+const fromB64=(value:string)=>Uint8Array.from(atob(value),c=>c.charCodeAt(0));
+async function getCredentialKey(){
+ const raw=Deno.env.get("MYKIOO_CREDENTIAL_KEY");
+ if(!raw)throw Error("service_credential_key_missing");
+ try{
+  const material=fromB64(raw);
+  if(material.length!==32)throw Error("invalid_key");
+  return await crypto.subtle.importKey("raw",material,{name:"AES-GCM"},false,["decrypt"]);
+ }catch{throw Error("service_credential_key_unavailable");}
+}
 Deno.serve(async req=>{
  if(req.method!=="POST")return reply({error:"Method not allowed"},405);
  const token=req.headers.get("x-mykioo-cron-token"),url=Deno.env.get("SUPABASE_URL"),secret=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -34,17 +44,40 @@ Deno.serve(async req=>{
     await db.from("mykioo_completion_email_log").update({state:"failed",last_error:"member_ineligible",attempts:5}).eq("id",row.id);skipped++;continue;
    }
    const fr=member.preferred_language==="fr";
-   let detail="",kindLabel="";
+   let detail="",kindLabel="",credentialsHtml="",credentialsText="";
    if(row.kind==="subscription"||row.kind==="renewal"){
     const {data:r}=await db.from("mykioo_subscription_requests")
      .select("service_name,status,subscription_id,request_type").eq("id",row.entity_id).eq("member_id",row.user_id).maybeSingle();
     if(!r||r.status!=="fulfilled"){skipped++;await db.from("mykioo_completion_email_log").update({state:"failed",last_error:"not_fulfilled",attempts:5}).eq("id",row.id);continue}
-    const {data:sub}=await db.from("mykioo_subscriptions").select("expires_at").eq("id",r.subscription_id).eq("member_id",row.user_id).maybeSingle();
+    const {data:sub,error:subError}=await db.from("mykioo_subscriptions")
+     .select("expires_at,service_username,service_host").eq("id",r.subscription_id).eq("member_id",row.user_id).maybeSingle();
+    const {data:credential,error:credentialError}=await db.from("mykioo_subscription_credentials")
+     .select("iv,cipher_text").eq("subscription_id",r.subscription_id).maybeSingle();
+    if(subError||credentialError||!sub?.service_username||!credential?.iv||!credential?.cipher_text)
+     throw Error("service_credentials_missing");
+    const key=await getCredentialKey();
+    let password="";
+    try{
+     password=new TextDecoder().decode(await crypto.subtle.decrypt(
+      {name:"AES-GCM",iv:fromB64(credential.iv),additionalData:new TextEncoder().encode(r.subscription_id)},
+      key,fromB64(credential.cipher_text)));
+    }catch{throw Error("service_credentials_decrypt_failed");}
+    if(!password)throw Error("service_password_missing");
+    const host=sub.service_host||"http://6af5bd6ba0648.stream-sky.online";
+    const fields=[
+     [fr?"Nom d’utilisateur":"Username",sub.service_username],
+     [fr?"Mot de passe":"Password",password],
+     [fr?"Adresse du serveur":"Host URL",host]
+    ];
+    credentialsHtml='<table role="presentation" style="border-collapse:collapse;width:100%;background:#211b2d;border:1px solid #574563;border-radius:10px">'+
+     fields.map(([label,value])=>'<tr><td style="padding:12px;color:#e6c38d;vertical-align:top">'+escapeHtml(label)+'</td><td style="padding:12px;color:#fff;word-break:break-all">'+escapeHtml(value)+'</td></tr>').join('')+
+     '</table>';
+    credentialsText=fields.map(([label,value])=>label+": "+value).join("\n");
     const date=sub?.expires_at?new Intl.DateTimeFormat(fr?"fr-CA":"en-CA",{year:"numeric",month:"long",day:"numeric",timeZone:"UTC"}).format(new Date(sub.expires_at)):"";
-    kindLabel=row.kind==="renewal"?(fr?"Renouvellement terminé":"Renewal completed"):(fr?"Abonnement activé":"Subscription ready");
+    kindLabel=row.kind==="renewal"?(fr?"Renouvellement et identifiants":"Renewal login details"):(fr?"Vos identifiants de connexion":"Your service login details");
     detail=fr?"Votre "+(row.kind==="renewal"?"renouvellement":"abonnement")+" pour "+escapeHtml(r.service_name)+" est terminé.":"Your "+(row.kind==="renewal"?"renewal":"subscription")+" for "+escapeHtml(r.service_name)+" is complete.";
     if(date)detail+=" "+(fr?"Expiration : ":"Expiration: ")+escapeHtml(date)+".";
-    detail+=" "+(fr?"Connectez-vous pour voir les détails du service.":"Sign in to view your service details.");
+    detail+=" "+(fr?"Voici les identifiants et l’adresse du serveur pour votre service.":"Your service username, password and server URL are below.");
    }else if(row.kind==="support"){
     const {data:t}=await db.from("mykioo_support_tickets").select("subject,status").eq("id",row.entity_id).eq("member_id",row.user_id).maybeSingle();
     if(!t||!["resolved","closed"].includes(t.status)){skipped++;await db.from("mykioo_completion_email_log").update({state:"failed",last_error:"ticket_not_completed",attempts:5}).eq("id",row.id);continue}
@@ -66,13 +99,17 @@ Deno.serve(async req=>{
     detail=escapeHtml(issue?.title||"MYKIOO")+" — "+escapeHtml(issue?.latest_update||issue?.description||"");
    }else{skipped++;continue}
    const name=escapeHtml(member.display_name||"");
-   const html='<div style="font-family:Arial,sans-serif;background:#18121f;color:#f7edf8;padding:28px"><h1 style="color:#e6bd87">MYKIOO</h1><p>'+(fr?"Bonjour ":"Hello ")+name+',</p><p>'+detail+'</p><p><a href="https://mykioo.icu" style="color:#e6bd87">'+(fr?"Ouvrir MYKIOO":"Open MYKIOO")+'</a></p></div>';
+   const html='<div style="font-family:Arial,sans-serif;background:#18121f;color:#f7edf8;padding:28px;max-width:560px;margin:auto"><img src="https://mykioo.pages.dev/MYKIOO-Email-Logo.png" width="90" height="90" alt="MYKIOO" style="display:block;border:0"/><h1 style="color:#e6bd87">MYKIOO</h1><p>'+(fr?"Bonjour ":"Hello ")+name+',</p><p>'+detail+'</p>'+credentialsHtml+'<p><a href="https://mykioo.icu" style="color:#e6bd87">'+(fr?"Ouvrir MYKIOO":"Open MYKIOO")+'</a></p></div>';
    const outgoing=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=email"),{
     method:"POST",headers:{"api-key":mailerKey,"Content-Type":"application/json"},
-    body:JSON.stringify({sender:{name:"MYKIOO",email:"mykiootv@outlook.com"},
-     to:[{email:member.email}],subject:"MYKIOO | "+kindLabel,htmlContent:html,tags:["mykioo","account-notification"]})
+    body:JSON.stringify({sender:{name:"MYKIOO",email:"iptv@mykioo.icu"},
+     to:[{email:member.email}],subject:"MYKIOO | "+kindLabel,htmlContent:html,
+     textContent:[fr?"Bonjour":"Hello",kindLabel,credentialsText,"https://mykioo.icu"].filter(Boolean).join("\n\n"),
+     tags:["mykioo","account-notification"]})
    });
-   if(!outgoing.ok)throw Error("gmail_"+outgoing.status);
+   if(!outgoing.ok)throw Error("smtp_"+outgoing.status);
+   const receipt=await outgoing.json().catch(()=>null);
+   if(!receipt?.messageId)throw Error("smtp_no_acceptance");
    const {error:markError}=await db.from("mykioo_completion_email_log")
     .update({state:"sent",sent_at:new Date().toISOString(),last_error:null}).eq("id",row.id);
    if(markError)console.error("Email sent but log update failed",row.id);
