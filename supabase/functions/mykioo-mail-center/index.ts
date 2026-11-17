@@ -84,6 +84,45 @@ async function buildRaw(mail:any){
 }
 const validFolder=(v:unknown)=>typeof v==="string"&&v.length<=160&&!/[\x00-\x1f]/.test(v);
 
+
+const CAMPAIGN="service-email-domain-update-nov2026";
+const announcement={
+ en:{subject:"MYKIOO | Important Update: Email Delivery & Our New Website",body:[
+ "Hello MYKIOO Members,",
+ "We'd like to share an important update and apologize for some recent technical difficulties.",
+ "We experienced an issue with our email notifications that prevented some members from receiving important messages, including their subscription usernames, passwords and server information.",
+ "Our team has worked to resolve this issue, and email delivery should now be functioning normally. We sincerely apologize if you were affected.",
+ "We're also moving from our Cloudflare Pages website address to our official domain: https://mykioo.icu",
+ "This transition has brought a few unexpected technical hiccups. We are continuously improving the experience and resolving remaining problems as quickly as possible.",
+ "MYKIOO is run by a small, dedicated team. Despite our limited resources, we remain committed to giving you reliable service.",
+ "Please check your Inbox and Spam/Junk folders. If you're still missing your login information, contact us through the Support section at https://mykioo.icu.",
+ "Thank you for your patience, understanding and continued support. We truly appreciate having you in the MYKIOO community.",
+ "Warm regards,\nThe MYKIOO Team"
+ ].join("\n\n")},
+ fr:{subject:"MYKIOO | Mise à jour importante : courriels et nouvelle adresse du site",body:[
+ "Bonjour à tous les membres MYKIOO,",
+ "Nous souhaitons vous informer de quelques mises à jour et nous excuser pour les difficultés techniques rencontrées récemment.",
+ "Nous avons connu un problème avec les notifications par courriel. Certains membres n'ont pas reçu leurs identifiants de connexion, mots de passe ou adresses de serveur.",
+ "Notre équipe a travaillé à résoudre ce problème, et l'envoi des courriels devrait maintenant fonctionner normalement. Nous sommes sincèrement désolés des désagréments occasionnés.",
+ "Nous effectuons également la transition de notre adresse Cloudflare Pages vers notre domaine officiel : https://mykioo.icu",
+ "Cette transition a provoqué quelques difficultés techniques imprévues. Nous travaillons continuellement à améliorer la plateforme et à corriger les problèmes restants.",
+ "MYKIOO est géré par une petite équipe dévouée. Malgré nos ressources limitées, nous nous engageons à vous offrir un service fiable.",
+ "Veuillez vérifier votre boîte de réception et vos courriels indésirables. Si vos identifiants sont toujours manquants, contactez l'assistance depuis https://mykioo.icu.",
+ "Merci de votre patience, de votre compréhension et de votre confiance. Votre soutien compte beaucoup pour notre équipe.",
+ "Cordialement,\nL'équipe MYKIOO"
+ ].join("\n\n")}
+};
+const mailEsc=(s:string)=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]||c));
+const mailHtml=(lang:"en"|"fr")=>'<html lang="'+lang+'"><body style="background:#0e1020;color:#f4edf5;padding:24px;font-family:Arial,sans-serif"><div style="max-width:600px;margin:auto;background:#1d1929;border:1px solid #66516c;border-top:4px solid #d9b87e;border-radius:12px;padding:28px"><h1 style="color:#e7c18b">MYKIOO</h1><h2>'+mailEsc(announcement[lang].subject.replace("MYKIOO | ",""))+'</h2><div style="white-space:pre-wrap;line-height:1.7">'+mailEsc(announcement[lang].body)+'</div><p><a style="color:#e7c18b" href="https://mykioo.icu">mykioo.icu</a></p></div></body></html>';
+async function announcementState(db:any){
+ const {data:members,error:me}=await db.from("mykioo_members").select("user_id,email,preferred_language").eq("role","member").eq("status","approved").order("user_id",{ascending:true}).limit(1000);
+ const {data:history,error:he}=await db.from("mykioo_audit_logs").select("entity_id").eq("action","member_announcement_sent").eq("entity_type","member").contains("details",{campaign_id:CAMPAIGN}).limit(1000);
+ if(me||he)throw Error("Cannot check member announcement status");
+ const sent=new Set((history||[]).map((r:any)=>r.entity_id));
+ const recipients=(members||[]).filter((r:any)=>address(r.email));
+ return {total:recipients.length,sent:recipients.filter((m:any)=>sent.has(m.user_id)).length,pending:recipients.filter((m:any)=>!sent.has(m.user_id))};
+}
+
 Deno.serve(async request=>{
  const requestOrigin=request.headers.get("Origin")||"";
  const corsOrigin=allowedOrigins.has(requestOrigin)?requestOrigin:"https://mykioo.icu";
@@ -107,6 +146,28 @@ Deno.serve(async request=>{
  const password=Deno.env.get("MYKIOO_IONOS_SMTP_PASSWORD");
  if(action==="status")return json({ok:true,configured:Boolean(password),mailbox:ACCOUNT},200,corsOrigin);
  if(!password)return json({error:"IONOS mailbox password is not configured in private Supabase secrets"},503,corsOrigin);
+ if(action==="announcement_status"||action==="announcement_send"){
+  const a=await announcementState(db);
+  if(action==="announcement_status")return json({ok:true,campaign_id:CAMPAIGN,total:a.total,sent:a.sent,remaining:a.pending.length,previews:announcement},200,corsOrigin);
+  if(input.confirm!==true||input.campaign_id!==CAMPAIGN)return json({error:"Explicit confirmation required"},400,corsOrigin);
+  if(!a.pending.length)return json({ok:true,total:a.total,sent:a.sent,remaining:0,accepted:0,failed:0},200,corsOrigin);
+  const smtp=nodemailer.createTransport({host:"smtp.ionos.com",port:465,secure:true,auth:{user:ACCOUNT,pass:password},connectionTimeout:12000,greetingTimeout:12000,socketTimeout:18000});
+  let accepted=0,failed=0;
+  try{
+   for(const member of a.pending.slice(0,8)){
+    const language=member.preferred_language==="fr"?"fr":"en",d=announcement[language];
+    try{
+     const result=await smtp.sendMail({from:{name:"MYKIOO",address:ACCOUNT},to:member.email,subject:d.subject,text:d.body,html:mailHtml(language)});
+     if(!result.accepted?.some((x:string)=>x.toLowerCase()===member.email.toLowerCase()))throw Error("SMTP did not accept recipient");
+     const {error:logError}=await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:"member_announcement_sent",entity_type:"member",entity_id:member.user_id,details:{campaign_id:CAMPAIGN,language}});
+     if(logError)throw Error("tracking_failed_after_send");
+     accepted++;
+    }catch(error){failed++;console.error("MYKIOO member announcement delivery error",(error as Error)?.name||"unknown");if((error as Error)?.message==="tracking_failed_after_send")break;}
+   }
+  }finally{smtp.close()}
+  const after=await announcementState(db);
+  return json({ok:failed===0,total:after.total,sent:after.sent,remaining:after.pending.length,accepted,failed,...(failed?{error:"Some messages were not accepted. Check counts before retrying."}:{})},failed?207:200,corsOrigin);
+ }
  if(action==="members"){
    const term=clean(input.search,100);
    if(term.length<2)return json({ok:true,members:[]},200,corsOrigin);
