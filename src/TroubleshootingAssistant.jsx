@@ -35,10 +35,10 @@ const issues=[
    ['Record the exact channel name and the approximate time. MYKIOO will review reported service issues; this assistant cannot verify a live outage.','Notez le nom exact de la chaîne et l’heure approximative. MYKIOO examinera les problèmes signalés ; cet assistant ne peut pas vérifier une panne en direct.']]}
  ]},
  {id:'setup',en:'App installation or setup',fr:'Installation ou configuration',category:'setup',symptoms:[
-  {id:'install',en:'Cannot install the app',fr:'Impossible d’installer l’application',steps:[
+  {id:'install',en:'Cannot download or install the app',fr:'Impossible de télécharger ou d’installer l’application',steps:[
    ['Open Setup guides and choose the instructions matching your specific device.','Ouvrez les guides d’installation et choisissez ceux de votre appareil.'],
    ['Check that your device is supported by the selected app. Some TV systems use different apps or cannot install Android APK files.','Vérifiez que l’application prend en charge votre appareil. Certains téléviseurs utilisent d’autres applications ou ne peuvent pas installer de fichiers APK Android.'],
-   ['Check available storage and restart the device before attempting installation again.','Vérifiez l’espace de stockage et redémarrez l’appareil avant de réessayer.']]},
+   ['Check free space in your device’s storage settings. Low storage can prevent apps such as OwnTV from downloading or installing. Uninstall apps you no longer use to free up space, restart the device and try the download and installation again.','Vérifiez l’espace libre dans les paramètres de stockage de votre appareil. Un manque d’espace peut empêcher le téléchargement ou l’installation d’applications comme OwnTV. Désinstallez les applications que vous n’utilisez plus pour libérer de l’espace, redémarrez l’appareil et réessayez le téléchargement et l’installation.']]},
   {id:'configure',en:'Need help entering service details',fr:'Besoin d’aide pour configurer le service',steps:[
    ['Follow the setup guide for your device and selected app.','Suivez le guide d’installation de votre appareil et de votre application.'],
    ['Use the service credentials and setup details from your activation message or My subscriptions, not your website login.','Utilisez les identifiants et renseignements de votre message d’activation ou de Mes abonnements, et non votre connexion au site.'],
