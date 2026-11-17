@@ -60,8 +60,6 @@ const apkDownloads=[
  {url:'http://apk.streamsky.online/yestream.apk',platforms:['android','android_tv'],login:'credentials',downloaderCode:'2940403'},
  {url:'http://apk.streamsky.online/v12mate.apk',platforms:['android','android_tv','fire_tv'],login:'credentials'},
  {url:'http://apk.streamsky.online/v12.apk',platforms:['android','android_tv'],login:'credentials'},
- {url:'http://apk.streamsky.online/max-ott.apk',platforms:['android','android_tv'],login:'activation'},
- {url:'http://apk.streamsky.online/max-ott-firestick.apk',platforms:['fire_tv'],login:'activation'}
 ];
 const downloadFor=guide=>apkDownloads.find(app=>(guide.steps_en||'').includes(app.url)||(guide.steps_fr||'').includes(app.url));
 const officialProtonLink=guide=>([guide.steps_en,guide.steps_fr].some(s=>(s||'').includes('https://protonvpn.com/free-vpn'))
