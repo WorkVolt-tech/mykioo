@@ -29,4 +29,13 @@
 .mykioo-mail-member-search{padding:10px;border:1px solid var(--mail-line);border-radius:8px;margin-bottom:14px;display:grid;gap:5px}.mykioo-mail-member-search input{width:100%}.mykioo-mail-member-search button{justify-content:flex-start;text-align:left;overflow-wrap:anywhere}
 .mykioo-mail-downloads{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.mykioo-mail-downloads strong{display:flex;align-items:center;gap:7px;flex-basis:100%}
 .mykioo-mail-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;padding:14px 0;font-size:.78rem;color:#b2a2b8}.mykioo-mail-footer a{color:var(--mail-gold)}
+.mykioo-mail-announcement{padding:0 17px 25px;display:grid;gap:13px}
+.mykioo-mail-announcement>.mykioo-mail-toolbar{margin:0 -17px;padding:14px 17px}
+.mykioo-mail-announcement>p{color:#dbd1de;font-size:.9rem;line-height:1.55;margin:6px 0 0}
+.mykioo-mail-announcement strong{color:#eed0a2}
+.mykioo-mail-announcement-languages{display:flex;gap:8px}
+.mykioo-mail-announcement-languages button.active{border-color:#d9b782;background:#403148;color:#f5d39d}
+.mykioo-mail-announcement-preview{background:#120f1b;border:1px solid var(--mail-line);border-radius:12px;padding:19px;min-width:0}
+.mykioo-mail-announcement-preview strong{display:block;line-height:1.5;overflow-wrap:anywhere}
+.mykioo-mail-announcement-preview p{white-space:pre-wrap;overflow-wrap:anywhere;color:#eee5f0;line-height:1.7;font-size:.9rem;margin:14px 0 0}
 @media(max-width:750px){.mykioo-mail-heading{padding:15px}.mykioo-mail-heading-actions{width:100%}.mykioo-mail-workspace{display:block}.mykioo-mail-folders{display:flex;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--mail-line);padding:9px}.mykioo-mail-folders button{width:auto;min-width:max-content}.mykioo-mail-toolbar{align-items:flex-start}.mykioo-mail-toolbar form{width:100%;max-width:none}.mykioo-mail-reader,.mykioo-mail-compose{padding:0 10px 15px}.mykioo-mail-heading h2{font-size:1.12rem}.mykioo-mail-row-top{flex-wrap:wrap}}
