@@ -38,4 +38,9 @@
 .mykioo-mail-announcement-preview{background:#120f1b;border:1px solid var(--mail-line);border-radius:12px;padding:19px;min-width:0}
 .mykioo-mail-announcement-preview strong{display:block;line-height:1.5;overflow-wrap:anywhere}
 .mykioo-mail-announcement-preview p{white-space:pre-wrap;overflow-wrap:anywhere;color:#eee5f0;line-height:1.7;font-size:.9rem;margin:14px 0 0}
+
+.mykioo-mail-announcement-edit{display:flex;flex-direction:column;gap:15px;background:#120f1b;border:1px solid var(--mail-line);border-radius:12px;padding:17px}
+.mykioo-mail-announcement-edit label{display:flex;flex-direction:column;gap:7px;color:#eed0a2;font-size:.88rem;font-weight:600}
+.mykioo-mail-announcement-edit input,.mykioo-mail-announcement-edit textarea{width:100%;resize:vertical;color:#fff;line-height:1.55}
+.mykioo-mail-announcement-edit p,.mykioo-mail-announcement-help,.mykioo-mail-template-saved{font-size:.81rem!important;color:#c7bacc!important;line-height:1.6;margin:3px 0 0}
 @media(max-width:750px){.mykioo-mail-heading{padding:15px}.mykioo-mail-heading-actions{width:100%}.mykioo-mail-workspace{display:block}.mykioo-mail-folders{display:flex;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--mail-line);padding:9px}.mykioo-mail-folders button{width:auto;min-width:max-content}.mykioo-mail-toolbar{align-items:flex-start}.mykioo-mail-toolbar form{width:100%;max-width:none}.mykioo-mail-reader,.mykioo-mail-compose{padding:0 10px 15px}.mykioo-mail-heading h2{font-size:1.12rem}.mykioo-mail-row-top{flex-wrap:wrap}}
