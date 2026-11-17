@@ -3,7 +3,7 @@ import {supabase} from './supabase';
 import SubscriptionDirectory from './SubscriptionDirectory';
 import './CountryPackPicker.css';
 
-const blank={id:'',member_id:'',service_name:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:'',contract_days:365,device_count:1,service_password:'',request_id:''};
+const blank={id:'',member_id:'',service_name:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:'',contract_days:365,device_count:1,service_password:'',service_host:'',epg_url:'',request_id:''};
 const todayLocal=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const addDays=(date,days)=>{if(!date||!days)return '';const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+Number(days));return d.toISOString().slice(0,10)};
 const newForm=()=>({...blank,starts_at:todayLocal(),expires_at:addDays(todayLocal(),365)});
@@ -27,6 +27,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
  const clients=members.filter(m=>m.role==='member'||m.role==='owner');
  const pendingCancellationIds=new Set(cancellations.filter(c=>c.status==='pending').map(c=>c.request_id));
  const pendingRequests=requests.filter(r=>['pending','in_review'].includes(r.status));
+ const renewalEditor=Boolean(form.id&&form.request_id);
  const trialEditor=requests.some(r=>r.id===form.request_id&&r.request_type==='trial');
  const displayedRequests=requestFilter==='open'?pendingRequests:requests;
  function openEditor(){
@@ -67,7 +68,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
    setResendFeedback({id:subscription.id,success:false,message});setError(message);
   }finally{setResendingId(null)}
  }
- function edit(row){setCustomerEmail(clients.find(m=>m.user_id===row.member_id)?.email||'');setCreatedInvite(null);setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',device_count:row.device_count||1,request_id:''});setError('');setNotice('');openEditor()}
+ function edit(row){setCustomerEmail(clients.find(m=>m.user_id===row.member_id)?.email||'');setCreatedInvite(null);setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',service_host:row.service_host||'',epg_url:row.epg_url||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',device_count:row.device_count||1,request_id:''});setError('');setNotice('');openEditor()}
  function completeRequest(r){
    setCustomerEmail(clients.find(m=>m.user_id===r.member_id)?.email||'');setCreatedInvite(null);
    if(r.preferred_payment_method&&!paidRequests.has(r.id)){
@@ -80,7 +81,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
      if(!previous){setError(tr('The original subscription could not be found.','Impossible de trouver l’abonnement initial.'));return}
      const base=previous.expires_at&&dateOnly(previous.expires_at)>today?dateOnly(previous.expires_at):today;
      setForm({...blank,id:previous.id,request_id:r.id,member_id:r.member_id,service_name:previous.service_name||r.service_name,
-       service_username:previous.service_username||'',supplier_reference:previous.supplier_reference||'',status:'active',
+       service_username:previous.service_username||'',service_host:previous.service_host||'',epg_url:previous.epg_url||'',supplier_reference:previous.supplier_reference||'',status:'active',
        contract_days:days,device_count:r.device_count||1,starts_at:base,expires_at:addDays(base,days)});
    }else{
      setForm({...blank,request_id:r.id,member_id:r.member_id,service_name:r.service_name,contract_days:days,device_count:r.device_count||1,starts_at:today,expires_at:addDays(today,days),status:'active'});
@@ -266,11 +267,13 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     <label>{tr('Service / package name','Service / nom du forfait')}<input required maxLength={80} value={form.service_name} onChange={e=>update('service_name',e.target.value)} placeholder={tr('e.g. Premium package','ex. Forfait premium')}/></label>
 
     {trialEditor&&<p>{tr('Leave username and password empty to create a 24-hour trial in the panel automatically when you save. Its credentials and host will be emailed to the customer.','Laissez les identifiants vides pour créer automatiquement un essai de 24 heures lors de l’enregistrement. Les identifiants et le serveur seront envoyés au client.')}</p>}
+    {renewalEditor&&<p className="mykioo-free-trial-callout">{tr('The existing username, saved password, server URL, EPG URL and provider reference are reused. Review the details and the extended expiry date below.','L’identifiant, le mot de passe enregistré, le serveur, le lien EPG et la référence du fournisseur sont repris. Vérifiez les renseignements et la nouvelle date d’expiration ci-dessous.')}</p>}
     <label>{tr('Service host URL','Adresse du serveur')}<input type="url" value={form.service_host||''} onChange={e=>update('service_host',e.target.value)} placeholder={tr('Filled automatically for panel trials','Rempli automatiquement pour les essais du panneau')}/></label>
+    <label>{tr('EPG URL (TV guide)','Lien EPG (guide TV)')}<input type="url" maxLength={4096} value={form.epg_url||''} onChange={e=>update('epg_url',e.target.value)} placeholder="https://example.com/xmltv.php?username=…&password=…"/><small>{tr('Included in completion and login-details emails when provided.','Inclus dans les courriels de confirmation et d’identifiants lorsqu’il est renseigné.')}</small></label>
     <label>{tr('Service login username','Identifiant du service')}<input required={Boolean(form.request_id&&!form.id&&!trialEditor)} maxLength={160} autoComplete="off" value={form.service_username} onChange={e=>update('service_username',e.target.value)} placeholder={tr('Username / login ID','Nom d’utilisateur / identifiant')}/></label>
-    <label>{form.id?tr('Replace service password (leave blank to keep)','Remplacer le mot de passe du service (laisser vide pour conserver)'):tr('Service password','Mot de passe du service')}
+    {renewalEditor?<p>{tr('Service password — saved and reused for this renewal.','Mot de passe du service — enregistré et repris pour ce renouvellement.')}</p>:<label>{form.id?tr('Replace service password (leave blank to keep)','Remplacer le mot de passe du service (laisser vide pour conserver)'):tr('Service password','Mot de passe du service')}
       <input type="password" required={Boolean(form.request_id&&!form.id&&!trialEditor)} autoComplete="new-password" maxLength={256} value={form.service_password} onChange={e=>update('service_password',e.target.value)}
-       placeholder={tr('Encrypted when saved','Chiffré lors de l’enregistrement')}/></label>
+       placeholder={tr('Encrypted when saved','Chiffré lors de l’enregistrement')}/></label>}
     <label>{tr('Provider reference (optional)','Référence du fournisseur (facultatif)')}<input maxLength={160} value={form.supplier_reference} onChange={e=>update('supplier_reference',e.target.value)}/></label>
     <label>{tr('Status','Statut')}<select value={form.status} disabled={trialEditor} onChange={e=>update('status',e.target.value)}>
      {['pending','active','expired','suspended','cancelled'].map(status=><option key={status} value={status}>{tr(({pending:'Pending',active:'Active',expired:'Expired',suspended:'Suspended',cancelled:'Cancelled'})[status],({pending:'En attente',active:'Actif',expired:'Expiré',suspended:'Suspendu',cancelled:'Annulé'})[status])}</option>)}

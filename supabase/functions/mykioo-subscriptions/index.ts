@@ -20,7 +20,7 @@ const serviceHost="http://6af5bd6ba0648.stream-sky.online";
 async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionId:string,memberId:string){
  try{
   const {data:member,error:memberError}=await db.from("mykioo_members").select("email,preferred_language").eq("user_id",memberId).single();
-  const {data:subscription,error:subscriptionError}=await db.from("mykioo_subscriptions").select("service_username,service_host").eq("id",subscriptionId).eq("member_id",memberId).single();
+  const {data:subscription,error:subscriptionError}=await db.from("mykioo_subscriptions").select("service_username,service_host,epg_url").eq("id",subscriptionId).eq("member_id",memberId).single();
   const {data:credential,error:credentialError}=await db.from("mykioo_subscription_credentials").select("iv,cipher_text").eq("subscription_id",subscriptionId).single();
   const key=await encryptionKey(),mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if(memberError||subscriptionError||credentialError||!member?.email||!subscription?.service_username||!credential||!key||!mailerKey)throw Error("Email prerequisites unavailable");
@@ -36,8 +36,9 @@ async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionI
   const {data:panel}=request?await db.from("mykioo_panel_trials").select("host").eq("request_id",request.id).maybeSingle():{data:null};
   const accountHost=panel?.host||subscription.service_host||serviceHost;
   const rows=[[fr?"Nom d’utilisateur":"Username",subscription.service_username],[fr?"Mot de passe":"Password",password],[fr?"Adresse du serveur":"Host URL",accountHost]];
+  if(subscription.epg_url)rows.push([fr?"Lien EPG (guide TV)":"EPG URL (TV guide)",subscription.epg_url]);
   const escape=(value:string)=>value.replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]||char));
-  const htmlContent=`<!doctype html><html lang="${fr?"fr":"en"}"><body style="background:#090b13;padding:24px;font-family:Arial,sans-serif;color:#f5ecf7"><table role="presentation" style="max-width:560px;width:100%;margin:auto;background:#171422;border:1px solid #574563;border-top:3px solid #dab77c;border-radius:16px"><tr><td style="padding:28px"><img src="https://mykioo.pages.dev/MYKIOO-Email-Logo.png" width="90" alt="MYKIOO"><h1 style="color:#e6c38d;font-size:26px">${title}</h1><p>${intro}</p><table style="width:100%;background:#211b2d">${rows.map(([label,value])=>`<tr><td style="padding:12px;vertical-align:top">${label}</td><td style="padding:12px;word-break:break-all;white-space:pre-wrap">${escape(value)}</td></tr>`).join("")}</table><p><a href="${origin}" style="color:#e6c38d">${fr?"Ouvrir MYKIOO et les guides d’installation":"Open MYKIOO and the setup guides"}</a></p></td></tr></table></body></html>`;
+  const htmlContent=`<!doctype html><html lang="${fr?"fr":"en"}"><body style="background:#090b13;padding:24px;font-family:Arial,sans-serif;color:#f5ecf7"><table role="presentation" style="max-width:560px;width:100%;margin:auto;background:#171422;border:1px solid #574563;border-top:3px solid #dab77c;border-radius:16px"><tr><td style="padding:28px"><img src="https://mykioo.pages.dev/MYKIOO-Email-Logo.png" width="90" alt="MYKIOO"><h1 style="color:#e6c38d;font-size:26px">${title}</h1><p>${intro}</p><table style="width:100%;background:#211b2d">${rows.map(([label,value])=>`<tr><td style="padding:12px;vertical-align:top">${label}</td><td style="padding:12px;word-break:break-all;white-space:pre-wrap">${label===(fr?"Lien EPG (guide TV)":"EPG URL (TV guide)")?`<a href="${escape(value)}" style="color:#e6c38d">${escape(value)}</a>`:escape(value)}</td></tr>`).join("")}</table><p><a href="${origin}" style="color:#e6c38d">${fr?"Ouvrir MYKIOO et les guides d’installation":"Open MYKIOO and the setup guides"}</a></p></td></tr></table></body></html>`;
   const sent=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=email"),{method:"POST",headers:{"api-key":mailerKey,"Content-Type":"application/json"},body:JSON.stringify({
    sender:{email:template.sender.email,name:"MYKIOO"},to:[{email:member.email}],subject:"MYKIOO | "+title,
    htmlContent,textContent:[title,intro,...rows.map(([label,value])=>label+": "+value),origin].join("\n"),
@@ -102,6 +103,15 @@ Deno.serve(async (req) => {
    if(data.service_host){
     try{const host=new URL(data.service_host);if(!["http:","https:"].includes(host.protocol)||host.username||host.password)throw Error();requestedHost=host.origin}catch{return response({error:"Enter a valid HTTP or HTTPS service host."},400)}
    }
+   let epgUrl: string|null|undefined;
+   if(Object.hasOwn(data,"epg_url")){
+    if(typeof data.epg_url!=="string")return response({error:"Enter a valid HTTP or HTTPS EPG URL."},400);
+    epgUrl=data.epg_url.trim()||null;
+    if(epgUrl){
+     try{const parsed=new URL(epgUrl);if(epgUrl.length>4096||!["http:","https:"].includes(parsed.protocol)||parsed.username||parsed.password)throw Error();}
+     catch{return response({error:"Enter a valid HTTP or HTTPS EPG URL."},400)}
+    }
+   }
    if(requestId&&!uuid(requestId))return response({error:"Invalid request ID"},400);
    let pendingRequest=null;
    if(requestId){
@@ -165,6 +175,7 @@ Deno.serve(async (req) => {
      }
     }
     if(Date.parse(generated.expires_at)<=Date.now())return response({error:"This generated trial has expired. Review it in the panel."},409);
+    requestedHost=generated.host;
     Object.assign(data,{service_username:generated.username,service_password:generated.password,service_host:generated.host,supplier_reference:generated.reference,starts_at:generated.starts_at,expires_at:generated.expires_at});
    }
    const service_name=limitText(data.service_name,80),
@@ -209,12 +220,12 @@ Deno.serve(async (req) => {
    // Complete renewals atomically: update the original subscription, capture both expiry
    // dates, fulfill the request and record the audit event in one database transaction.
    if(isRenewal){
-     const {data:renewed,error:renewalError}=await db.rpc("mykioo_complete_subscription_renewal",{
+     const {data:renewed,error:renewalError}=await db.rpc("mykioo_complete_subscription_with_details",{p_details:{kind:"renewal",service_host:requestedHost,epg_url:epgUrl,
        p_request_id:requestId,p_member_id:member_id,p_subscription_id:id,p_actor_id:user.id,
        p_service_name:service_name,p_service_username:service_username,
        p_supplier_reference:supplier_reference||null,p_status:status,
        p_contract_days:contract_days,p_expires_at:finalExpiry
-     });
+     }});
      if(renewalError){
        console.error("MYKIOO atomic renewal failed",renewalError.code||"unknown");
        const known=[
@@ -242,14 +253,14 @@ Deno.serve(async (req) => {
        {name:"AES-GCM",iv:nonce,additionalData:new TextEncoder().encode(subscriptionId)},
        key,new TextEncoder().encode(password)
      );
-     const {data:completed,error:completeError}=await db.rpc("mykioo_complete_new_subscription_request",{
+     const {data:completed,error:completeError}=await db.rpc("mykioo_complete_subscription_with_details",{p_details:{kind:"new",service_host:requestedHost,epg_url:epgUrl,
        p_request_id:requestId,p_member_id:member_id,p_actor_id:user.id,
        p_subscription_id:subscriptionId,p_service_name:service_name,
        p_service_username:service_username,p_supplier_reference:supplier_reference||null,
        p_status:status,p_contract_days:contract_days,p_starts_at:starts_at,
        p_expires_at:expires_at,p_credential_iv:b64(nonce),
        p_credential_cipher:b64(new Uint8Array(encrypted))
-     });
+     }});
      if(completeError){
        const message=String(completeError.message||"");
        if(message.includes("Request already cancelled, completed or unavailable"))
@@ -257,11 +268,10 @@ Deno.serve(async (req) => {
        console.error("MYKIOO atomic new subscription completion failed",completeError.code||"unknown");
        return response({error:"Could not complete the request. No subscription was created."},500);
      }
-     if(data.service_host)await db.from("mykioo_subscriptions").update({service_host:data.service_host}).eq("id",subscriptionId);
      // Prevent a second, competing message: the completion queue sends login details.
      return response({ok:true,subscription:completed?.subscription,notification:"queued"});
    }
-   const payload={...(requestedHost?{service_host:requestedHost}:{}),member_id,service_name,contract_days,device_count,device_label:null,service_username:service_username||null,
+   const payload={...(requestedHost?{service_host:requestedHost}:{}),...(epgUrl!==undefined?{epg_url:epgUrl}:{}),member_id,service_name,contract_days,device_count,device_label:null,service_username:service_username||null,
       supplier_reference:supplier_reference||null,status,starts_at:subscriptionStart,expires_at:finalExpiry,updated_at:new Date().toISOString()};
    let query=id?db.from("mykioo_subscriptions").update(payload).eq("id",id).eq("member_id",member_id):
      db.from("mykioo_subscriptions").insert(payload);

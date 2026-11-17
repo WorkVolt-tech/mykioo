@@ -50,7 +50,7 @@ Deno.serve(async req=>{
      .select("service_name,status,subscription_id,request_type").eq("id",row.entity_id).eq("member_id",row.user_id).maybeSingle();
     if(!r||r.status!=="fulfilled"){skipped++;await db.from("mykioo_completion_email_log").update({state:"failed",last_error:"not_fulfilled",attempts:5}).eq("id",row.id);continue}
     const {data:sub,error:subError}=await db.from("mykioo_subscriptions")
-     .select("expires_at,service_username,service_host").eq("id",r.subscription_id).eq("member_id",row.user_id).maybeSingle();
+     .select("expires_at,service_username,service_host,epg_url").eq("id",r.subscription_id).eq("member_id",row.user_id).maybeSingle();
     const {data:credential,error:credentialError}=await db.from("mykioo_subscription_credentials")
      .select("iv,cipher_text").eq("subscription_id",r.subscription_id).maybeSingle();
     if(subError||credentialError||!sub?.service_username||!credential?.iv||!credential?.cipher_text)
@@ -69,8 +69,9 @@ Deno.serve(async req=>{
      [fr?"Mot de passe":"Password",password],
      [fr?"Adresse du serveur":"Host URL",host]
     ];
+    if(sub.epg_url)fields.push([fr?"Lien EPG (guide TV)":"EPG URL (TV guide)",sub.epg_url]);
     credentialsHtml='<table role="presentation" style="border-collapse:collapse;width:100%;background:#211b2d;border:1px solid #574563;border-radius:10px">'+
-     fields.map(([label,value])=>'<tr><td style="padding:12px;color:#e6c38d;vertical-align:top">'+escapeHtml(label)+'</td><td style="padding:12px;color:#fff;word-break:break-all">'+escapeHtml(value)+'</td></tr>').join('')+
+     fields.map(([label,value])=>'<tr><td style="padding:12px;color:#e6c38d;vertical-align:top">'+escapeHtml(label)+'</td><td style="padding:12px;color:#fff;word-break:break-all">'+(label===(fr?"Lien EPG (guide TV)":"EPG URL (TV guide)")?'<a href="'+escapeHtml(value)+'" style="color:#e6c38d">'+escapeHtml(value)+'</a>':escapeHtml(value))+'</td></tr>').join('')+
      '</table>';
     credentialsText=fields.map(([label,value])=>label+": "+value).join("\n");
     const date=sub?.expires_at?new Intl.DateTimeFormat(fr?"fr-CA":"en-CA",{year:"numeric",month:"long",day:"numeric",timeZone:"UTC"}).format(new Date(sub.expires_at)):"";

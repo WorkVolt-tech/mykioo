@@ -201,7 +201,7 @@ export function MemberBilling({userId,language='en',highlightInvoiceId=null}){
   <div className="mykioo-billing-list">{visibleInvoices.map(inv=><InvoiceCard key={inv.id} invoice={inv} language={language} busy={busy} onAction={action}/>)}</div>
  </section>;
 }
-export function OwnerBilling({language='en',userId='',requests=[],members=[]}){
+export function OwnerBilling({language='en',userId='',requests=[],members=[],onSaved}){
  const tr=(en,fr)=>trFor(language,en,fr);
  const [settings,setSettings]=useState(null),[invoices,setInvoices]=useState([]),[loading,setLoading]=useState(true);
  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[requestId,setRequestId]=useState('');
@@ -253,7 +253,7 @@ export function OwnerBilling({language='en',userId='',requests=[],members=[]}){
   invoiceFilter==='paid'&&i.state==='paid');
  async function action(payload){
   setBusy(true);setError('');setNotice('');
-  try{await billingAction(payload);await reload();setNotice(tr('Billing change saved','Modification enregistrée'))}
+  try{await billingAction(payload);await reload();await onSaved?.();setNotice(tr('Billing change saved','Modification enregistrée'))}
   catch(err){setError(err.message||tr('Billing operation failed','Échec de l’opération de facturation'))}
   finally{setBusy(false)}
  }
