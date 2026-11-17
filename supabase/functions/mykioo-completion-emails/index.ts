@@ -40,7 +40,7 @@ Deno.serve(async req=>{
   try{
    const {data:member}=await db.from("mykioo_members")
     .select("email,display_name,preferred_language,status,role").eq("user_id",row.user_id).maybeSingle();
-   if(!member||member.role!=="member"||member.status!=="approved"||!member.email){
+   if(!member||!["member","owner"].includes(member.role)||member.status!=="approved"||!member.email){
     await db.from("mykioo_completion_email_log").update({state:"failed",last_error:"member_ineligible",attempts:5}).eq("id",row.id);skipped++;continue;
    }
    const fr=member.preferred_language==="fr";
