@@ -30,6 +30,8 @@ export default function OwnerMailCenter({language='en',members=[]}){
  const [selected,setSelected]=useState(null),[message,setMessage]=useState(null),[compose,setCompose]=useState(false),[draft,setDraft]=useState(emptyDraft()),[saving,setSaving]=useState(false);
  const [memberQuery,setMemberQuery]=useState(''),[memberResults,setMemberResults]=useState([]),[linkMode,setLinkMode]=useState(false);
  const [configured,setConfigured]=useState(false);
+ const [announcementOpen,setAnnouncementOpen]=useState(false),[announcement,setAnnouncement]=useState(null);
+ const [announcementLanguage,setAnnouncementLanguage]=useState('en'),[sendingAnnouncement,setSendingAnnouncement]=useState(false);
  const categories=useMemo(()=>{
   const by=(special,guess)=>folders.find(f=>f.specialUse===special)?.path||folders.find(f=>guess.some(g=>f.path.toLowerCase()===g))?.path;
   return [{id:'inbox',name:tr('Inbox','Réception'),icon:Inbox,path:by('\\Inbox',['inbox'])||'INBOX'},
@@ -55,8 +57,32 @@ export default function OwnerMailCenter({language='en',members=[]}){
   try{const data=await api({action:'read',folder,uid:m.uid});setMessage(data.message);setLinks(previous=>[...previous.filter(x=>x.message_id!==data.message.messageId),...(data.links||[])]);setMatches(previous=>[...previous,...(data.members||[])].filter((x,i,a)=>a.findIndex(t=>t.user_id===x.user_id)===i));setItems(previous=>previous.map(x=>x.uid===m.uid?{...x,seen:true}:x))}
   catch(e){setError(e.message)}
  }
+ async function openAnnouncement(){
+  setCompose(false);setSelected(null);setMessage(null);setAnnouncementOpen(true);setAnnouncement(null);setError('');setNotice('');
+  try{setAnnouncement(await api({action:'announcement_status'}))}
+  catch(e){setError(e.message)}
+ }
+ async function sendAnnouncement(){
+  if(!announcement?.remaining||sendingAnnouncement)return;
+  if(!window.confirm(tr('Send this announcement to '+announcement.remaining+' remaining approved members? This cannot be undone.','Envoyer cette annonce aux '+announcement.remaining+' membres approuvés restants ? Cette action est irréversible.')))return;
+  setSendingAnnouncement(true);setError('');setNotice('');
+  try{
+   let current=announcement,rounds=0;
+   while(current.remaining>0&&rounds<125){
+    const r=await api({action:'announcement_send',campaign_id:current.campaign_id,confirm:true});
+    setAnnouncement(previous=>({...previous,...r}));rounds++;
+    if(r.failed||r.remaining>=current.remaining)throw Error(tr('Some emails could not be sent. Check the delivery count before retrying.','Certains courriels n’ont pas pu être envoyés. Vérifiez le nombre restant avant de réessayer.'));
+    current=r;
+   }
+   if(current.remaining)throw Error(tr('Some members remain; try sending again.','Il reste des membres ; veuillez réessayer.'));
+   setNotice(tr('IONOS accepted the announcement for delivery. Ask members to check Inbox and Spam.','IONOS a accepté l’annonce pour livraison. Demandez aux membres de vérifier leur boîte de réception et leurs indésirables.'));
+  }catch(e){
+   setError(e.message);
+   try{setAnnouncement(await api({action:'announcement_status'}))}catch(_ignored){}
+  }finally{setSendingAnnouncement(false)}
+ }
  function startCompose(base){
-  setDraft({...emptyDraft(),...(base||{})});setCompose(true);setSelected(null);setMessage(null);setError('');setNotice('');
+  setAnnouncementOpen(false);setDraft({...emptyDraft(),...(base||{})});setCompose(true);setSelected(null);setMessage(null);setError('');setNotice('');
  }
  function composeReply(){
   if(!message)return;
@@ -124,7 +150,7 @@ export default function OwnerMailCenter({language='en',members=[]}){
  const displayedMembers=[...members,...matches,...memberResults].filter((x,i,a)=>a.findIndex(y=>y.user_id===x.user_id)===i);
  return <section className="mykioo-mail">
   <header className="mykioo-mail-heading"><div><h2><Mail size={23}/>{tr('MYKIOO Mail Center','Centre de messagerie MYKIOO')}</h2><p>{MAILBOX} · {tr('Private IONOS mailbox','Boîte IONOS privée')}</p></div>
-   <div className="mykioo-mail-heading-actions"><button type="button" onClick={()=>{setError('');refreshFolders().then(()=>load(folder,search)).catch(e=>setError(e.message))}} disabled={busy}><RefreshCw size={16}/>{tr('Refresh','Actualiser')}</button><button type="button" className="primary" onClick={()=>startCompose()}><Plus size={16}/>{tr('Compose','Rédiger')}</button></div>
+   <div className="mykioo-mail-heading-actions"><button type="button" onClick={()=>{setError('');refreshFolders().then(()=>load(folder,search)).catch(e=>setError(e.message))}} disabled={busy}><RefreshCw size={16}/>{tr('Refresh','Actualiser')}</button><button type="button" onClick={openAnnouncement}><Mail size={16}/>{tr('Message all members','Écrire à tous les membres')}</button><button type="button" className="primary" onClick={()=>startCompose()}><Plus size={16}/>{tr('Compose','Rédiger')}</button></div>
   </header>
   {error&&<div className="mykioo-mail-alert" role="alert"><AlertCircle size={18}/>{error}</div>}
   {notice&&<div className="mykioo-mail-notice" role="status"><Check size={18}/>{notice}</div>}
@@ -136,7 +162,16 @@ export default function OwnerMailCenter({language='en',members=[]}){
     {folders.filter(f=>!categories.some(c=>c.path===f.path)).slice(0,12).map(f=><button type="button" key={f.path} className={folder===f.path?'active':''} onClick={()=>pickFolder(f.path)}><Folder size={16}/><span title={f.path}>{f.path}</span></button>)}
    </nav>
    <div className="mykioo-mail-main">
-    {compose?<form className="mykioo-mail-compose" onSubmit={e=>{e.preventDefault();submitMail('send')}}>
+    {announcementOpen?<div className="mykioo-mail-announcement">
+     <div className="mykioo-mail-toolbar"><h3>{tr('Member announcement','Annonce aux membres')}</h3><button type="button" disabled={sendingAnnouncement} onClick={()=>setAnnouncementOpen(false)}>{tr('Close','Fermer')}</button></div>
+     {!announcement?<p className="mykioo-mail-placeholder">{tr('Checking member recipients…','Vérification des destinataires…')}</p>:<>
+      <p><strong>{announcement.total}</strong> {tr('approved members','membres approuvés')} · <strong>{announcement.sent}</strong> {tr('already emailed','déjà contactés')} · <strong>{announcement.remaining}</strong> {tr('remaining','restants')}</p>
+      <p>{tr('Private emails will be sent individually in each approved member’s preferred language. Pending applicants and owners are excluded. Previously emailed members will not receive a duplicate.','Les courriels seront envoyés individuellement dans la langue de chaque membre approuvé. Les demandes en attente et les propriétaires sont exclus. Aucun doublon ne sera envoyé aux membres déjà contactés.')}</p>
+      <div className="mykioo-mail-announcement-languages"><button type="button" className={announcementLanguage==='en'?'active':''} onClick={()=>setAnnouncementLanguage('en')}>English</button><button type="button" className={announcementLanguage==='fr'?'active':''} onClick={()=>setAnnouncementLanguage('fr')}>Français</button></div>
+      <div className="mykioo-mail-announcement-preview"><strong>{announcement.previews?.[announcementLanguage]?.subject}</strong><p>{announcement.previews?.[announcementLanguage]?.body}</p></div>
+      <div className="mykioo-mail-actions"><button type="button" className="primary" disabled={sendingAnnouncement||!announcement.remaining} onClick={sendAnnouncement}><Send size={17}/>{sendingAnnouncement?tr('Sending…','Envoi…'):!announcement.remaining?tr('Announcement already sent','Annonce déjà envoyée'):tr('Send to all remaining members','Envoyer à tous les membres restants')}</button><button type="button" disabled={sendingAnnouncement} onClick={openAnnouncement}><RefreshCw size={16}/>{tr('Refresh count','Actualiser le nombre')}</button></div>
+     </>}
+    </div>:compose?<form className="mykioo-mail-compose" onSubmit={e=>{e.preventDefault();submitMail('send')}}>
      <div className="mykioo-mail-toolbar"><h3>{tr('New message','Nouveau message')}</h3><button type="button" onClick={()=>setCompose(false)}>{tr('Close','Fermer')}</button></div>
      <label>{tr('To','À')}<input type="email" value={draft.to} maxLength={254} onChange={e=>setDraft(d=>({...d,to:e.target.value}))} required placeholder="person@example.com"/></label>
      <label>{tr('Subject','Objet')}<input value={draft.subject} maxLength={220} onChange={e=>setDraft(d=>({...d,subject:e.target.value}))} required/></label>
