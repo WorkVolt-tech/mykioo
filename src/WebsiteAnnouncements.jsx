@@ -15,7 +15,7 @@ export function useWebsiteAnnouncements(){
   const refresh=async()=>{
    const {data,error}=await supabase.from('mykioo_website_announcements')
     .select(readable).order('created_at',{ascending:false}).limit(100);
-   if(active&&!error)setAnnouncements(previous=>JSON.stringify(previous)===JSON.stringify(data||[])?previous:data||[]);
+   if(active&&!error)setAnnouncements(data||[]);
   };
   refresh();
   const timer=setInterval(()=>{if(document.visibilityState==='visible')refresh()},60000);
