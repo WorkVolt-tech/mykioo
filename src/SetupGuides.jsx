@@ -22,6 +22,37 @@ const platformOptions=[
 ];
 const titleFor=(options,id,fr)=>options.find(o=>o.id===id)?.[fr?'fr':'en']||id;
 
+// Shared Downloader catalog: intentionally a built-in guide so it remains pinned
+// without creating or changing any Supabase guide records.
+const androidDownloaderGuide={
+ id:'mykioo-android-downloader-collection',category:'setup',platform:'general',published:true,sort_order:-1,
+ title_en:'START HERE — Android app downloads (code 6050216)',
+ title_fr:'COMMENCEZ ICI — Applications Android (code 6050216)',
+ summary_en:'Use Downloader code 6050216 to browse a collection of apps for compatible Android and Fire OS devices. Follow these steps before choosing an app.',
+ summary_fr:'Utilisez le code Downloader 6050216 pour parcourir une sélection d’applications pour les appareils Android et Fire OS compatibles. Suivez ces étapes avant de choisir une application.',
+ steps_en:[
+  '1. Check your device: this guide is for Android TV, Google TV, Android phones/tablets and Fire TV Sticks running Fire OS. Android APKs do not work on Vega OS, iPhone or Apple TV.',
+  '2. Install the Downloader app by AFTVnews from your device’s app store, if available.',
+  '3. Fire OS only: when required, allow Downloader under Settings > My Fire TV > Developer Options > Install Unknown Apps. If Developer Options is hidden, open My Fire TV > About and select the device name seven times, then return to settings.',
+  '4. Android TV, Google TV or Android phone/tablet: if asked, allow Downloader to install apps from this source in your device’s settings.',
+  '5. Open Downloader, enter 6050216 into the address/code box and select Go.',
+  '6. Browse the collection and pick just the app that works with your device. The code opens a selection of download options; it does not install every app automatically.',
+  '7. Check the publisher and source before installing. Follow the selected player’s login instructions: some use Xtream Codes/M3U credentials, while others require an activation code. They are not interchangeable.',
+  '8. For safety, revoke Downloader’s install-unknown-apps permission after installation if you no longer need it. Contact MYKIOO Support if setup fails.'
+ ].join('\\n'),
+ steps_fr:[
+  '1. Vérifiez votre appareil : ce guide concerne Android TV, Google TV, les téléphones/tablettes Android et les Fire TV Stick sous Fire OS. Les APK Android ne fonctionnent pas sous Vega OS, sur iPhone ou sur Apple TV.',
+  '2. Installez l’application Downloader d’AFTVnews depuis la boutique d’applications de votre appareil, si disponible.',
+  '3. Sous Fire OS seulement : au besoin, autorisez Downloader dans Paramètres > Ma Fire TV > Options pour les développeurs > Installer des applis inconnues. Si ce menu est masqué, ouvrez Ma Fire TV > À propos et sélectionnez sept fois le nom de l’appareil, puis revenez aux paramètres.',
+  '4. Sur Android TV, Google TV ou téléphone/tablette Android : si demandé, autorisez Downloader à installer des applications de cette source dans les paramètres de l’appareil.',
+  '5. Ouvrez Downloader, saisissez 6050216 dans la barre d’adresse ou de code, puis sélectionnez Go.',
+  '6. Parcourez la sélection et choisissez uniquement l’application compatible avec votre appareil. Le code donne accès à plusieurs options de téléchargement; il ne les installe pas toutes automatiquement.',
+  '7. Vérifiez l’éditeur et la provenance avant d’installer. Suivez la méthode de connexion du lecteur choisi : certains utilisent Xtream Codes/M3U, d’autres un code d’activation. Ces méthodes ne sont pas interchangeables.',
+  '8. Pour votre sécurité, retirez l’autorisation d’installer des applications inconnues après l’installation si elle n’est plus nécessaire. Contactez l’assistance MYKIOO en cas de problème.'
+ ].join('\\n')
+};
+
+
 // These download URLs, compatible platforms and login types are transcribed from
 // the owner's reseller-panel screenshot. They are third-party APKs, not hosted by MYKIOO.
 // The URL must appear in a published guide's steps for its download controls to appear.
@@ -39,7 +70,7 @@ const xciptvPlayUrl='https://play.google.com/store/apps/details?id=com.nathnetwo
 const officialXciptvLink=guide=>guide.platform==='android_tv'&&(guide.steps_en||'').includes(xciptvPlayUrl)?xciptvPlayUrl:null;
 // Guide titles now identify exactly one device type, so don't label an
 // Android tutorial as Fire TV just because that APK happens to support both.
-const guidePlatformLabel=(guide,fr)=>titleFor(platformOptions,guide.platform,fr);
+const guidePlatformLabel=(guide,fr)=>guide.id===androidDownloaderGuide.id?(fr?'Android / Fire OS':'Android / Fire OS'):titleFor(platformOptions,guide.platform,fr);
 
 const fresh=()=>({id:'',title_en:'',title_fr:'',summary_en:'',summary_fr:'',steps_en:'',steps_fr:'',category:'setup',platform:'general',published:false,sort_order:0});
 const orderGuides=(a,b)=>a.sort_order-b.sort_order||new Date(b.updated_at)-new Date(a.updated_at);
@@ -90,6 +121,7 @@ function GuideCard({guide,language='en',owner=false,userId=''}){
  const app=downloadFor(guide);
  const protonLink=officialProtonLink(guide);
  const xciptvLink=officialXciptvLink(guide);
+ const isDownloaderCatalog=guide.id===androidDownloaderGuide.id;
  const instructions=(fr?guide.steps_fr:guide.steps_en)||'';
  const steps=instructions.split(/\r?\n/).map(s=>s.trim()).filter(Boolean)
   .filter(step=>!(app&&step.endsWith(app.url)&&/^(download url|lien de téléchargement)\s*:/i.test(step)));
@@ -110,6 +142,10 @@ function GuideCard({guide,language='en',owner=false,userId=''}){
   </button>
   {expanded&&<div className="mykioo-guide-detail">
    <h4>{tr('Follow each step in order','Suivez chaque étape dans l’ordre')}</h4>
+   {isDownloaderCatalog&&<div className="mykioo-guide-downloader-code">
+    <span>{tr('Shared Downloader code','Code Downloader commun')}: <strong>6050216</strong></span>
+    <button type="button" onClick={()=>copyValue('6050216','catalog') }><Copy size={15}/>{copied==='catalog'?tr('Copied!','Copié !'):tr('Copy code','Copier le code')}</button>
+   </div>}
    <div className="mykioo-guide-wizard" aria-label={tr('Guided installation','Installation guidée')}>
     <div className="mykioo-guide-progress-header">
      <strong>{tr('Step','Étape')} {Math.min(safeStep+1,steps.length)} {tr('of','sur')} {steps.length}</strong>
@@ -174,6 +210,7 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId=''}){
  const [search,setSearch]=useRememberedState(scope+':search','', 'session');
  const [category,setCategory]=useRememberedState(scope+':category','all');
  const [platform,setPlatform]=useRememberedState(scope+':platform','all');
+ const showDownloaderGuide=(category==='all'||category==='setup')&&['all','fire_tv','android_tv','android'].includes(platform);
  const visible=guides.filter(g=>g.published).filter(g=>{
   const term=search.trim().toLocaleLowerCase();
   return (!term||[g.title_en,g.title_fr,g.summary_en,g.summary_fr,g.steps_en,g.steps_fr].some(x=>(x||'').toLocaleLowerCase().includes(term)))
@@ -210,10 +247,10 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId=''}){
   </div>}
   {error&&<p role="alert" className="mykioo-profile-error">{tr('Could not load guides. Please refresh this page.','Impossible de charger les guides. Veuillez actualiser cette page.')}</p>}
   {loading?<p className="mykioo-guide-empty">{tr('Loading guides…','Chargement des guides…')}</p>:
-   visible.length===0?<div className="mykioo-guide-empty">
+   (visible.length===0&&!showDownloaderGuide)?<div className="mykioo-guide-empty">
     <BookOpen size={24}/><strong>{guides.length===0?tr('Guides are being prepared.','Les guides sont en préparation.'):tr('No guides match your search.','Aucun guide ne correspond à votre recherche.')}</strong>
     <p>{tr('Need assistance? You can contact MYKIOO Support.','Besoin d’aide ? Vous pouvez contacter l’assistance MYKIOO.')}</p>
-   </div>:<div className="mykioo-guide-list">{visible.map(g=><GuideCard key={g.id} guide={g} language={language} userId={userId}/>)}</div>}
+   </div>:<div className="mykioo-guide-list">{showDownloaderGuide&&<GuideCard key={androidDownloaderGuide.id} guide={androidDownloaderGuide} language={language} userId={userId}/>} {visible.map(g=><GuideCard key={g.id} guide={g} language={language} userId={userId}/>)}</div>}
   <div className="mykioo-guide-help">
    <div><strong>{tr('Still need help?','Vous avez encore besoin d’aide ?')}</strong>
     <p>{tr('Send a support request. Please allow up to 24 hours for an initial reply.','Envoyez une demande d’assistance. Veuillez prévoir jusqu’à 24 heures pour une première réponse.')}</p></div>
