@@ -26,8 +26,8 @@ const titleFor=(options,id,fr)=>options.find(o=>o.id===id)?.[fr?'fr':'en']||id;
 // without creating or changing any Supabase guide records.
 const androidDownloaderGuide={
  id:'mykioo-android-downloader-collection',category:'setup',platform:'general',published:true,sort_order:-1,
- title_en:'START HERE — Android app downloads (code 6050216)',
- title_fr:'COMMENCEZ ICI — Applications Android (code 6050216)',
+ title_en:'MYKIOO App Downloads — Downloader Code 6050216',
+ title_fr:'Applications MYKIOO — Code Downloader 6050216',
  summary_en:'Use Downloader code 6050216 to browse a collection of apps for compatible Android and Fire OS devices. Follow these steps before choosing an app.',
  summary_fr:'Utilisez le code Downloader 6050216 pour parcourir une sélection d’applications pour les appareils Android et Fire OS compatibles. Suivez ces étapes avant de choisir une application.',
  steps_en:[
