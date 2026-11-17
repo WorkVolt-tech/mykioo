@@ -47,11 +47,8 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
   });setNotice('');setError('');
 }
  async function resendLoginDetails(subscription){
-  if(!subscription?.id||!['active','expired'].includes(subscription.status)||!subscription.has_password||!subscription.service_username||saving||resendingId)return;
-  const isExpired=subscription.status==='expired'||(subscription.expires_at&&Date.parse(subscription.expires_at)<Date.now());
-  if(!window.confirm(isExpired?
-   tr('This subscription has expired. Send its original username, password and server URL anyway? The service may no longer work.','Cet abonnement a expiré. Renvoyer ses identifiants et son adresse du serveur quand même ? Le service pourrait ne plus fonctionner.'):
-   tr('Resend this service username, password and server URL to the member’s registered email?','Renvoyer l’identifiant, le mot de passe et l’adresse du serveur à l’adresse courriel enregistrée du membre ?')))return;
+  if(!subscription?.id||subscription.status!=='active'||!subscription.has_password||!subscription.service_username||saving||resendingId)return;
+  if(!window.confirm(tr('Resend this service username, password and server URL to the member’s registered email?','Renvoyer l’identifiant, le mot de passe et l’adresse du serveur à l’adresse courriel enregistrée du membre ?')))return;
   setResendingId(subscription.id);setResendFeedback(null);setError('');setNotice('');
   try{
    const {data:{session},error:authError}=await supabase.auth.getSession();
@@ -294,7 +291,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     <label>{tr('Expiry date — automatically calculated; editable','Date d’expiration — calculée automatiquement, modifiable')}<input type="date" value={form.expires_at} disabled={trialEditor} onChange={e=>update('expires_at',e.target.value)}/></label>
     <p className="mykioo-sub-note">{tr('Passwords are encrypted on the server. Members must verify their email before viewing them. Encryption must first be configured in Supabase.','Les mots de passe sont chiffrés sur le serveur. Les membres doivent vérifier leur adresse courriel avant de les afficher. Le chiffrement doit d’abord être configuré dans Supabase.')}</p>
     <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!customerEmail.trim()} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):trialEditor?tr('Activate 24-hour free trial','Activer l’essai gratuit de 24 heures'):tr('Save subscription','Enregistrer l’abonnement')}</button>
-     {form.id&&!form.request_id&&subscriptions.some(sub=>sub.id===form.id&&['active','expired'].includes(sub.status)&&sub.has_password)&&<button className="admin-action" type="button" disabled={saving||Boolean(resendingId)} onClick={()=>resendLoginDetails(subscriptions.find(sub=>sub.id===form.id))}>{resendingId===form.id?tr('Sending login email…','Envoi des identifiants…'):tr('Resend login details','Renvoyer les identifiants')}</button>}
+     {form.id&&!form.request_id&&subscriptions.some(sub=>sub.id===form.id&&sub.status==='active'&&sub.has_password)&&<button className="admin-action" type="button" disabled={saving||Boolean(resendingId)} onClick={()=>resendLoginDetails(subscriptions.find(sub=>sub.id===form.id))}>{resendingId===form.id?tr('Sending login email…','Envoi des identifiants…'):tr('Resend login details','Renvoyer les identifiants')}</button>}
      {(form.id||form.request_id)&&<button className="admin-action" type="button" onClick={()=>{setForm(newForm());setCustomerEmail('');setCreatedInvite(null);setError('')}}>{tr("Cancel editing","Annuler")}</button>}
     </div>
    </form>
