@@ -2,21 +2,29 @@ import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-credential-access';
+const PASSWORD_VISIBLE_MS=10*60*1000;
 export default function PasswordReveal({subscription,language='en'}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
- const [phase,setPhase]=useState('hidden'),[challenge,setChallenge]=useState(''),[code,setCode]=useState(''),[password,setPassword]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[seconds,setSeconds]=useState(0);
+ const [phase,setPhase]=useState('hidden'),[challenge,setChallenge]=useState(''),[code,setCode]=useState(''),[password,setPassword]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[seconds,setSeconds]=useState(0),[revealDeadline,setRevealDeadline]=useState(null);
  useEffect(()=>{
-   if(phase!=='shown')return;
-   const timer=window.setTimeout(()=>{setPassword('');setPhase('hidden')},60000);
-   const onHide=()=>{if(document.visibilityState!=='visible'){setPassword('');setPhase('hidden')}};
-   document.addEventListener('visibilitychange',onHide);
-   return()=>{window.clearTimeout(timer);document.removeEventListener('visibilitychange',onHide)};
- },[phase]);
+   if(phase!=='shown'||!revealDeadline)return;
+   const updateRemaining=()=>{
+     const remaining=Math.max(0,Math.ceil((revealDeadline-Date.now())/1000));
+     setSeconds(remaining);
+     if(remaining===0){setPassword('');setPhase('hidden');setRevealDeadline(null);}
+   };
+   updateRemaining();
+   const timer=window.setInterval(updateRemaining,1000);
+   // Switching to a TV setup app won't immediately hide the password.
+   // The absolute deadline still expires while the tab is in the background.
+   document.addEventListener('visibilitychange',updateRemaining);
+   return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',updateRemaining)};
+ },[phase,revealDeadline]);
  useEffect(()=>{
-   if(seconds<=0)return;
+   if(phase!=='code'||seconds<=0)return;
    const timer=setTimeout(()=>setSeconds(old=>Math.max(0,old-1)),1000);
    return()=>clearTimeout(timer);
- },[seconds]);
+ },[seconds,phase]);
  async function request(action,extra={}){
   const {data:{session},error:authError}=await supabase.auth.getSession();
   if(authError||!session)throw Error(tr('Session expired. Sign in again.','Session expirée. Reconnectez-vous.'));
@@ -41,11 +49,11 @@ export default function PasswordReveal({subscription,language='en'}){
   e.preventDefault();if(busy)return;setBusy(true);setError('');
   try{
    const result=await request('verify_code',{challenge_id:challenge,code:code.trim()});
-   setPassword(result.password);setCode('');setChallenge('');setPhase('shown');setSeconds(0);
+   setPassword(result.password);setCode('');setChallenge('');setRevealDeadline(Date.now()+PASSWORD_VISIBLE_MS);setSeconds(PASSWORD_VISIBLE_MS/1000);setPhase('shown');
   }catch(err){setError(err.message)}
   finally{setBusy(false)}
  }
- function conceal(){setPassword('');setCode('');setChallenge('');setPhase('hidden')}
+ function conceal(){setPassword('');setCode('');setChallenge('');setRevealDeadline(null);setSeconds(0);setPhase('hidden')}
  if(!subscription.has_password)return null;
  return <section className="mykioo-password-reveal">
   {phase==='hidden'&&<button type="button" className="mykioo-reveal-button" disabled={busy} onClick={sendCode}>
@@ -58,8 +66,9 @@ export default function PasswordReveal({subscription,language='en'}){
     <div className="mykioo-reveal-buttons"><button disabled={busy||code.length!==6} type="submit">{busy?tr('Verifying…','Vérification…'):tr('Verify and reveal','Vérifier et afficher')}</button><button type="button" onClick={conceal}>{tr('Cancel','Annuler')}</button></div>
   </form>}
   {phase==='shown'&&<div className="mykioo-password-open">
-   <p>{tr('Service password (hidden again after 60 seconds)','Mot de passe du service (masqué après 60 secondes)')}</p>
+   <p>{tr('Service password · automatically hidden after 10 minutes','Mot de passe du service · masqué automatiquement après 10 minutes')}</p>
    <code>{password}</code>
+   <small role="timer" aria-live="off">{tr('Time remaining','Temps restant')}: {Math.floor(seconds/60)}:{String(seconds%60).padStart(2,'0')}</small>
    <div className="mykioo-reveal-buttons">
     <button type="button" onClick={()=>{if(navigator.clipboard?.writeText)navigator.clipboard.writeText(password).catch(()=>{})}}>{tr('Copy password','Copier le mot de passe')}</button>
     <button type="button" onClick={conceal}>{tr('Hide now','Masquer')}</button>
