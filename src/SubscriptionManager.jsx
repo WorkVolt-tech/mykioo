@@ -11,7 +11,7 @@ const dateOnly=value=>value?new Date(value).toISOString().slice(0,10):'';
 
 export default function SubscriptionManager({members=[],subscriptions=[],requests=[],cancellations=[],language='en',onSaved,view='all',onViewChange}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
- const [form,setForm]=useState(newForm),[saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [form,setForm]=useState(newForm),[saving,setSaving]=useState(false),[resending,setResending]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [customerEmail,setCustomerEmail]=useState(''),[createdInvite,setCreatedInvite]=useState(null);
  const [requestFilter,setRequestFilter]=useState('open');
  const [paidRequests,setPaidRequests]=useState(new Set());
@@ -46,6 +46,24 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     return next;
   });setNotice('');setError('');
 }
+ async function resendLoginDetails(){
+  if(!form.id||form.request_id||saving||resending)return;
+  if(!window.confirm(tr('Resend this service username, password and server URL to the member’s registered email?','Renvoyer l’identifiant, le mot de passe et l’adresse du serveur à l’adresse courriel enregistrée du membre ?')))return;
+  setResending(true);setError('');setNotice('');
+  try{
+   const {data:{session},error:authError}=await supabase.auth.getSession();
+   if(authError||!session)throw Error(tr('Please sign in again.','Veuillez vous reconnecter.'));
+   const response=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-subscriptions',{
+    method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
+     'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},
+    body:JSON.stringify({action:'resend_login_details',subscription_id:form.id})
+   });
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok||!result.ok)throw Error(result.error||tr('Unable to resend login details.','Impossible de renvoyer les identifiants.'));
+   setNotice(tr('Login details email accepted for delivery. Ask the member to check Inbox and Spam.','Le courriel contenant les identifiants a été accepté pour livraison. Demandez au membre de vérifier sa boîte de réception et ses indésirables.'));
+  }catch(error){setError(error.message||tr('Unable to resend login details.','Impossible de renvoyer les identifiants.'))}
+  finally{setResending(false)}
+ }
  function edit(row){setCustomerEmail(clients.find(m=>m.user_id===row.member_id)?.email||'');setCreatedInvite(null);setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',device_count:row.device_count||1,request_id:''});setError('');setNotice('');openEditor()}
  function completeRequest(r){
    setCustomerEmail(clients.find(m=>m.user_id===r.member_id)?.email||'');setCreatedInvite(null);
@@ -270,6 +288,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     <label>{tr('Expiry date — automatically calculated; editable','Date d’expiration — calculée automatiquement, modifiable')}<input type="date" value={form.expires_at} disabled={trialEditor} onChange={e=>update('expires_at',e.target.value)}/></label>
     <p className="mykioo-sub-note">{tr('Passwords are encrypted on the server. Members must verify their email before viewing them. Encryption must first be configured in Supabase.','Les mots de passe sont chiffrés sur le serveur. Les membres doivent vérifier leur adresse courriel avant de les afficher. Le chiffrement doit d’abord être configuré dans Supabase.')}</p>
     <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!customerEmail.trim()} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):trialEditor?tr('Activate 24-hour free trial','Activer l’essai gratuit de 24 heures'):tr('Save subscription','Enregistrer l’abonnement')}</button>
+     {form.id&&!form.request_id&&form.status==='active'&&<button className="admin-action" type="button" disabled={saving||resending} onClick={resendLoginDetails}>{resending?tr('Sending login email…','Envoi des identifiants…'):tr('Resend login details','Renvoyer les identifiants')}</button>}
      {(form.id||form.request_id)&&<button className="admin-action" type="button" onClick={()=>{setForm(newForm());setCustomerEmail('');setCreatedInvite(null);setError('')}}>{tr("Cancel editing","Annuler")}</button>}
     </div>
    </form>
