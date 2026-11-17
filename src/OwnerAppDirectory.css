@@ -1,0 +1,49 @@
+.mykioo-app-editor{color:#f8edf6;--app-border:rgba(222,187,136,.24);display:grid;gap:18px}
+.mykioo-app-editor *{box-sizing:border-box}
+.mykioo-app-editor h2{font-size:1.25rem;margin:0;display:flex;align-items:center;gap:8px;color:#f8e7d0}
+.mykioo-app-editor p{color:#cbbed3;font-size:.88rem;line-height:1.6;margin:5px 0}
+.app-editor-top{display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}
+.app-editor-top>div{flex:1 1 360px}.app-editor-public{display:flex;align-items:center;gap:8px;padding:11px 14px;text-decoration:none;border-radius:9px;background:#352840;color:#f3d4a3;border:1px solid var(--app-border)}
+.mykioo-app-editor button,.mykioo-app-editor select,.mykioo-app-editor input,.mykioo-app-editor textarea{font:inherit}
+.mykioo-app-editor button{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:#332840;color:#f8eef8;border:1px solid #6d5674;border-radius:9px;padding:10px 12px;cursor:pointer}
+.mykioo-app-editor button:disabled{opacity:.5;cursor:not-allowed}
+.mykioo-app-editor button:hover:not(:disabled){background:#463452}
+.mykioo-app-editor button.primary{background:#dbba89;color:#2b1e30;border-color:#e5cda9;font-weight:750}
+.mykioo-app-editor button.primary:hover:not(:disabled){background:#f0cd92}
+.mykioo-app-editor a{color:#e6c38f}
+.mykioo-app-editor label{display:grid;gap:6px;font-size:.87rem;color:#e9d6ed;font-weight:550;min-width:0}
+.mykioo-app-editor input:not([type=checkbox]),.mykioo-app-editor select,.mykioo-app-editor textarea{background:#171321;border:1px solid #63516d;border-radius:8px;padding:10px 12px;color:#fff;width:100%;min-width:0;max-width:100%}
+.mykioo-app-editor textarea{resize:vertical}
+.app-editor-codebox{border:1px solid var(--app-border);border-top:3px solid #cfa76f;background:#22192c;padding:20px;border-radius:12px;display:grid;gap:10px}
+.app-editor-codebox>strong{color:#edcf9d;font-size:1.04rem}
+.app-editor-share{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.app-editor-share code{color:white;background:#12101c;padding:12px 14px;border-radius:8px;border:1px solid #574662;font-size:.95rem;overflow-wrap:anywhere}
+.app-editor-code-input{display:flex;align-items:end;gap:15px;flex-wrap:wrap}
+.app-editor-code-input label{min-width:185px;max-width:245px;flex:1 1 180px}
+.app-editor-code-input>a{display:inline-flex;align-items:center;gap:8px;padding:11px 0}
+.app-editor-warning{display:flex;align-items:flex-start;gap:10px;background:#27232e;border-left:3px solid #d9ae70;border-radius:9px;padding:13px 15px}
+.app-editor-warning svg{flex-shrink:0;color:#d8bd8b}.app-editor-warning p{margin:0}
+.app-editor-error,.app-editor-notice{display:flex;align-items:center;gap:8px;padding:12px;border-radius:9px}
+.app-editor-error{background:#4e2731;border:1px solid #a76775!important;color:#ffd0d0!important}
+.app-editor-notice{background:#213329;border:1px solid #5f876e!important;color:#cef5d8!important}
+.app-editor-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:4px 0}
+.app-editor-toolbar strong{color:#eed6b1}.app-editor-toolbar p{font-size:.75rem;margin:0}
+.app-editor-actions{display:flex;gap:8px;flex-wrap:wrap}
+.app-editor-empty{border:1px dashed #7b6680;border-radius:12px;color:#cbbad0;padding:28px;text-align:center}
+.app-editor-list{display:grid;gap:11px}
+.app-editor-card{border:1px solid var(--app-border);border-radius:12px;background:#201a29;overflow:hidden}
+.app-editor-cardbar{display:flex;align-items:center;gap:6px;padding:8px}
+.app-editor-row-title{display:flex!important;align-items:center;justify-content:space-between!important;gap:14px;flex:1!important;border:0!important;background:transparent!important;text-align:left!important}
+.app-editor-row-title span:first-child{display:flex;flex-direction:column;gap:4px;min-width:0}
+.app-editor-row-title small{font-size:.74rem;color:#baa4c2;overflow-wrap:anywhere}
+.app-editor-form{padding:18px;display:grid;gap:18px;border-top:1px solid var(--app-border)}
+.app-editor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:15px}
+.app-editor-form fieldset{border:1px solid #625071;border-radius:9px;padding:14px}
+.app-editor-form legend{color:#dfc6e4;font-size:.87rem;padding:0 6px}
+.app-editor-platforms{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:8px}
+.app-editor-platforms label,.mykioo-app-editor label.app-editor-check{display:flex;align-items:center;gap:9px;color:#e6dae8;font-weight:450}
+.app-editor-platforms input,.app-editor-check input{accent-color:#d3a873;flex-shrink:0}
+.app-editor-remove{justify-self:start;color:#ffc5c5!important;border-color:#874d60!important}
+.app-editor-footer{display:flex;align-items:center;gap:9px;color:#b5a5bd;font-size:.77rem;border-top:1px solid var(--app-border);padding:16px 2px}
+.app-editor-footer svg{flex-shrink:0}
+@media(max-width:680px){.app-editor-top,.app-editor-toolbar{align-items:stretch}.app-editor-actions{width:100%}.app-editor-actions button{flex:1}.app-editor-cardbar>button:not(.app-editor-row-title){padding:10px 8px}.app-editor-form{padding:12px}}
