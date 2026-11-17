@@ -20,7 +20,7 @@ const serviceHost="http://6af5bd6ba0648.stream-sky.online";
 async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionId:string,memberId:string){
  try{
   const {data:member,error:memberError}=await db.from("mykioo_members").select("email,preferred_language").eq("user_id",memberId).single();
-  const {data:subscription,error:subscriptionError}=await db.from("mykioo_subscriptions").select("service_username,service_host,status,expires_at").eq("id",subscriptionId).eq("member_id",memberId).single();
+  const {data:subscription,error:subscriptionError}=await db.from("mykioo_subscriptions").select("service_username,service_host").eq("id",subscriptionId).eq("member_id",memberId).single();
   const {data:credential,error:credentialError}=await db.from("mykioo_subscription_credentials").select("iv,cipher_text").eq("subscription_id",subscriptionId).single();
   const key=await encryptionKey(),mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if(memberError||subscriptionError||credentialError||!member?.email||!subscription?.service_username||!credential||!key||!mailerKey)throw Error("Email prerequisites unavailable");
@@ -32,18 +32,15 @@ async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionI
   if(!templateResponse.ok||!template?.sender?.email)throw Error("Sender unavailable");
   const title=fr?"Votre commande est terminée":"Your order is complete";
   const intro=fr?"Voici vos identifiants de connexion Xtream Codes pour votre service MYKIOO.":"Here are your Xtream Codes login details for your MYKIOO service.";
-  const isExpired=subscription.status==="expired"||Boolean(subscription.expires_at&&Date.parse(subscription.expires_at)<=Date.now());
-  const expiryWarning=isExpired?(fr?"Attention : cet abonnement est expiré. Le renvoi des identifiants ne réactive pas le service.":"Note: this subscription has expired. Resending the login details does not reactivate service."):"";
-  const expiredMarkup=expiryWarning?'<p style="color:#f3c18a">'+expiryWarning+'</p>':"";
   const {data:request}=await db.from("mykioo_subscription_requests").select("id").eq("subscription_id",subscriptionId).eq("request_type","trial").maybeSingle();
   const {data:panel}=request?await db.from("mykioo_panel_trials").select("host").eq("request_id",request.id).maybeSingle():{data:null};
   const accountHost=panel?.host||subscription.service_host||serviceHost;
   const rows=[[fr?"Nom d’utilisateur":"Username",subscription.service_username],[fr?"Mot de passe":"Password",password],[fr?"Adresse du serveur":"Host URL",accountHost]];
   const escape=(value:string)=>value.replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]||char));
-  const htmlContent=`<!doctype html><html lang="${fr?"fr":"en"}"><body style="background:#090b13;padding:24px;font-family:Arial,sans-serif;color:#f5ecf7"><table role="presentation" style="max-width:560px;width:100%;margin:auto;background:#171422;border:1px solid #574563;border-top:3px solid #dab77c;border-radius:16px"><tr><td style="padding:28px"><img src="https://mykioo.pages.dev/MYKIOO-Email-Logo.png" width="90" alt="MYKIOO"><h1 style="color:#e6c38d;font-size:26px">${title}</h1><p>${intro}</p>${expiredMarkup}<table style="width:100%;background:#211b2d">${rows.map(([label,value])=>`<tr><td style="padding:12px;vertical-align:top">${label}</td><td style="padding:12px;word-break:break-all;white-space:pre-wrap">${escape(value)}</td></tr>`).join("")}</table><p><a href="${origin}" style="color:#e6c38d">${fr?"Ouvrir MYKIOO et les guides d’installation":"Open MYKIOO and the setup guides"}</a></p></td></tr></table></body></html>`;
+  const htmlContent=`<!doctype html><html lang="${fr?"fr":"en"}"><body style="background:#090b13;padding:24px;font-family:Arial,sans-serif;color:#f5ecf7"><table role="presentation" style="max-width:560px;width:100%;margin:auto;background:#171422;border:1px solid #574563;border-top:3px solid #dab77c;border-radius:16px"><tr><td style="padding:28px"><img src="https://mykioo.pages.dev/MYKIOO-Email-Logo.png" width="90" alt="MYKIOO"><h1 style="color:#e6c38d;font-size:26px">${title}</h1><p>${intro}</p><table style="width:100%;background:#211b2d">${rows.map(([label,value])=>`<tr><td style="padding:12px;vertical-align:top">${label}</td><td style="padding:12px;word-break:break-all;white-space:pre-wrap">${escape(value)}</td></tr>`).join("")}</table><p><a href="${origin}" style="color:#e6c38d">${fr?"Ouvrir MYKIOO et les guides d’installation":"Open MYKIOO and the setup guides"}</a></p></td></tr></table></body></html>`;
   const sent=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=email"),{method:"POST",headers:{"api-key":mailerKey,"Content-Type":"application/json"},body:JSON.stringify({
    sender:{email:template.sender.email,name:"MYKIOO"},to:[{email:member.email}],subject:"MYKIOO | "+title,
-   htmlContent,textContent:[title,intro,expiryWarning,...rows.map(([label,value])=>label+": "+value),origin].filter(Boolean).join("\n"),
+   htmlContent,textContent:[title,intro,...rows.map(([label,value])=>label+": "+value),origin].join("\n"),
    tags:["mykioo","order-completed"]
   })});
   const result=await sent.json();
@@ -80,8 +77,8 @@ Deno.serve(async (req) => {
    if(!uuid(subscriptionId))return response({error:"Select a valid subscription."},400);
    const {data:sub,error:subError}=await db.from("mykioo_subscriptions")
      .select("id,member_id,status,service_username").eq("id",subscriptionId).maybeSingle();
-   if(subError||!sub||!["active","expired"].includes(sub.status)||!sub.service_username)
-     return response({error:"Only active or expired subscriptions with a service login can receive a resend."},409);
+   if(subError||!sub||sub.status!=="active"||!sub.service_username)
+     return response({error:"Only active subscriptions with a service login can receive a resend."},409);
    // The recipient is the saved member email; no address or password comes from browser input.
    const {count,error:rateError}=await db.from("mykioo_audit_logs").select("id",{count:"exact",head:true})
      .eq("action","subscription_login_email_resent").eq("entity_id",subscriptionId)
