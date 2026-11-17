@@ -11,7 +11,7 @@ const isCode=(s:string)=>!s||/^[0-9]{4,10}$/.test(s);
 function isHttpsUrl(s:string){
  try{const u=new URL(s);return u.protocol==="https:"&&!u.username&&!u.password&&!["localhost","127.0.0.1","::1"].includes(u.hostname.toLowerCase())&&u.hostname.includes(".")&&u.href.length<=1600}catch{return false}
 }
-const respond=(data:unknown,status=200,origin="*")=>new Response(JSON.stringify(data),{status,headers:{"Content-Type":"application/json","Cache-Control":"no-store",
+const respond=(data:unknown,status=200,origin="*")=>new Response(status===204?null:JSON.stringify(data),{status,headers:{"Content-Type":"application/json","Cache-Control":"no-store",
  "Access-Control-Allow-Origin":origin,"Access-Control-Allow-Headers":"authorization,apikey,content-type,x-client-info",
  "Access-Control-Allow-Methods":"GET,POST,OPTIONS","Vary":"Origin"}});
 type Entry={id:string;name_en:string;name_fr:string;description_en:string;description_fr:string;url:string;
