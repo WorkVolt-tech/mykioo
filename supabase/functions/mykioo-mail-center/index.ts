@@ -150,7 +150,7 @@ Deno.serve(async request=>{
   const a=await announcementState(db);
   if(action==="announcement_status")return json({ok:true,campaign_id:CAMPAIGN,total:a.total,sent:a.sent,remaining:a.pending.length,previews:announcement},200,corsOrigin);
   if(input.confirm!==true||input.campaign_id!==CAMPAIGN)return json({error:"Explicit confirmation required"},400,corsOrigin);
-  if(!a.pending.length)return json({ok:true,total:a.total,sent:a.sent,remaining:0,accepted:0,failed:0},200,corsOrigin);
+  if(!a.pending.length)return json({ok:true,campaign_id:CAMPAIGN,total:a.total,sent:a.sent,remaining:0,accepted:0,failed:0},200,corsOrigin);
   const smtp=nodemailer.createTransport({host:"smtp.ionos.com",port:465,secure:true,auth:{user:ACCOUNT,pass:password},connectionTimeout:12000,greetingTimeout:12000,socketTimeout:18000});
   let accepted=0,failed=0;
   try{
@@ -166,7 +166,7 @@ Deno.serve(async request=>{
    }
   }finally{smtp.close()}
   const after=await announcementState(db);
-  return json({ok:failed===0,total:after.total,sent:after.sent,remaining:after.pending.length,accepted,failed,...(failed?{error:"Some messages were not accepted. Check counts before retrying."}:{})},failed?207:200,corsOrigin);
+  return json({ok:failed===0,campaign_id:CAMPAIGN,total:after.total,sent:after.sent,remaining:after.pending.length,accepted,failed,...(failed?{error:"Some messages were not accepted. Check counts before retrying."}:{})},failed?207:200,corsOrigin);
  }
  if(action==="members"){
    const term=clean(input.search,100);
