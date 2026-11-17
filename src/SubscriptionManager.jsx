@@ -159,7 +159,9 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
    setNotice(invitationSent?
     tr('Subscription saved. MYKIOO issued the new customer a site invitation. The account must be approved before access is granted.','Abonnement enregistré. MYKIOO a envoyé une invitation au nouveau client. Le compte doit être approuvé avant l’accès.'):
     trialEditor?tr('Free trial activated for 24 hours. Disable the external service when it expires.','Essai gratuit activé pour 24 heures. Désactivez le service externe à son expiration.'):tr('Subscription saved for this customer.','Abonnement enregistré pour ce client.'));
-   if(result.notification)setNotice(current=>current+' '+(result.notification==='accepted'?
+   if(result.notification)setNotice(current=>current+' '+(result.notification==='queued'?
+    tr('Login details (username, password and server URL) are queued for email delivery.','Les identifiants (nom d’utilisateur, mot de passe et adresse du serveur) sont en attente d’envoi par courriel.'):
+    result.notification==='accepted'?
     tr('The service login email was accepted for delivery.','Le courriel contenant les identifiants a été accepté pour livraison.'):
     tr('The order is complete, but the service login email failed. Contact the customer with their credentials.','La commande est terminée, mais l’envoi des identifiants a échoué. Communiquez les identifiants au client.')));
    onSaved?.();
