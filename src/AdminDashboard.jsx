@@ -87,6 +87,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  const tr=(english,french)=>fr?french:english;
  const [tab,setTab]=usePageSection(tabs.map(item=>item.id),'overview','owner:'+user.id),[rows,setRows]=useState({}),[loading,setLoading]=useState(true),[error,setError]=useState('');const [selectedTicketIds,setSelectedTicketIds]=useState([]);
  const [mobileNav,setMobileNav]=useState(false);
+ const [pendingPaymentCount,setPendingPaymentCount]=useState(0);
   const [supportView,setSupportView]=useRememberedState('mykioo-ui:owner:'+user.id+':support-view','tickets');
   const [subscriptionView,setSubscriptionView]=useRememberedState('mykioo-ui:owner:'+user.id+':subscription-view','queue');
   const [guideView,setGuideView]=useRememberedState('mykioo-ui:owner:'+user.id+':guide-view','faq');
@@ -100,6 +101,8 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     if(error)throw Error(table+': '+error.message);
     return [key,data||[]];
    }));
+   const paymentCount=await supabase.from('mykioo_billing_invoices').select('id',{count:'exact',head:true}).eq('state','payment_submitted');
+   if(!paymentCount.error)setPendingPaymentCount(paymentCount.count||0);
    setRows(previous=>{
     const fresh=Object.fromEntries(all);
     return JSON.stringify(previous)===JSON.stringify(fresh)?previous:fresh;
@@ -225,7 +228,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    }finally{running=false}
   }
   refresh();
-  const tables=['mykioo_members','mykioo_invitations','mykioo_invitation_requests','mykioo_membership_history','mykioo_plans','mykioo_subscriptions','mykioo_orders','mykioo_support_tickets','mykioo_subscription_requests','mykioo_subscription_cancellation_requests','mykioo_audit_logs'];
+  const tables=['mykioo_members','mykioo_invitations','mykioo_invitation_requests','mykioo_membership_history','mykioo_plans','mykioo_subscriptions','mykioo_orders','mykioo_support_tickets','mykioo_subscription_requests','mykioo_subscription_cancellation_requests','mykioo_audit_logs','mykioo_billing_invoices'];
   let channel=supabase.channel('mykioo-admin-live-'+user.id);
   tables.forEach(table=>{channel=channel.on('postgres_changes',{event:'*',schema:'public',table},sync)});
   channel.subscribe(status=>{if(status==='SUBSCRIBED')sync()});
@@ -341,6 +344,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
       aria-current={tab===id?'page':undefined} onClick={()=>navigate(id)}>
       <Icon size={18}/><span>{tr(...ownerLabels[id])}</span>
       {id==='support'&&unreadTotal>0&&<span className="mykioo-unread-dot">{unreadTotal>99?'99+':unreadTotal}</span>}
+      {id==='billing'&&pendingPaymentCount>0&&<span className="mykioo-unread-dot" aria-label={tr('Payments awaiting verification','Paiements à vérifier')}>{pendingPaymentCount>99?'99+':pendingPaymentCount}</span>}
       {id==='notifications'&&notificationUnread>0&&<span className="mykioo-unread-dot">{notificationUnread>99?'99+':notificationUnread}</span>}
       {id==='invitations'&&(rows.invitation_requests||[]).some(r=>r.status==='pending')&&<span className="mykioo-unread-dot">{(rows.invitation_requests||[]).filter(r=>r.status==='pending').length}</span>}
      </button>
@@ -428,7 +432,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      <SubscriptionRequests owner view="form" userId={user.id} members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>
     </div>
    </section>}
-  {tab==='billing'&&<OwnerBilling language={language} userId={user.id} requests={rows.subscription_requests||[]} members={rows.members||[]}/>}{tab==='activity'&&<ActivityHistory members={rows.members||[]} language={language}/>}{tab==='notifications'&&<NotificationCenter owner items={notifications} language={language} markRead={markNotificationRead} clearNotifications={clearNotifications} onSelect={section=>setTab(section)}/>}{tab==='guides'&&<section className="admin-workspace-section">
+  {tab==='billing'&&<OwnerBilling language={language} userId={user.id} requests={rows.subscription_requests||[]} members={rows.members||[]} onSaved={()=>refresh({silent:true})}/>}{tab==='activity'&&<ActivityHistory members={rows.members||[]} language={language}/>}{tab==='notifications'&&<NotificationCenter owner items={notifications} language={language} markRead={markNotificationRead} clearNotifications={clearNotifications} onSelect={section=>setTab(section)}/>}{tab==='guides'&&<section className="admin-workspace-section">
   <div className="admin-subnav" role="tablist" aria-label={tr('Help content sections','Sections du contenu d’aide')}>
    {guideViews.map(view=><button type="button" role="tab" key={view.id} aria-selected={guideView===view.id} onClick={()=>setGuideView(view.id)}>
     <view.Icon size={16}/>{tr(view.en,view.fr)}

@@ -3,7 +3,7 @@ import {supabase} from './supabase';
 import SubscriptionDirectory from './SubscriptionDirectory';
 import './CountryPackPicker.css';
 
-const blank={id:'',member_id:'',service_name:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:'',contract_days:365,device_count:1,service_password:'',request_id:''};
+const blank={id:'',member_id:'',service_name:'',service_username:'',supplier_reference:'',status:'active',starts_at:'',expires_at:'',contract_days:365,device_count:1,service_password:'',service_host:'',epg_url:'',request_id:''};
 const todayLocal=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const addDays=(date,days)=>{if(!date||!days)return '';const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+Number(days));return d.toISOString().slice(0,10)};
 const newForm=()=>({...blank,starts_at:todayLocal(),expires_at:addDays(todayLocal(),365)});
@@ -14,6 +14,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
  const [form,setForm]=useState(newForm),[saving,setSaving]=useState(false),[resendingId,setResendingId]=useState(null),[resendFeedback,setResendFeedback]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [customerEmail,setCustomerEmail]=useState(''),[createdInvite,setCreatedInvite]=useState(null);
  const [requestFilter,setRequestFilter]=useState('open');
+ const [showPassword,setShowPassword]=useState(false);
  const [paidRequests,setPaidRequests]=useState(new Set());
  useEffect(()=>{
   let active=true;
@@ -27,9 +28,11 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
  const clients=members.filter(m=>m.role==='member'||m.role==='owner');
  const pendingCancellationIds=new Set(cancellations.filter(c=>c.status==='pending').map(c=>c.request_id));
  const pendingRequests=requests.filter(r=>['pending','in_review'].includes(r.status));
+ const renewalEditor=Boolean(form.id&&form.request_id);
  const trialEditor=requests.some(r=>r.id===form.request_id&&r.request_type==='trial');
  const displayedRequests=requestFilter==='open'?pendingRequests:requests;
  function openEditor(){
+  setShowPassword(false);
   onViewChange?.('editor');
   window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
    document.getElementById('mykioo-subscription-editor')?.scrollIntoView({behavior:'smooth',block:'start'});
@@ -67,7 +70,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
    setResendFeedback({id:subscription.id,success:false,message});setError(message);
   }finally{setResendingId(null)}
  }
- function edit(row){setCustomerEmail(clients.find(m=>m.user_id===row.member_id)?.email||'');setCreatedInvite(null);setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',device_count:row.device_count||1,request_id:''});setError('');setNotice('');openEditor()}
+ function edit(row){setCustomerEmail(clients.find(m=>m.user_id===row.member_id)?.email||'');setCreatedInvite(null);setForm({id:row.id,member_id:row.member_id,service_name:row.service_name||'',contract_days:row.contract_days??'',service_username:row.service_username||'',service_host:row.service_host||'',epg_url:row.epg_url||'',supplier_reference:row.supplier_reference||'',status:row.status,starts_at:dateOnly(row.starts_at),expires_at:dateOnly(row.expires_at),service_password:'',device_count:row.device_count||1,request_id:''});setError('');setNotice('');openEditor()}
  function completeRequest(r){
    setCustomerEmail(clients.find(m=>m.user_id===r.member_id)?.email||'');setCreatedInvite(null);
    if(r.preferred_payment_method&&!paidRequests.has(r.id)){
@@ -80,7 +83,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
      if(!previous){setError(tr('The original subscription could not be found.','Impossible de trouver l’abonnement initial.'));return}
      const base=previous.expires_at&&dateOnly(previous.expires_at)>today?dateOnly(previous.expires_at):today;
      setForm({...blank,id:previous.id,request_id:r.id,member_id:r.member_id,service_name:previous.service_name||r.service_name,
-       service_username:previous.service_username||'',supplier_reference:previous.supplier_reference||'',status:'active',
+       service_username:previous.service_username||'',service_host:previous.service_host||'',epg_url:previous.epg_url||'',supplier_reference:previous.supplier_reference||'',status:'active',
        contract_days:days,device_count:r.device_count||1,starts_at:base,expires_at:addDays(base,days)});
    }else{
      setForm({...blank,request_id:r.id,member_id:r.member_id,service_name:r.service_name,contract_days:days,device_count:r.device_count||1,starts_at:today,expires_at:addDays(today,days),status:'active'});
@@ -169,7 +172,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
      setForm(previous=>({...previous,member_id:resolvedMemberId}));
     }
    }
-   const payload={action:'save',...form,generate_trial:trialEditor&&!form.service_username&&!form.service_password,member_id:resolvedMemberId,contract_days:form.contract_days||null,
+   const payload={action:'save',...form,notify_member:Boolean(form.id&&!form.request_id),generate_trial:trialEditor&&!form.service_username&&!form.service_password,member_id:resolvedMemberId,contract_days:form.contract_days||null,
     starts_at:form.starts_at||null,expires_at:form.expires_at||null};
    const response=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-subscriptions',{
     method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
@@ -184,7 +187,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     tr('Login details (username, password and server URL) are queued for email delivery.','Les identifiants (nom d’utilisateur, mot de passe et adresse du serveur) sont en attente d’envoi par courriel.'):
     result.notification==='accepted'?
     tr('The service login email was accepted for delivery.','Le courriel contenant les identifiants a été accepté pour livraison.'):
-    tr('The order is complete, but the service login email failed. Contact the customer with their credentials.','La commande est terminée, mais l’envoi des identifiants a échoué. Communiquez les identifiants au client.')));
+    tr('Changes saved, but the email could not be sent. Use Resend login details to retry.','Modifications enregistrées, mais le courriel n’a pas pu être envoyé. Utilisez Renvoyer les identifiants pour réessayer.')));
    onSaved?.();
   }catch(err){
    setError(((createdInvite||invitationSent)?tr('A site invitation may already have been issued. ','Une invitation a peut-être déjà été envoyée. '):'')+
@@ -266,11 +269,15 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     <label>{tr('Service / package name','Service / nom du forfait')}<input required maxLength={80} value={form.service_name} onChange={e=>update('service_name',e.target.value)} placeholder={tr('e.g. Premium package','ex. Forfait premium')}/></label>
 
     {trialEditor&&<p>{tr('Leave username and password empty to create a 24-hour trial in the panel automatically when you save. Its credentials and host will be emailed to the customer.','Laissez les identifiants vides pour créer automatiquement un essai de 24 heures lors de l’enregistrement. Les identifiants et le serveur seront envoyés au client.')}</p>}
+    {renewalEditor&&<p className="mykioo-free-trial-callout">{tr('The saved account details are reused. Review them below and enter a replacement password only if it changed with your provider.','Les renseignements du compte sont repris. Vérifiez-les ci-dessous et saisissez un nouveau mot de passe uniquement s’il a changé chez votre fournisseur.')}</p>}
     <label>{tr('Service host URL','Adresse du serveur')}<input type="url" value={form.service_host||''} onChange={e=>update('service_host',e.target.value)} placeholder={tr('Filled automatically for panel trials','Rempli automatiquement pour les essais du panneau')}/></label>
+    <label>{tr('EPG URL (TV guide)','Lien EPG (guide TV)')}<input type="url" maxLength={4096} value={form.epg_url||''} onChange={e=>update('epg_url',e.target.value)} placeholder="https://example.com/xmltv.php?username=…&password=…"/><small>{tr('Included in completion and login-details emails when provided.','Inclus dans les courriels de confirmation et d’identifiants lorsqu’il est renseigné.')}</small></label>
     <label>{tr('Service login username','Identifiant du service')}<input required={Boolean(form.request_id&&!form.id&&!trialEditor)} maxLength={160} autoComplete="off" value={form.service_username} onChange={e=>update('service_username',e.target.value)} placeholder={tr('Username / login ID','Nom d’utilisateur / identifiant')}/></label>
     <label>{form.id?tr('Replace service password (leave blank to keep)','Remplacer le mot de passe du service (laisser vide pour conserver)'):tr('Service password','Mot de passe du service')}
-      <input type="password" required={Boolean(form.request_id&&!form.id&&!trialEditor)} autoComplete="new-password" maxLength={256} value={form.service_password} onChange={e=>update('service_password',e.target.value)}
-       placeholder={tr('Encrypted when saved','Chiffré lors de l’enregistrement')}/></label>
+      <input id="mykioo-service-password" type={showPassword?'text':'password'} required={Boolean(form.request_id&&!form.id&&!trialEditor)} autoComplete="new-password" maxLength={256} value={form.service_password} onChange={e=>update('service_password',e.target.value)}
+       placeholder={form.id?tr('Leave blank to keep the saved password','Laisser vide pour conserver le mot de passe enregistré'):tr('Encrypted when saved','Chiffré lors de l’enregistrement')}/>
+      <button type="button" aria-controls="mykioo-service-password" aria-pressed={showPassword} onClick={()=>setShowPassword(value=>!value)}>{showPassword?tr('Hide password','Masquer le mot de passe'):tr('Show password','Afficher le mot de passe')}</button>
+     </label>
     <label>{tr('Provider reference (optional)','Référence du fournisseur (facultatif)')}<input maxLength={160} value={form.supplier_reference} onChange={e=>update('supplier_reference',e.target.value)}/></label>
     <label>{tr('Status','Statut')}<select value={form.status} disabled={trialEditor} onChange={e=>update('status',e.target.value)}>
      {['pending','active','expired','suspended','cancelled'].map(status=><option key={status} value={status}>{tr(({pending:'Pending',active:'Active',expired:'Expired',suspended:'Suspended',cancelled:'Cancelled'})[status],({pending:'En attente',active:'Actif',expired:'Expiré',suspended:'Suspendu',cancelled:'Annulé'})[status])}</option>)}
@@ -290,7 +297,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     <label>{tr('Start date','Date de début')}<input type="date" value={form.starts_at} disabled={trialEditor} onChange={e=>update('starts_at',e.target.value)}/></label>
     <label>{tr('Expiry date — automatically calculated; editable','Date d’expiration — calculée automatiquement, modifiable')}<input type="date" value={form.expires_at} disabled={trialEditor} onChange={e=>update('expires_at',e.target.value)}/></label>
     <p className="mykioo-sub-note">{tr('Passwords are encrypted on the server. Members must verify their email before viewing them. Encryption must first be configured in Supabase.','Les mots de passe sont chiffrés sur le serveur. Les membres doivent vérifier leur adresse courriel avant de les afficher. Le chiffrement doit d’abord être configuré dans Supabase.')}</p>
-    <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!customerEmail.trim()} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):trialEditor?tr('Activate 24-hour free trial','Activer l’essai gratuit de 24 heures'):tr('Save subscription','Enregistrer l’abonnement')}</button>
+    <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!customerEmail.trim()} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):trialEditor?tr('Activate 24-hour free trial','Activer l’essai gratuit de 24 heures'):form.request_id?tr('Complete & email details','Terminer et envoyer les accès'):form.id?tr('Save & email update','Enregistrer et envoyer la mise à jour'):tr('Save subscription','Enregistrer l’abonnement')}</button>
      {form.id&&!form.request_id&&subscriptions.some(sub=>sub.id===form.id&&sub.status==='active'&&sub.has_password)&&<button className="admin-action" type="button" disabled={saving||Boolean(resendingId)} onClick={()=>resendLoginDetails(subscriptions.find(sub=>sub.id===form.id))}>{resendingId===form.id?tr('Sending login email…','Envoi des identifiants…'):tr('Resend login details','Renvoyer les identifiants')}</button>}
      {(form.id||form.request_id)&&<button className="admin-action" type="button" onClick={()=>{setForm(newForm());setCustomerEmail('');setCreatedInvite(null);setError('')}}>{tr("Cancel editing","Annuler")}</button>}
     </div>
