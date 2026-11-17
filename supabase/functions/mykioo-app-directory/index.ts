@@ -15,7 +15,7 @@ const respond=(data:unknown,status=200,origin="*")=>new Response(status===204?nu
  "Access-Control-Allow-Origin":origin,"Access-Control-Allow-Headers":"authorization,apikey,content-type,x-client-info",
  "Access-Control-Allow-Methods":"GET,POST,OPTIONS","Vary":"Origin"}});
 type Entry={id:string;name_en:string;name_fr:string;description_en:string;description_fr:string;url:string;
- source:"store"|"publisher"|"apk";platforms:string[];downloader_code:string;published:boolean;rights_confirmed:boolean};
+ source:"store"|"publisher"|"apk";platforms:string[];blocked_platforms:string[];blocked_reason_en:string;blocked_reason_fr:string;downloader_code:string;published:boolean;rights_confirmed:boolean};
 function sanitizeEntry(raw:any):Entry|null{
  if(!raw||typeof raw!=="object")return null;
  const id=text(raw.id,70),name_en=text(raw.name_en,95),name_fr=text(raw.name_fr,95);
@@ -23,19 +23,23 @@ function sanitizeEntry(raw:any):Entry|null{
  const url=text(raw.url,1600),source=text(raw.source,20);
  const downloader_code=text(raw.downloader_code,12);
  const deviceTypes=Array.isArray(raw.platforms)?[...new Set(raw.platforms.filter((x:unknown)=>typeof x==="string"&&platforms.has(x)))]:[];
+ const blockedTypes=Array.isArray(raw.blocked_platforms)?[...new Set(raw.blocked_platforms.filter((x:unknown)=>typeof x==="string"&&platforms.has(x)))]:[];
+ const reasonEn=text(raw.blocked_reason_en,360),reasonFr=text(raw.blocked_reason_fr,360);
  if(!/^[A-Za-z0-9_-]{8,70}$/.test(id)||name_en.length<2||name_fr.length<2||!isHttpsUrl(url)||
-    !kindOptions.has(source)||!isCode(downloader_code)||!deviceTypes.length||
-    description_en.length>480||description_fr.length>480)return null;
+    !kindOptions.has(source)||!isCode(downloader_code)||!(deviceTypes.length||blockedTypes.length)||
+    description_en.length>480||description_fr.length>480||reasonEn.length>360||reasonFr.length>360||
+    deviceTypes.some(id=>blockedTypes.includes(id)))return null;
  if(source==="apk"&&raw.rights_confirmed!==true)return null;
  return {id,name_en,name_fr,description_en,description_fr,url,source:source as Entry["source"],
-  platforms:deviceTypes,downloader_code,published:raw.published===true,rights_confirmed:raw.rights_confirmed===true};
+  platforms:deviceTypes,blocked_platforms:blockedTypes,blocked_reason_en:reasonEn,blocked_reason_fr:reasonFr,
+  downloader_code,published:raw.published===true,rights_confirmed:raw.rights_confirmed===true};
 }
 async function loadCurrent(db:any){
  const {data,error}=await db.from(TABLE).select("id,details,created_at").eq("action","app_directory_saved")
    .eq("entity_type","app_directory").eq("entity_id",CAMPAIGN).order("id",{ascending:false}).limit(1).maybeSingle();
  if(error)throw Error("Could not load app library");
  const details=data?.details||{};
- const apps=Array.isArray(details.apps)?details.apps:[];
+ const apps=Array.isArray(details.apps)?details.apps.map((app:any)=>({...app,blocked_platforms:app.blocked_platforms||[],blocked_reason_en:app.blocked_reason_en||"",blocked_reason_fr:app.blocked_reason_fr||""})):[];
  return {revision:data?.id?String(data.id):"initial",updated_at:data?.created_at||null,
   downloader_code:isCode(String(details.downloader_code||""))?String(details.downloader_code||""):"",apps};
 }
@@ -52,7 +56,8 @@ Deno.serve(async request=>{
    const current=await loadCurrent(db);
    return respond({ok:true,apps:current.apps.filter((a:Entry)=>a.published===true).map((a:Entry)=>({
     id:a.id,name_en:a.name_en,name_fr:a.name_fr,description_en:a.description_en,
-    description_fr:a.description_fr,url:a.url,source:a.source,platforms:a.platforms,downloader_code:a.downloader_code
+    description_fr:a.description_fr,url:a.url,source:a.source,platforms:a.platforms,
+    blocked_platforms:a.blocked_platforms||[],blocked_reason_en:a.blocked_reason_en||"",blocked_reason_fr:a.blocked_reason_fr||"",downloader_code:a.downloader_code
    })),downloader_code:current.downloader_code,updated_at:current.updated_at},200,"*");
   }
   if(!ORIGINS.has(origin))return respond({error:"Origin not allowed"},403,ownOrigin);
