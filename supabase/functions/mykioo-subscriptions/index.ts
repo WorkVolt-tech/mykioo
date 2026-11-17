@@ -17,10 +17,10 @@ async function encryptionKey(){
 }
 
 const serviceHost="http://6af5bd6ba0648.stream-sky.online";
-async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionId:string,memberId:string){
+async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionId:string,memberId:string,updated=false){
  try{
   const {data:member,error:memberError}=await db.from("mykioo_members").select("email,preferred_language").eq("user_id",memberId).single();
-  const {data:subscription,error:subscriptionError}=await db.from("mykioo_subscriptions").select("service_username,service_host,epg_url").eq("id",subscriptionId).eq("member_id",memberId).single();
+  const {data:subscription,error:subscriptionError}=await db.from("mykioo_subscriptions").select("service_name,service_username,service_host,epg_url,expires_at,status,device_count").eq("id",subscriptionId).eq("member_id",memberId).single();
   const {data:credential,error:credentialError}=await db.from("mykioo_subscription_credentials").select("iv,cipher_text").eq("subscription_id",subscriptionId).single();
   const key=await encryptionKey(),mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if(memberError||subscriptionError||credentialError||!member?.email||!subscription?.service_username||!credential||!key||!mailerKey)throw Error("Email prerequisites unavailable");
@@ -30,19 +30,35 @@ async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionI
   const templateResponse=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=template&id=")+(fr?2:1),{headers:{"api-key":mailerKey}});
   const template=await templateResponse.json();
   if(!templateResponse.ok||!template?.sender?.email)throw Error("Sender unavailable");
-  const title=fr?"Votre commande est terminée":"Your order is complete";
-  const intro=fr?"Voici vos identifiants de connexion Xtream Codes pour votre service MYKIOO.":"Here are your Xtream Codes login details for your MYKIOO service.";
+  const title=updated
+   ?(fr?"Votre abonnement a été mis à jour":"Your subscription has been updated")
+   :(fr?"Votre commande est terminée":"Your order is complete");
+  const intro=updated
+   ?(fr?"Les renseignements de votre abonnement MYKIOO ont été mis à jour. Voici les renseignements actuels pour configurer votre application.":"Your MYKIOO subscription details have been updated. Use the current details below to configure your app.")
+   :(fr?"Voici vos identifiants de connexion Xtream Codes pour votre service MYKIOO.":"Here are your Xtream Codes login details for your MYKIOO service.");
   const {data:request}=await db.from("mykioo_subscription_requests").select("id").eq("subscription_id",subscriptionId).eq("request_type","trial").maybeSingle();
   const {data:panel}=request?await db.from("mykioo_panel_trials").select("host").eq("request_id",request.id).maybeSingle():{data:null};
-  const accountHost=panel?.host||subscription.service_host||serviceHost;
+  const accountHost=subscription.service_host||panel?.host||serviceHost;
   const rows=[[fr?"Nom d’utilisateur":"Username",subscription.service_username],[fr?"Mot de passe":"Password",password],[fr?"Adresse du serveur":"Host URL",accountHost]];
   if(subscription.epg_url)rows.push([fr?"Lien EPG (guide TV)":"EPG URL (TV guide)",subscription.epg_url]);
+  if(updated){
+   const statusLabels=fr
+    ?{pending:"En attente",active:"Actif",expired:"Expiré",suspended:"Suspendu",cancelled:"Annulé"}
+    :{pending:"Pending",active:"Active",expired:"Expired",suspended:"Suspended",cancelled:"Cancelled"};
+   rows.unshift([fr?"Service":"Service",subscription.service_name]);
+   rows.push([fr?"Statut":"Status",statusLabels[subscription.status]||subscription.status]);
+   rows.push([fr?"Nombre d’appareils":"Devices",String(subscription.device_count||1)]);
+   if(subscription.expires_at){
+    const expiry=new Intl.DateTimeFormat(fr?"fr-CA":"en-CA",{year:"numeric",month:"long",day:"numeric",timeZone:"UTC"}).format(new Date(subscription.expires_at));
+    rows.push([fr?"Date d’expiration":"Expiry date",expiry]);
+   }
+  }
   const escape=(value:string)=>value.replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]||char));
   const htmlContent=`<!doctype html><html lang="${fr?"fr":"en"}"><body style="background:#090b13;padding:24px;font-family:Arial,sans-serif;color:#f5ecf7"><table role="presentation" style="max-width:560px;width:100%;margin:auto;background:#171422;border:1px solid #574563;border-top:3px solid #dab77c;border-radius:16px"><tr><td style="padding:28px"><img src="https://mykioo.pages.dev/MYKIOO-Email-Logo.png" width="90" alt="MYKIOO"><h1 style="color:#e6c38d;font-size:26px">${title}</h1><p>${intro}</p><table style="width:100%;background:#211b2d">${rows.map(([label,value])=>`<tr><td style="padding:12px;vertical-align:top">${label}</td><td style="padding:12px;word-break:break-all;white-space:pre-wrap">${label===(fr?"Lien EPG (guide TV)":"EPG URL (TV guide)")?`<a href="${escape(value)}" style="color:#e6c38d">${escape(value)}</a>`:escape(value)}</td></tr>`).join("")}</table><p><a href="${origin}" style="color:#e6c38d">${fr?"Ouvrir MYKIOO et les guides d’installation":"Open MYKIOO and the setup guides"}</a></p></td></tr></table></body></html>`;
   const sent=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=email"),{method:"POST",headers:{"api-key":mailerKey,"Content-Type":"application/json"},body:JSON.stringify({
    sender:{email:template.sender.email,name:"MYKIOO"},to:[{email:member.email}],subject:"MYKIOO | "+title,
    htmlContent,textContent:[title,intro,...rows.map(([label,value])=>label+": "+value),origin].join("\n"),
-   tags:["mykioo","order-completed"]
+   tags:["mykioo",updated?"subscription-updated":"order-completed"]
   })});
   const result=await sent.json();
   if(!sent.ok||!result.messageId)throw Error("Email provider rejected message");
@@ -308,10 +324,11 @@ Deno.serve(async (req) => {
    }
    await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:isRenewal?"subscription_renewed":id?"subscription_updated":"subscription_created",
     entity_type:"subscription",entity_id:record.id,details:{member_id,service_name,status}});
-   // Manual owner-created accounts do not have a completion-queue event.
-   // Email new active accounts once; ordinary edits must not resend passwords.
-   const notification=!id&&status==="active"&&Boolean(service_username)&&Boolean(password)
-    ?await emailCredentials(db,record.id,member_id):null;
+   // Request completion emails are queued by the database. Manual saves send here.
+   const sendUpdate=Boolean(id)&&data.notify_member===true;
+   const sendNew=!id&&status==="active"&&Boolean(service_username)&&Boolean(password);
+   const notification=sendUpdate||sendNew
+    ?await emailCredentials(db,record.id,member_id,sendUpdate):null;
    return response({ok:true,subscription:record,...(notification?{notification}:{})});
   }
   return response({error:"Unknown action"},400);

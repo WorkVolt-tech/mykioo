@@ -172,7 +172,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
      setForm(previous=>({...previous,member_id:resolvedMemberId}));
     }
    }
-   const payload={action:'save',...form,generate_trial:trialEditor&&!form.service_username&&!form.service_password,member_id:resolvedMemberId,contract_days:form.contract_days||null,
+   const payload={action:'save',...form,notify_member:Boolean(form.id&&!form.request_id),generate_trial:trialEditor&&!form.service_username&&!form.service_password,member_id:resolvedMemberId,contract_days:form.contract_days||null,
     starts_at:form.starts_at||null,expires_at:form.expires_at||null};
    const response=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-subscriptions',{
     method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
@@ -187,7 +187,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     tr('Login details (username, password and server URL) are queued for email delivery.','Les identifiants (nom d’utilisateur, mot de passe et adresse du serveur) sont en attente d’envoi par courriel.'):
     result.notification==='accepted'?
     tr('The service login email was accepted for delivery.','Le courriel contenant les identifiants a été accepté pour livraison.'):
-    tr('The order is complete, but the service login email failed. Contact the customer with their credentials.','La commande est terminée, mais l’envoi des identifiants a échoué. Communiquez les identifiants au client.')));
+    tr('Changes saved, but the email could not be sent. Use Resend login details to retry.','Modifications enregistrées, mais le courriel n’a pas pu être envoyé. Utilisez Renvoyer les identifiants pour réessayer.')));
    onSaved?.();
   }catch(err){
    setError(((createdInvite||invitationSent)?tr('A site invitation may already have been issued. ','Une invitation a peut-être déjà été envoyée. '):'')+
@@ -297,7 +297,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
     <label>{tr('Start date','Date de début')}<input type="date" value={form.starts_at} disabled={trialEditor} onChange={e=>update('starts_at',e.target.value)}/></label>
     <label>{tr('Expiry date — automatically calculated; editable','Date d’expiration — calculée automatiquement, modifiable')}<input type="date" value={form.expires_at} disabled={trialEditor} onChange={e=>update('expires_at',e.target.value)}/></label>
     <p className="mykioo-sub-note">{tr('Passwords are encrypted on the server. Members must verify their email before viewing them. Encryption must first be configured in Supabase.','Les mots de passe sont chiffrés sur le serveur. Les membres doivent vérifier leur adresse courriel avant de les afficher. Le chiffrement doit d’abord être configuré dans Supabase.')}</p>
-    <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!customerEmail.trim()} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):trialEditor?tr('Activate 24-hour free trial','Activer l’essai gratuit de 24 heures'):tr('Save subscription','Enregistrer l’abonnement')}</button>
+    <div className="mykioo-sub-actions"><button type="submit" disabled={saving||!customerEmail.trim()} className="admin-action primary">{saving?tr('Saving…','Enregistrement…'):trialEditor?tr('Activate 24-hour free trial','Activer l’essai gratuit de 24 heures'):form.request_id?tr('Complete & email details','Terminer et envoyer les accès'):form.id?tr('Save & email update','Enregistrer et envoyer la mise à jour'):tr('Save subscription','Enregistrer l’abonnement')}</button>
      {form.id&&!form.request_id&&subscriptions.some(sub=>sub.id===form.id&&sub.status==='active'&&sub.has_password)&&<button className="admin-action" type="button" disabled={saving||Boolean(resendingId)} onClick={()=>resendLoginDetails(subscriptions.find(sub=>sub.id===form.id))}>{resendingId===form.id?tr('Sending login email…','Envoi des identifiants…'):tr('Resend login details','Renvoyer les identifiants')}</button>}
      {(form.id||form.request_id)&&<button className="admin-action" type="button" onClick={()=>{setForm(newForm());setCustomerEmail('');setCreatedInvite(null);setError('')}}>{tr("Cancel editing","Annuler")}</button>}
     </div>
