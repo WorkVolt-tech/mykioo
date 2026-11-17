@@ -72,6 +72,28 @@ Deno.serve(async (req) => {
    return response({error:"Owner permission required"},403);
   const data=await req.json().catch(()=>null);
   if(!data||typeof data!=="object")return response({error:"Invalid request"},400);
+  if(data.action==="resend_login_details"){
+   const subscriptionId=data.subscription_id;
+   if(!uuid(subscriptionId))return response({error:"Select a valid subscription."},400);
+   const {data:sub,error:subError}=await db.from("mykioo_subscriptions")
+     .select("id,member_id,status,service_username").eq("id",subscriptionId).maybeSingle();
+   if(subError||!sub||sub.status!=="active"||!sub.service_username)
+     return response({error:"Only active subscriptions with a service login can receive a resend."},409);
+   // The recipient is the saved member email; no address or password comes from browser input.
+   const {count,error:rateError}=await db.from("mykioo_audit_logs").select("id",{count:"exact",head:true})
+     .eq("action","subscription_login_email_resent").eq("entity_id",subscriptionId)
+     .gte("created_at",new Date(Date.now()-15*60000).toISOString());
+   if(rateError)return response({error:"Unable to verify resend limit."},503);
+   if((count||0)>=3)return response({error:"Resend limit reached. Please try again later."},429);
+   const notification=await emailCredentials(db,sub.id,sub.member_id);
+   await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:"subscription_login_email_resent",
+     entity_type:"subscription",entity_id:sub.id,
+     details:{member_id:sub.member_id,email_accepted:notification==="accepted"}});
+   return response(notification==="accepted"
+     ?{ok:true,notification:"accepted",message:"Credentials email accepted for delivery. Ask member to check Inbox and Spam."}
+     :{ok:false,notification:"failed",error:"Unable to resend credentials. Verify the stored login and SMTP configuration."},
+     notification==="accepted"?200:503);
+  }
   if(data.action==="save"){
    const member_id=data.member_id, id=data.id;
    if(!uuid(member_id)||id&&!uuid(id))return response({error:"Invalid member or subscription ID"},400);
