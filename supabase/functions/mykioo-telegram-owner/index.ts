@@ -6,7 +6,7 @@ const root="https://mykioo.icu/";
 const respond=(body:unknown,status=200)=>new Response(JSON.stringify(body),{
  status,headers:{"Content-Type":"application/json","Cache-Control":"no-store"}
 });
-type Alert={key:string;kind:string;title:string;details:string;section:string;reference:string};
+type Alert={key:string;kind:string;title:string;details:string;section:string;reference:string;memberId?:string;contactEmail?:string;relatedEmail?:string;ticketId?:string};
 const short=(v:unknown,max=100)=>String(v??"").replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,max);
 const sectionUrl=(section:string)=>root+"?section="+encodeURIComponent(section);
 const safeError=(status:number)=>"Telegram HTTP "+status;
@@ -33,8 +33,22 @@ Deno.serve(async req=>{
    return respond({error:"Telegram owner bot settings are missing or invalid",
     bot_token_configured:Boolean(botToken),chat_id_configured:Boolean(chatId),
     chat_id_numeric:Boolean(chatId&&/^(-?[0-9]{5,20})$/.test(chatId))},503);
+ const memberProfiles=new Map<string,{display_name:string|null;email:string|null}>();
+ const identityText=(alert:Alert)=>{
+  const member=alert.memberId?memberProfiles.get(alert.memberId):undefined;
+  const name=short(member?.display_name||"",100);
+  const email=short(member?.email||alert.contactEmail||"",180);
+  const extra=short(alert.relatedEmail||"",180);
+  const lines:string[]=[];
+  if(name)lines.push("Requested by: "+name);
+  if(email)lines.push("Email: "+email);
+  if(extra)lines.push("Invitation for: "+extra);
+  if(!name&&!email&&alert.memberId)lines.push("Member ID: "+short(alert.memberId,45));
+  return lines.join("\n");
+ };
  const send=async(alert:Alert)=>{
   const text="🔔 MYKIOO Owner Alerts\n\n"+alert.title+"\n"+
+   (identityText(alert)?"\n"+identityText(alert)+"\n":"")+
    (alert.details?"\n"+alert.details+"\n":"")+
    "\nReference: "+short(alert.reference,45)+"\n"+
    "Sign in to MYKIOO to review and take action.";
@@ -78,33 +92,33 @@ Deno.serve(async req=>{
   return data||[];
  }
 
- const invites=await load("mykioo_invitation_requests","id,email,created_at,status",
+ const invites=await load("mykioo_invitation_requests","id,email,requested_by,created_at,status",
   q=>q.eq("status","pending").gte("created_at",since).order("created_at",{ascending:true}));
  for(const i of invites)add({key:"invite-request:"+i.id,kind:"invitation",title:"✉️ Invitation needs approval",
   details:"A member requested an invitation. Review the request in the invitation manager.",
-  section:"invitations",reference:i.id});
+  memberId:i.requested_by,relatedEmail:i.email,section:"invitations",reference:i.id});
 
- const renewals=await load("mykioo_invitations","id,renewal_requested_at,status",
+ const renewals=await load("mykioo_invitations","id,email,renewal_requested_at,status",
   q=>q.gte("renewal_requested_at",since).order("renewal_requested_at",{ascending:true}));
  for(const i of renewals){
   if(i.status==="accepted")continue;
   add({key:"invite-renewal:"+i.id+":"+i.renewal_requested_at,kind:"invitation",
     title:"🔄 Invitation link renewal requested",
-    details:"An invited user needs a new invitation link.",
+    details:"An invited user needs a new invitation link.",contactEmail:i.email,
     section:"invitations",reference:i.id});
  }
- const approvals=await load("mykioo_members","user_id,display_name,updated_at,status",
+ const approvals=await load("mykioo_members","user_id,display_name,email,updated_at,status",
   q=>q.eq("status","pending").not("display_name","is",null).gte("updated_at",since)
    .order("updated_at",{ascending:true}));
  for(const m of approvals){
   if(!String(m.display_name||"").trim())continue;
   add({key:"member-approval:"+m.user_id,kind:"membership",
    title:"👤 Member awaiting approval",
-   details:"A registered member is awaiting access approval.",
+   details:"A registered member is awaiting access approval.",memberId:m.user_id,
    section:"members",reference:m.user_id});
  }
 
- const requests=await load("mykioo_subscription_requests","id,request_type,service_name,status,created_at,device_count",
+ const requests=await load("mykioo_subscription_requests","id,member_id,request_type,service_name,status,created_at,device_count",
   q=>q.in("status",["pending","in_review"]).gte("created_at",since).order("created_at",{ascending:true}));
  for(const r of requests){
   const trial=r.request_type==="trial",renew=r.request_type==="renewal";
@@ -112,37 +126,37 @@ Deno.serve(async req=>{
     title:trial?"🎁 Free trial request":renew?"🔄 Renewal request":"📺 New subscription request",
     details:"Service: "+short(r.service_name,70)+(trial?" · 24-hour trial":" · "+(r.device_count||1)+" device(s)")+
       "\nStatus: "+(r.status==="in_review"?"Under review":"Needs review"),
-    section:"subscriptions",reference:r.id});
+    memberId:r.member_id,section:"subscriptions",reference:r.id});
  }
 
- const invoices=await load("mykioo_billing_invoices","id,request_id,state,submitted_at,method,currency,amount_due",
+ const invoices=await load("mykioo_billing_invoices","id,member_id,request_id,state,submitted_at,method,currency,amount_due",
   q=>q.eq("state","payment_submitted").gte("submitted_at",since).order("submitted_at",{ascending:true}));
  for(const inv of invoices)add({key:"payment-submitted:"+inv.id,kind:"payment",
    title:"💳 Customer payment requires verification",
    details:"A customer reported a payment. Verify receipt before activating service."+
     (inv.method?"\nMethod: "+short(inv.method,20):""),
-   section:"billing",reference:inv.id});
+   memberId:inv.member_id,section:"billing",reference:inv.id});
 
- const cancels=await load("mykioo_subscription_cancellation_requests","request_id,status,created_at",
+ const cancels=await load("mykioo_subscription_cancellation_requests","request_id,member_id,status,created_at",
   q=>q.eq("status","pending").gte("created_at",since).order("created_at",{ascending:true}));
  for(const c of cancels)add({key:"cancellation:"+c.request_id,kind:"cancellation",
   title:"⚠️ Cancellation requires your approval",
   details:"A member requested to cancel an order. Review it before taking action.",
-  section:"subscriptions",reference:c.request_id});
+  memberId:c.member_id,section:"subscriptions",reference:c.request_id});
 
- const tickets=await load("mykioo_support_tickets","id,subject,status,created_at",
+ const tickets=await load("mykioo_support_tickets","id,member_id,subject,status,created_at",
   q=>q.gte("created_at",since).order("created_at",{ascending:true}));
  for(const t of tickets){
   if(["closed","resolved","cancelled","merged"].includes(t.status))continue;
   add({key:"support-ticket:"+t.id,kind:"support",title:"🎧 New support ticket",
-   details:"Subject: "+short(t.subject,110),section:"support",reference:t.id});
+   details:"Subject: "+short(t.subject,110),memberId:t.member_id,section:"support",reference:t.id});
  }
  const messages=await load("mykioo_support_messages","id,ticket_id,sender_id,created_at",
   q=>q.gte("created_at",since).order("created_at",{ascending:true}));
  for(const m of messages){
   if(ownerSet.has(m.sender_id))continue;
   add({key:"support-reply:"+m.id,kind:"support",title:"💬 Customer replied to support",
-   details:"A member sent a new support message that may need your reply.",
+   details:"A member sent a new support message that may need your reply.",memberId:m.sender_id,
    section:"support",reference:m.ticket_id});
  }
  const followups=await load("mykioo_support_followups","ticket_id,due_at,status,created_at",
@@ -151,7 +165,7 @@ Deno.serve(async req=>{
   if(["done","completed","closed","resolved"].includes(f.status))continue;
   add({key:"support-followup:"+f.ticket_id+":"+f.due_at,kind:"support",
    title:"⏰ Support follow-up is due",
-   details:"A support follow-up is due and still needs attention.",
+   details:"A support follow-up is due and still needs attention.",ticketId:f.ticket_id,
    section:"support",reference:f.ticket_id});
  }
 
@@ -174,8 +188,25 @@ Deno.serve(async req=>{
    details:"An owner notification was received. Open MYKIOO to review it.",
    section,reference:n.source_id||n.id});
  }
+ // Resolve member identities in batches once per dispatch, not one database call per alert.
+ // This uses only server-side membership data and does not expose it to the browser.
+ const followupTicketIds=[...new Set(alerts.map(a=>a.ticketId).filter((id):id is string=>Boolean(id)))];
+ for(let i=0;i<followupTicketIds.length;i+=100){
+  const group=followupTicketIds.slice(i,i+100);
+  const foundTickets=await load("mykioo_support_tickets","id,member_id",q=>q.in("id",group));
+  const owners=new Map(foundTickets.map((t:any)=>[t.id,t.member_id]));
+  for(const alert of alerts){
+   if(alert.ticketId&&owners.has(alert.ticketId))alert.memberId=owners.get(alert.ticketId);
+  }
+ }
+ const memberIds=[...new Set(alerts.map(a=>a.memberId).filter((id):id is string=>Boolean(id)))];
+ for(let i=0;i<memberIds.length;i+=100){
+  const members=await load("mykioo_members","user_id,display_name,email",q=>q.in("user_id",memberIds.slice(i,i+100)));
+  for(const m of members)memberProfiles.set(m.user_id,{display_name:m.display_name,email:m.email});
+ }
  if(errors)return respond({error:"Unable to check one or more MYKIOO alert sources",failed_sources:errors},503);
- if(mode==="dry_run")return respond({ok:true,dry_run:true,candidates:alerts.length,owner_accounts:ownerIds.length});
+ if(mode==="dry_run")return respond({ok:true,dry_run:true,candidates:alerts.length,owner_accounts:ownerIds.length,
+  identified:alerts.filter(a=>Boolean(identityText(a))).length});
 
  // Limit the number of Telegram API calls per dispatch; any remaining alerts are found next minute.
  let sent=0,skipped=0,failed=0;
