@@ -32,6 +32,8 @@ export default function OwnerMailCenter({language='en',members=[]}){
  const [configured,setConfigured]=useState(false);
  const [announcementOpen,setAnnouncementOpen]=useState(false),[announcement,setAnnouncement]=useState(null);
  const [announcementLanguage,setAnnouncementLanguage]=useState('en'),[sendingAnnouncement,setSendingAnnouncement]=useState(false);
+ const [editingAnnouncement,setEditingAnnouncement]=useState(false),[announcementDraft,setAnnouncementDraft]=useState(null);
+ const [savingAnnouncement,setSavingAnnouncement]=useState(false),[resettingAnnouncement,setResettingAnnouncement]=useState(false);
  const categories=useMemo(()=>{
   const by=(special,guess)=>folders.find(f=>f.specialUse===special)?.path||folders.find(f=>guess.some(g=>f.path.toLowerCase()===g))?.path;
   return [{id:'inbox',name:tr('Inbox','Réception'),icon:Inbox,path:by('\\Inbox',['inbox'])||'INBOX'},
@@ -57,28 +59,65 @@ export default function OwnerMailCenter({language='en',members=[]}){
   try{const data=await api({action:'read',folder,uid:m.uid});setMessage(data.message);setLinks(previous=>[...previous.filter(x=>x.message_id!==data.message.messageId),...(data.links||[])]);setMatches(previous=>[...previous,...(data.members||[])].filter((x,i,a)=>a.findIndex(t=>t.user_id===x.user_id)===i));setItems(previous=>previous.map(x=>x.uid===m.uid?{...x,seen:true}:x))}
   catch(e){setError(e.message)}
  }
+ function applyAnnouncementState(status){
+  setAnnouncement(status);
+  setAnnouncementDraft(status.previews?JSON.parse(JSON.stringify(status.previews)):null);
+  setEditingAnnouncement(false);
+ }
  async function openAnnouncement(){
   setCompose(false);setSelected(null);setMessage(null);setAnnouncementOpen(true);setAnnouncement(null);setError('');setNotice('');
-  try{setAnnouncement(await api({action:'announcement_status'}))}
-  catch(e){setError(e.message)}
+  setEditingAnnouncement(false);
+  try{applyAnnouncementState(await api({action:'announcement_status'}))}catch(e){setError(e.message)}
+ }
+ function changeAnnouncement(field,value){
+  setAnnouncementDraft(old=>({...old,[announcementLanguage]:{...old[announcementLanguage],[field]:value}}));
+ }
+ async function saveAnnouncement(){
+  if(!announcement||!announcementDraft||savingAnnouncement)return;
+  setSavingAnnouncement(true);setError('');setNotice('');
+  try{
+   const result=await api({action:'announcement_save',campaign_id:announcement.campaign_id,
+    expected_version:announcement.template_version,templates:announcementDraft});
+   applyAnnouncementState(result);
+   setNotice(tr('Template saved. No recipients reset and no emails sent.','Modèle enregistré. Aucun destinataire réinitialisé et aucun courriel envoyé.'));
+  }catch(e){setError(e.message)}
+  finally{setSavingAnnouncement(false)}
+ }
+ async function resetAnnouncementRecipients(){
+  if(!announcement||resettingAnnouncement||sendingAnnouncement||editingAnnouncement)return;
+  if(!window.confirm(tr(
+   'Reset the recipients for this announcement? Previously emailed members will become eligible again. Prior delivery records remain, and NO emails are sent now.',
+   'Réinitialiser les destinataires de cette annonce ? Les membres déjà contactés pourront la recevoir de nouveau. L’historique reste intact et AUCUN courriel ne sera envoyé maintenant.'
+  )))return;
+  setResettingAnnouncement(true);setError('');setNotice('');
+  try{
+   const result=await api({action:'announcement_reset',campaign_id:announcement.campaign_id,confirm:true,
+    expected_cycle:announcement.cycle_id,expected_version:announcement.template_version});
+   applyAnnouncementState(result);
+   setNotice(tr('Recipients reset; no emails sent. Review the template before sending.','Destinataires réinitialisés ; aucun courriel envoyé. Vérifiez le modèle avant l’envoi.'));
+  }catch(e){setError(e.message)}
+  finally{setResettingAnnouncement(false)}
  }
  async function sendAnnouncement(){
-  if(!announcement?.remaining||sendingAnnouncement)return;
-  if(!window.confirm(tr('Send this announcement to '+announcement.remaining+' remaining approved members? This cannot be undone.','Envoyer cette annonce aux '+announcement.remaining+' membres approuvés restants ? Cette action est irréversible.')))return;
+  if(!announcement?.remaining||sendingAnnouncement||editingAnnouncement)return;
+  if(!window.confirm(tr('Send this announcement to '+announcement.remaining+' remaining approved members? This cannot be undone.',
+   'Envoyer cette annonce aux '+announcement.remaining+' membres approuvés restants ? Cette action est irréversible.')))return;
   setSendingAnnouncement(true);setError('');setNotice('');
   try{
    let current=announcement,rounds=0;
    while(current.remaining>0&&rounds<125){
-    const r=await api({action:'announcement_send',campaign_id:current.campaign_id,confirm:true});
+    const r=await api({action:'announcement_send',campaign_id:current.campaign_id,confirm:true,
+     template_version:current.template_version,cycle_id:current.cycle_id});
     setAnnouncement(previous=>({...previous,...r}));rounds++;
-    if(r.failed||r.remaining>=current.remaining)throw Error(tr('Some emails could not be sent. Check the delivery count before retrying.','Certains courriels n’ont pas pu être envoyés. Vérifiez le nombre restant avant de réessayer.'));
+    if(r.failed||r.remaining>=current.remaining)throw Error(tr('Some emails could not be sent. Check counts before retrying.',
+     'Certains courriels n’ont pas pu être envoyés. Vérifiez les nombres avant de réessayer.'));
     current=r;
    }
-   if(current.remaining)throw Error(tr('Some members remain; try sending again.','Il reste des membres ; veuillez réessayer.'));
-   setNotice(tr('IONOS accepted the announcement for delivery. Ask members to check Inbox and Spam.','IONOS a accepté l’annonce pour livraison. Demandez aux membres de vérifier leur boîte de réception et leurs indésirables.'));
+   if(current.remaining)throw Error(tr('Some members remain; try again.','Il reste des membres ; réessayez.'));
+   setNotice(tr('IONOS accepted the announcement for delivery. Check Inbox and Spam.','IONOS a accepté l’annonce. Vérifiez les boîtes de réception et les indésirables.'));
   }catch(e){
    setError(e.message);
-   try{setAnnouncement(await api({action:'announcement_status'}))}catch(_ignored){}
+   try{applyAnnouncementState(await api({action:'announcement_status'}))}catch(_ignored){}
   }finally{setSendingAnnouncement(false)}
  }
  function startCompose(base){
