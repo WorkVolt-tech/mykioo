@@ -19,7 +19,7 @@ const displayDate=(value,fr,withTime=false)=>{
 };
 
 export default function SubscriptionDirectory({
- subscriptions=[],members=[],language='en',owner=false,onEdit
+ subscriptions=[],members=[],language='en',owner=false,onEdit,onResend,resendingId=null,resendFeedback=null
 }){
  const fr=language==='fr';
  const tr=(en,french)=>fr?french:en;
@@ -97,6 +97,16 @@ export default function SubscriptionDirectory({
        </span>
        {isExpanded?<ChevronUp className="mykioo-directory-chevron" size={19}/>:<ChevronDown className="mykioo-directory-chevron" size={19}/>}
       </button>
+      {owner&&onResend&&['active','expired'].includes(sub.status)&&<div className="mykioo-directory-resend">
+       <button type="button" className="mykioo-directory-resend-button"
+        disabled={Boolean(resendingId)||!sub.has_password||!sub.service_username}
+        onClick={()=>onResend(sub)}>
+        {resendingId===sub.id?tr('Sending login email…','Envoi des identifiants…'):tr('Resend login details','Renvoyer les identifiants')}
+       </button>
+       {(!sub.has_password||!sub.service_username)&&<small>{tr('Login details are incomplete. Add the username and saved password before resending.','Identifiants incomplets. Ajoutez l’identifiant et le mot de passe enregistré avant le renvoi.')}</small>}
+       {sub.status==='expired'&&<small>{tr('Expired service — resending will not reactivate it.','Service expiré — le renvoi ne le réactivera pas.')}</small>}
+       {resendFeedback?.id===sub.id&&<p role={resendFeedback.success?'status':'alert'} className={resendFeedback.success?'mykioo-profile-success':'mykioo-profile-error'}>{resendFeedback.message}</p>}
+      </div>}
       {isExpanded&&<div className="mykioo-directory-details" id={'mykioo-sub-detail-'+sub.id}>
        {owner&&<div className="mykioo-directory-detail"><span>{tr('Customer name','Nom du client')}</span><strong>{name}</strong></div>}
        {owner&&customer?.email&&<div className="mykioo-directory-detail"><span>{tr('Customer email','Courriel du client')}</span><strong>{customer.email}</strong></div>}
