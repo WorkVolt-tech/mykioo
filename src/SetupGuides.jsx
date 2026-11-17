@@ -39,7 +39,7 @@ const androidDownloaderGuide={
   '6. Browse the collection and pick just the app that works with your device. The code opens a selection of download options; it does not install every app automatically.',
   '7. Check the publisher and source before installing. Follow the selected player’s login instructions: some use Xtream Codes/M3U credentials, while others require an activation code. They are not interchangeable.',
   '8. For safety, revoke Downloader’s install-unknown-apps permission after installation if you no longer need it. Contact MYKIOO Support if setup fails.'
- ].join('\\n'),
+ ].join('\n'),
  steps_fr:[
   '1. Vérifiez votre appareil : ce guide concerne Android TV, Google TV, les téléphones/tablettes Android et les Fire TV Stick sous Fire OS. Les APK Android ne fonctionnent pas sous Vega OS, sur iPhone ou sur Apple TV.',
   '2. Installez l’application Downloader d’AFTVnews depuis la boutique d’applications de votre appareil, si disponible.',
@@ -49,7 +49,7 @@ const androidDownloaderGuide={
   '6. Parcourez la sélection et choisissez uniquement l’application compatible avec votre appareil. Le code donne accès à plusieurs options de téléchargement; il ne les installe pas toutes automatiquement.',
   '7. Vérifiez l’éditeur et la provenance avant d’installer. Suivez la méthode de connexion du lecteur choisi : certains utilisent Xtream Codes/M3U, d’autres un code d’activation. Ces méthodes ne sont pas interchangeables.',
   '8. Pour votre sécurité, retirez l’autorisation d’installer des applications inconnues après l’installation si elle n’est plus nécessaire. Contactez l’assistance MYKIOO en cas de problème.'
- ].join('\\n')
+ ].join('\n')
 };
 
 
