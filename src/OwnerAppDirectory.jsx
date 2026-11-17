@@ -12,7 +12,7 @@ const platforms=[
 ];
 const makeEntry=()=>({id:'app_'+crypto.randomUUID(),name_en:'',name_fr:'',
  description_en:'',description_fr:'',url:'',source:'store',platforms:['android_tv'],
- downloader_code:'',published:false,rights_confirmed:false,blocked_platforms:[],blocked_reason_en:'',blocked_reason_fr:''});
+ downloader_code:'',published:false,rights_confirmed:false,blocked_platforms:[],blocked_reason_en:'',blocked_reason_fr:'',logo_url:'',guide_id:'',install_notes_en:'',install_notes_fr:''});
 async function api(payload){
  const {data:{session},error}=await supabase.auth.getSession();
  if(error||!session?.access_token)throw Error('Sign in as owner again.');
@@ -29,6 +29,12 @@ export default function OwnerAppDirectory({language='en'}){
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
  const [expanded,setExpanded]=useState(null),[changed,setChanged]=useState(false);
+ const [guideOptions,setGuideOptions]=useState([]),[guidesError,setGuidesError]=useState('');
+ useEffect(()=>{let active=true;supabase.from('mykioo_setup_guides')
+  .select('id,title_en,title_fr,platform').eq('published',true).order('sort_order')
+  .then(({data,error})=>{if(!active)return;if(error)setGuidesError(fr?'Impossible de charger les guides. Les liens existants sont conservés.':'Setup guides could not load. Existing links are preserved.');else setGuideOptions(data||[])});
+  return()=>{active=false};
+ },[fr]);
  async function reload(){
   if(changed&&!window.confirm(tr('Discard unsaved edits and reload?','Abandonner les modifications et actualiser ?')))return;
   setLoading(true);setError('');setNotice('');
@@ -121,6 +127,21 @@ export default function OwnerAppDirectory({language='en'}){
       </select></label>
       <label>{tr('App-specific Downloader code (optional)','Code Downloader pour cette application (facultatif)')}
        <input inputMode="numeric" pattern="[0-9]*" maxLength={10} value={app.downloader_code} onChange={e=>edit(app.id,{downloader_code:e.target.value.replace(/\D/g,'').slice(0,10)})}/></label>
+     </div>
+     <div className="app-editor-grid">
+      <label>{tr('Optional app logo URL (HTTPS)','Logo de l’application (URL HTTPS facultative)')}
+       <input type="url" maxLength={1600} placeholder="https://example.com/logo.png" value={app.logo_url||''} onChange={e=>edit(app.id,{logo_url:e.target.value})}/></label>
+      <label>{tr('Related installation guide','Guide d’installation associé')}
+       <select value={app.guide_id||''} onChange={e=>edit(app.id,{guide_id:e.target.value})}>
+        <option value="">{tr('General Downloader setup guide (default)','Guide Downloader général (par défaut)')}</option>
+        {(app.guide_id&&!guideOptions.some(g=>g.id===app.guide_id))&&<option value={app.guide_id}>{tr('Existing guide (unavailable)','Guide existant (indisponible)')}</option>}
+        {guideOptions.map(g=><option key={g.id} value={g.id}>{fr?g.title_fr:g.title_en} — {g.platform}</option>)}
+       </select></label>
+     </div>
+     {guidesError&&<p className="app-editor-warning">{guidesError}</p>}
+     <div className="app-editor-grid">
+      <label>{tr('Installation notes (English)','Notes d’installation (anglais)')}<textarea rows={3} maxLength={600} value={app.install_notes_en||''} onChange={e=>edit(app.id,{install_notes_en:e.target.value})}/></label>
+      <label>{tr('Installation notes (French)','Notes d’installation (français)')}<textarea rows={3} maxLength={600} value={app.install_notes_fr||''} onChange={e=>edit(app.id,{install_notes_fr:e.target.value})}/></label>
      </div>
      <fieldset><legend>{tr('Compatible devices','Appareils compatibles')}</legend>
       <div className="app-editor-platforms">{platforms.map(([key,label])=><label key={key}><input type="checkbox" checked={app.platforms.includes(key)} onChange={e=>changePlatform(app,key,e.target.checked)}/>{label}</label>)}</div>
