@@ -24,6 +24,20 @@ Deno.serve(async (req) => {
   const input=await req.json().catch(()=>null);
   if(!input||typeof input!=="object")return respond({error:"Invalid request"},400);
 
+  // Agent-managed customers must never enter the direct MYKIOO checkout or
+  // see its quotes/coupons. Agents use the isolated wholesale server workflow.
+  // This is SERVER-side enforcement, independent of hidden frontend navigation.
+  if(member.role!=="owner"&&["trial","get_checkout","create","renew","request_cancellation"].includes(input.action)){
+    const [agent,customer]=await Promise.all([
+      db.from("mykioo_agent_accounts").select("agent_user_id").eq("agent_user_id",user.id).maybeSingle(),
+      db.from("mykioo_agent_customers").select("customer_user_id").eq("customer_user_id",user.id).maybeSingle()
+    ]);
+    // Fail closed: if the new permission tables are not available yet, do not
+    // accidentally fall back to public checkout for users in a partial rollout.
+    if(agent.error||customer.error)return respond({error:"Checkout authorization unavailable"},503);
+    if(agent.data||customer.data)return respond({error:"This account is managed through the assigned MYKIOO agent"},403);
+  }
+
   // A client cannot submit its own price: quote always comes from the catalog.
   async function chosenPackage(){
    const days=Number(input.contract_days),devices=Number(input.device_count),method=input.preferred_payment_method;
