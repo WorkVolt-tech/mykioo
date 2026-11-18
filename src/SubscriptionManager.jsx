@@ -288,12 +288,13 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
       </select></label>
      <label>{tr('Service contract','Durée du contrat')}
      <select value={form.contract_days} disabled={trialEditor} onChange={e=>update('contract_days',e.target.value?Number(e.target.value):'')}>
-       {trialEditor&&<option value={1}>{tr('24-hour free trial','Essai gratuit de 24 heures')}</option>}
+       {(trialEditor||Number(form.contract_days)===1)&&<option value={1}>{tr('24-hour free trial','Essai gratuit de 24 heures')}</option>}
       {[30,90,183].includes(Number(form.contract_days))&&<option value={form.contract_days}>{tr('Legacy contract','Ancien contrat')} · {form.contract_days} {tr('days','jours')}</option>}
       <option value={365}>{tr('1 year (365 days)','1 an (365 jours)')}</option>
       <option value={730}>{tr('2 years (730 days)','2 ans (730 jours)')}</option>
       <option value="">{tr('Custom / no preset','Personnalisé / sans durée prédéfinie')}</option>
      </select></label>
+    {!trialEditor&&Number(form.contract_days)===1&&<p className="mykioo-sub-note">{tr('This service is currently a 24-hour trial. To convert it to a paid subscription, select a 1-year or 2-year service contract and set its status to Active before saving.','Ce service est actuellement un essai de 24 heures. Pour le convertir en abonnement payant, sélectionnez un contrat de 1 an ou de 2 ans et le statut Actif avant d’enregistrer.')}</p>}
     <label>{tr('Start date','Date de début')}<input type="date" value={form.starts_at} disabled={trialEditor} onChange={e=>update('starts_at',e.target.value)}/></label>
     <label>{tr('Expiry date — automatically calculated; editable','Date d’expiration — calculée automatiquement, modifiable')}<input type="date" value={form.expires_at} disabled={trialEditor} onChange={e=>update('expires_at',e.target.value)}/></label>
     <p className="mykioo-sub-note">{tr('Passwords are encrypted on the server. Members must verify their email before viewing them. Encryption must first be configured in Supabase.','Les mots de passe sont chiffrés sur le serveur. Les membres doivent vérifier leur adresse courriel avant de les afficher. Le chiffrement doit d’abord être configuré dans Supabase.')}</p>
