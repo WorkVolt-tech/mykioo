@@ -69,16 +69,46 @@ Deno.serve(async request=>{
    const accessType=["free","paid"].includes(input.access_type)?input.access_type:null;
    const period=["none","one_time","monthly","yearly"].includes(input.access_fee_period)?input.access_fee_period:null;
    const fee=amount(input.access_fee_cad);
-   if(!status||!accessType||!period||fee===null)return reply({error:"Invalid agent settings"},400);
+   const discount=amount(input.discount_cad);
+   if(!status||!accessType||!period||fee===null||discount===null||discount>1000)
+     return reply({error:"Set a valid fee and a discount from $0 to $1,000 CAD"},400);
    if(accessType==="free"&&(fee!==0||period!=="none"))return reply({error:"Free agents must have no access fee"},400);
    if(accessType==="paid"&&(fee<=0||period==="none"))return reply({error:"Paid agents need an access fee and period"},400);
-   // Never accept a browser-supplied discount: the owner-selected tier controls it.
+   // Only an authenticated owner may set the agent discount. No agent can edit it.
    const {data,error}=await db.from("mykioo_agent_accounts").upsert({
     agent_user_id:target.user_id,status,access_type:accessType,access_fee_cad:fee,
-    access_fee_period:period,discount_cad:accessType==="paid"?10:5,updated_at:new Date().toISOString()
+    access_fee_period:period,discount_cad:discount,updated_at:new Date().toISOString()
    }).select().single();
    if(error)return reply({error:"Agent update failed"},503);
    return reply({ok:true,agent:data});
+  }
+  if(action==="owner_remove_agent"){
+   if(!owner)return reply({error:"Owner only"},403);
+   if(!uuid(input.agent_user_id))return reply({error:"Invalid agent"},400);
+   const {data:agent,error:agentError}=await db.from("mykioo_agent_accounts")
+     .select("status").eq("agent_user_id",input.agent_user_id).maybeSingle();
+   if(agentError||!agent)return reply({error:"Agent not found"},404);
+   if(agent.status==="removed")return reply({ok:true,already_removed:true});
+   const [customers,openOrders]=await Promise.all([
+     db.from("mykioo_agent_customers").select("customer_user_id",{count:"exact",head:true})
+       .eq("agent_user_id",input.agent_user_id),
+     db.from("mykioo_agent_order_intents").select("id",{count:"exact",head:true})
+       .eq("agent_user_id",input.agent_user_id).in("status",["pending_payment","owner_review"])
+   ]);
+   if(customers.error||openOrders.error)return reply({error:"Unable to verify agent customers or orders"},503);
+   if((customers.count||0)>0)return reply({
+     error:"Transfer all "+customers.count+" assigned customer(s) to another active agent before removal."
+   },409);
+   if((openOrders.count||0)>0)return reply({
+     error:"Resolve the agent's "+openOrders.count+" outstanding order(s) before removal."
+   },409);
+   const {data:removed,error:removeError}=await db.from("mykioo_agent_accounts")
+     .update({status:"removed",access_type:"free",access_fee_cad:0,access_fee_period:"none",discount_cad:0,
+       updated_at:new Date().toISOString()})
+     .eq("agent_user_id",input.agent_user_id).neq("status","removed")
+     .select("agent_user_id,status").maybeSingle();
+   if(removeError||!removed)return reply({error:"Unable to remove Agent"},503);
+   return reply({ok:true,agent:removed});
   }
   if(action==="owner_assign_customer"){
    if(!owner)return reply({error:"Owner only"},403);
@@ -141,15 +171,20 @@ Deno.serve(async request=>{
    const {data:price,error:priceError}=await db.from("mykioo_package_prices")
      .select("price_cad").eq("contract_days",days).eq("device_count",devices).maybeSingle();
    if(priceError||!price)return reply({error:"Package unavailable"},503);
-   // Re-read the active agent tier for EVERY order; the UI, old orders and
-   // the agent profile's discount field are never trusted for pricing.
+   // Re-read the owner-assigned discount and active status for every order.
    const {data:agentTier,error:tierError}=await db.from("mykioo_agent_accounts")
-     .select("access_type,status").eq("agent_user_id",user.id).maybeSingle();
+     .select("access_type,status,discount_cad").eq("agent_user_id",user.id).maybeSingle();
    if(tierError||agentTier?.status!=="active"||!["free","paid"].includes(agentTier.access_type))
      return reply({error:"Active agent pricing unavailable"},403);
-   const discountCad=agentTier.access_type==="paid"?10:5;
-   const wholesale=Math.max(0,Math.round((Number(price.price_cad)-discountCad)*100)/100);
-   if(!Number.isFinite(wholesale))return reply({error:"Package price unavailable"},503);
+   const discountCad=Number(agentTier.discount_cad);
+   const basePrice=Number(price.price_cad);
+   if(!Number.isFinite(discountCad)||discountCad<0||discountCad>1000||
+      !Number.isFinite(basePrice)||basePrice<=0)
+     return reply({error:"Package or agent discount unavailable"},503);
+   if(discountCad>=basePrice)return reply({
+     error:"Agent discount must be less than this package's base price; contact the MYKIOO owner."
+   },409);
+   const wholesale=Math.round((basePrice-discountCad)*100)/100;
    const {data:order,error:orderError}=await db.from("mykioo_agent_order_intents").insert({
     agent_user_id:user.id,customer_user_id:customerId,kind,
     contract_days:days,device_count:devices,customer_price_cad:retail,
