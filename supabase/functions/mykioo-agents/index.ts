@@ -79,12 +79,17 @@ Deno.serve(async request=>{
      .select("status").eq("agent_user_id",target.user_id).maybeSingle();
    if(previousError)return reply({error:"Unable to verify Agent status"},503);
    const firstActivation=status==="active"&&previousAgent?.status!=="active";
-   // Only an authenticated owner may set the agent discount. No agent can edit it.
-   const {data,error}=await db.from("mykioo_agent_accounts").upsert({
-    agent_user_id:target.user_id,status,access_type:accessType,access_fee_cad:fee,
-    access_fee_period:period,discount_cad:discount,updated_at:new Date().toISOString(),
-    ...(firstActivation?{onboarding_acknowledged_at:null}:{})
-   }).select().single();
+   // Update existing records separately: upsert can overwrite omitted nullable
+   // acknowledgement columns, which would reopen the popup on routine edits.
+   const agentFields={
+     status,access_type:accessType,access_fee_cad:fee,
+     access_fee_period:period,discount_cad:discount,updated_at:new Date().toISOString(),
+     ...(firstActivation?{onboarding_acknowledged_at:null}:{})
+   };
+   const write=previousAgent
+     ?db.from("mykioo_agent_accounts").update(agentFields).eq("agent_user_id",target.user_id)
+     :db.from("mykioo_agent_accounts").insert({agent_user_id:target.user_id,...agentFields});
+   const {data,error}=await write.select().single();
    if(error)return reply({error:"Agent update failed"},503);
    return reply({ok:true,agent:data});
   }
