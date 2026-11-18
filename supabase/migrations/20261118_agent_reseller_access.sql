@@ -50,11 +50,26 @@ create table if not exists public.mykioo_agent_order_intents (
   contract_days integer check (contract_days in (365,730)),
   device_count integer check (device_count between 1 and 5),
   customer_price_cad numeric(10,2) check (customer_price_cad >= 0),
+  wholesale_price_cad numeric(10,2) check (wholesale_price_cad >= 0),
+  payment_method text check (payment_method in ('interac','zelle','cash','manual','btc','shib')),
+  payment_reference text check (length(payment_reference) <= 160),
+  payment_verified_at timestamptz,
   owner_request_id uuid null,
   status text not null default 'draft' check (status in ('draft','pending_payment','owner_review','completed','declined')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+create table if not exists public.mykioo_agent_invitation_requests (
+  id uuid primary key default gen_random_uuid(),
+  agent_user_id uuid not null references public.mykioo_agent_accounts(agent_user_id),
+  invitee_email text not null check (length(invitee_email) <= 254),
+  status text not null default 'pending' check (status in ('pending','sent','accepted','declined')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists mykioo_agent_invite_agent_idx
+ on public.mykioo_agent_invitation_requests(agent_user_id,created_at desc);
 
 create index if not exists mykioo_agent_order_agent_idx
   on public.mykioo_agent_order_intents(agent_user_id, created_at desc);
@@ -72,11 +87,14 @@ alter table public.mykioo_agent_accounts enable row level security;
 alter table public.mykioo_agent_customers enable row level security;
 alter table public.mykioo_agent_renewal_requests enable row level security;
 alter table public.mykioo_agent_order_intents enable row level security;
+alter table public.mykioo_agent_invitation_requests enable row level security;
 
 revoke all on public.mykioo_agent_accounts, public.mykioo_agent_customers,
-  public.mykioo_agent_renewal_requests, public.mykioo_agent_order_intents from anon;
+  public.mykioo_agent_renewal_requests, public.mykioo_agent_order_intents,
+  public.mykioo_agent_invitation_requests from anon;
 grant select on public.mykioo_agent_accounts, public.mykioo_agent_customers,
-  public.mykioo_agent_renewal_requests, public.mykioo_agent_order_intents to authenticated;
+  public.mykioo_agent_renewal_requests, public.mykioo_agent_order_intents,
+  public.mykioo_agent_invitation_requests to authenticated;
 grant insert on public.mykioo_agent_renewal_requests to authenticated;
 
 create policy mykioo_agent_account_read on public.mykioo_agent_accounts
@@ -110,6 +128,10 @@ create policy mykioo_agent_renewal_insert on public.mykioo_agent_renewal_request
   ));
 
 create policy mykioo_agent_order_read on public.mykioo_agent_order_intents
+  for select to authenticated using
+  (agent_user_id = (select auth.uid()) or public.mykioo_is_owner_for_agents());
+
+create policy mykioo_agent_invite_read on public.mykioo_agent_invitation_requests
   for select to authenticated using
   (agent_user_id = (select auth.uid()) or public.mykioo_is_owner_for_agents());
 
