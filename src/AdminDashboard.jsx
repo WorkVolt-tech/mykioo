@@ -133,7 +133,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      if(!response.ok || !result.ok) throw new Error(result.error||'Action failed.');
      if(payload.action==='set_status'){
        if(result.notification==='accepted')setNotice(tr('Member updated. IONOS accepted the notification email (inbox delivery not guaranteed).','Membre mis à jour. IONOS a accepté le courriel de notification (réception non garantie).'));
-       else if(result.notification==='not_configured')setNotice(tr('Member updated. Email not sent: configure the IONOS SMTP password in Supabase Edge Functions.','Membre mis à jour. Courriel non envoyé : configurez le mot de passe SMTP IONOS dans les fonctions Edge de Supabase.'));
+       else if(result.notification==='not_configured')setNotice(tr('Member updated. Email not sent: the backend email transport is not configured correctly.','Membre mis à jour. Courriel non envoyé : le système d’envoi du serveur n’est pas correctement configuré.'));
        else if(result.notification==='failed')setNotice(tr('Member updated, but the notification email failed. Check the IONOS SMTP configuration.','Membre mis à jour, mais l’envoi du courriel a échoué. Vérifiez la configuration SMTP IONOS.'));
        else setNotice(tr('Member updated.','Membre mis à jour.'));
      }else setNotice(result.message||tr('Updated successfully.','Mise à jour effectuée.'));
