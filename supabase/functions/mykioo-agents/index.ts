@@ -49,14 +49,15 @@ Deno.serve(async request=>{
 
   if(action==="owner_list"){
    if(!owner)return reply({error:"Owner only"},403);
-   const [agents,customers,invites,orders]=await Promise.all([
+   const [agents,customers,invites,orders,members]=await Promise.all([
     db.from("mykioo_agent_accounts").select("*").order("created_at",{ascending:false}),
     db.from("mykioo_agent_customers").select("*").order("assigned_at",{ascending:false}),
     db.from("mykioo_agent_invitation_requests").select("*").order("created_at",{ascending:false}).limit(100),
-    db.from("mykioo_agent_order_intents").select("*").order("created_at",{ascending:false}).limit(100)
+    db.from("mykioo_agent_order_intents").select("*").order("created_at",{ascending:false}).limit(100),
+    db.from("mykioo_members").select("user_id,email,display_name,role,status").order("created_at",{ascending:false}).limit(1000)
    ]);
-   if([agents,customers,invites,orders].some(x=>x.error))return reply({error:"Unable to load agent records"},503);
-   return reply({ok:true,agents:agents.data,customers:customers.data,invites:invites.data,orders:orders.data});
+   if([agents,customers,invites,orders,members].some(x=>x.error))return reply({error:"Unable to load agent records"},503);
+   return reply({ok:true,agents:agents.data,customers:customers.data,invites:invites.data,orders:orders.data,members:members.data});
   }
   if(action==="owner_set_agent"){
    if(!owner)return reply({error:"Owner only"},403);
