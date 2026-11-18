@@ -1,0 +1,13 @@
+/* Scoped styles: do not alter existing MYKIOO owner/member form components. */
+.mykioo-owner-agents .admin-panel-content{display:flex;flex-direction:column;gap:14px;max-width:960px}
+.mykioo-owner-agents .admin-panel{border:1px solid rgba(218,183,124,.22);border-radius:14px;background:rgba(255,255,255,.025)}
+.mykioo-owner-agents .mykioo-agent-form{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;align-items:end;max-width:660px}
+.mykioo-owner-agents .mykioo-agent-form>label{display:block;font-weight:600;align-self:end;margin:5px 0 -6px}
+.mykioo-owner-agents .mykioo-agent-form>input,.mykioo-owner-agents .mykioo-agent-form>select{box-sizing:border-box;width:100%;min-height:43px;padding:9px 12px;color:#f6edf6;background:#191724;border:1px solid #75687a;border-radius:8px}
+.mykioo-owner-agents .mykioo-agent-form>input:focus,.mykioo-owner-agents .mykioo-agent-form>select:focus{outline:2px solid #dfbd89;outline-offset:2px}
+.mykioo-owner-agents .mykioo-agent-form>p{grid-column:1/-1;line-height:1.5}
+.mykioo-owner-agents .mykioo-agent-form>button{grid-column:1/-1;justify-self:start;min-height:42px;padding:9px 17px}
+.mykioo-owner-agents .mykioo-agent-form>button:disabled{opacity:.55;cursor:not-allowed}
+.mykioo-owner-agents .mykioo-agent-offline{border:1px solid rgba(222,182,108,.48);background:rgba(222,182,108,.07);border-radius:10px;padding:12px 15px;line-height:1.55}
+.mykioo-owner-agents .admin-panel-content>ul{padding-left:24px;overflow-wrap:anywhere}
+@media(max-width:650px){.mykioo-owner-agents .mykioo-agent-form{grid-template-columns:minmax(0,1fr)}}
