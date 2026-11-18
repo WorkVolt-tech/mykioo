@@ -41,7 +41,7 @@ export function useAgentAccess(userId){
 }
 
 export function AgentDashboard({user,language='en',logout,agent}){
-  const discountCad=agent?.access_type==='paid'?10:5;
+  const discountCad=Number(agent?.discount_cad??(agent?.access_type==='paid'?10:5));
   const [rows,setRows]=useState([]),[renewals,setRenewals]=useState([]),[orders,setOrders]=useState([]),[invites,setInvites]=useState([]),[services,setServices]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
   const [inviteEmail,setInviteEmail]=useState(''),[selectedCustomer,setSelectedCustomer]=useState(''),[kind,setKind]=useState('new'),[days,setDays]=useState(365),[devices,setDevices]=useState(1),[retail,setRetail]=useState(''),[method,setMethod]=useState('interac'),[notice,setNotice]=useState(''),[saving,setSaving]=useState(false);
   async function refresh(){
