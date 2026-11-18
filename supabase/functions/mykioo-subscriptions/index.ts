@@ -18,12 +18,22 @@ async function encryptionKey(){
 
 const serviceHost="http://6af5bd6ba0648.stream-sky.online";
 async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionId:string,memberId:string,updated=false){
+ const attemptId=crypto.randomUUID();
+ let sendStarted=false;
+ let sendRejected=false;
+ const {error:logError}=await db.from("mykioo_subscription_email_log").insert({
+  id:attemptId,subscription_id:subscriptionId,member_id:memberId,kind:updated?"update":"login",state:"sending"
+ });
+ if(logError)return "failed";
  try{
   const {data:member,error:memberError}=await db.from("mykioo_members").select("email,preferred_language").eq("user_id",memberId).single();
-  const {data:subscription,error:subscriptionError}=await db.from("mykioo_subscriptions").select("service_name,service_username,service_host,epg_url,expires_at,status,device_count").eq("id",subscriptionId).eq("member_id",memberId).single();
+  const {data:subscription,error:subscriptionError}=await db.from("mykioo_subscriptions").select("service_name,service_username,service_host,epg_url,expires_at,status,device_count,updated_at").eq("id",subscriptionId).eq("member_id",memberId).single();
   const {data:credential,error:credentialError}=await db.from("mykioo_subscription_credentials").select("iv,cipher_text").eq("subscription_id",subscriptionId).single();
   const key=await encryptionKey(),mailerKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if(memberError||subscriptionError||credentialError||!member?.email||!subscription?.service_username||!credential||!key||!mailerKey)throw Error("Email prerequisites unavailable");
+  const {error:snapshotError}=await db.from("mykioo_subscription_email_log")
+   .update({subscription_updated_at:subscription.updated_at}).eq("id",attemptId);
+  if(snapshotError)throw Error("Email tracking unavailable");
   const password=new TextDecoder().decode(await crypto.subtle.decrypt(
    {name:"AES-GCM",iv:fromB64(credential.iv),additionalData:new TextEncoder().encode(subscriptionId)},key,fromB64(credential.cipher_text)));
   const fr=member.preferred_language==="fr";
@@ -55,17 +65,25 @@ async function emailCredentials(db:ReturnType<typeof createClient>,subscriptionI
   }
   const escape=(value:string)=>value.replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]||char));
   const htmlContent=`<!doctype html><html lang="${fr?"fr":"en"}"><body style="background:#090b13;padding:24px;font-family:Arial,sans-serif;color:#f5ecf7"><table role="presentation" style="max-width:560px;width:100%;margin:auto;background:#171422;border:1px solid #574563;border-top:3px solid #dab77c;border-radius:16px"><tr><td style="padding:28px"><img src="https://mykioo.pages.dev/MYKIOO-Email-Logo.png" width="90" alt="MYKIOO"><h1 style="color:#e6c38d;font-size:26px">${title}</h1><p>${intro}</p><table style="width:100%;background:#211b2d">${rows.map(([label,value])=>`<tr><td style="padding:12px;vertical-align:top">${label}</td><td style="padding:12px;word-break:break-all;white-space:pre-wrap">${label===(fr?"Lien EPG (guide TV)":"EPG URL (TV guide)")?`<a href="${escape(value)}" style="color:#e6c38d">${escape(value)}</a>`:escape(value)}</td></tr>`).join("")}</table><p><a href="${origin}" style="color:#e6c38d">${fr?"Ouvrir MYKIOO et les guides d’installation":"Open MYKIOO and the setup guides"}</a></p></td></tr></table></body></html>`;
+  sendStarted=true;
   const sent=await fetch(((Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/mykioo-email-dispatch?route=email"),{method:"POST",headers:{"api-key":mailerKey,"Content-Type":"application/json"},body:JSON.stringify({
    sender:{email:template.sender.email,name:"MYKIOO"},to:[{email:member.email}],subject:"MYKIOO | "+title,
    htmlContent,textContent:[title,intro,...rows.map(([label,value])=>label+": "+value),origin].join("\n"),
    tags:["mykioo",updated?"subscription-updated":"order-completed"]
   })});
+  sendRejected=!sent.ok;
   const result=await sent.json();
-  if(!sent.ok||!result.messageId)throw Error("Email provider rejected message");
+  if(!sent.ok||!result.messageId)throw Error("Email provider confirmation unavailable");
+  const sentAt=new Date().toISOString();
+  const {error:recordError}=await db.from("mykioo_subscription_email_log")
+   .update({state:"sent",sent_at:sentAt,provider_message_id:String(result.messageId),updated_at:sentAt}).eq("id",attemptId);
+  if(recordError)console.error("MYKIOO email accepted but tracking update failed",attemptId);
   return "accepted";
  }catch{
-  console.error("MYKIOO order credential email failed",subscriptionId);
-  return "failed";
+  const state=sendStarted&&!sendRejected?"unknown":"failed";
+  await db.from("mykioo_subscription_email_log").update({state,updated_at:new Date().toISOString()}).eq("id",attemptId);
+  console.error("MYKIOO credential email confirmation",state,subscriptionId);
+  return state;
  }
 }
 
@@ -89,6 +107,35 @@ Deno.serve(async (req) => {
    return response({error:"Owner permission required"},403);
   const data=await req.json().catch(()=>null);
   if(!data||typeof data!=="object")return response({error:"Invalid request"},400);
+  if(data.action==="get_email_status"){
+   if(!uuid(data.subscription_id))return response({error:"Select a valid subscription."},400);
+   const {data:sub,error:subError}=await db.from("mykioo_subscriptions")
+    .select("id,member_id,updated_at").eq("id",data.subscription_id).maybeSingle();
+   if(subError||!sub)return response({error:"Subscription not found."},404);
+   const [direct,requests]=await Promise.all([
+    db.from("mykioo_subscription_email_log")
+     .select("state,created_at,sent_at,subscription_updated_at").eq("subscription_id",sub.id)
+     .order("created_at",{ascending:false}).limit(1).maybeSingle(),
+    db.from("mykioo_subscription_requests").select("id").eq("subscription_id",sub.id).eq("member_id",sub.member_id)
+   ]);
+   if(direct.error||requests.error)return response({error:"Email status could not be checked."},503);
+   let latest=direct.data;
+   const requestIds=(requests.data||[]).map((row:{id:string})=>row.id);
+   if(requestIds.length){
+    const queued=await db.from("mykioo_completion_email_log").select("state,created_at,sent_at")
+     .eq("user_id",sub.member_id).in("entity_id",requestIds).in("kind",["subscription","renewal"])
+     .order("created_at",{ascending:false}).limit(1).maybeSingle();
+    if(queued.error)return response({error:"Completion email status could not be checked."},503);
+    if(queued.data&&(!latest||Date.parse(queued.data.created_at)>Date.parse(latest.created_at)))latest=queued.data;
+   }
+   if(!latest)return response({ok:true,email:{state:"unknown",sent_at:null,outdated:false}});
+   let state=latest.state;
+   if(state==="sending"&&Date.now()-Date.parse(latest.created_at)>5*60000)state="unknown";
+   const outdated=state==="sent"&&(latest.subscription_updated_at
+    ?Date.parse(latest.subscription_updated_at)<Date.parse(sub.updated_at)
+    :Date.parse(latest.sent_at||latest.created_at)<Date.parse(sub.updated_at));
+   return response({ok:true,email:{state,sent_at:latest.sent_at||null,outdated}});
+  }
   if(data.action==="resend_login_details"){
    const subscriptionId=data.subscription_id;
    if(!uuid(subscriptionId))return response({error:"Select a valid subscription."},400);
@@ -108,7 +155,9 @@ Deno.serve(async (req) => {
      details:{member_id:sub.member_id,email_accepted:notification==="accepted"}});
    return response(notification==="accepted"
      ?{ok:true,notification:"accepted",message:"Credentials email accepted for delivery. Ask member to check Inbox and Spam."}
-     :{ok:false,notification:"failed",error:"Unable to resend credentials. Verify the stored login and SMTP configuration."},
+     :{ok:false,notification,error:notification==="unknown"
+      ?"Email send confirmation is unavailable. Check email status before retrying."
+      :"Unable to resend credentials. Verify the stored login and SMTP configuration."},
      notification==="accepted"?200:503);
   }
   if(data.action==="save"){

@@ -1,6 +1,7 @@
 import React,{useMemo,useState} from 'react';
 import {CalendarDays,ChevronDown,ChevronUp,Search,Layers3} from 'lucide-react';
 import PasswordReveal from './PasswordReveal';
+import SubscriptionEmailStatus from './SubscriptionEmailStatus';
 import './SubscriptionDirectory.css';
 
 const statusLabels={
@@ -108,6 +109,7 @@ export default function SubscriptionDirectory({
        {resendFeedback?.id===sub.id&&<p role={resendFeedback.success?'status':'alert'} className={resendFeedback.success?'mykioo-profile-success':'mykioo-profile-error'}>{resendFeedback.message}</p>}
       </div>}
       {isExpanded&&<div className="mykioo-directory-details" id={'mykioo-sub-detail-'+sub.id}>
+       {owner&&<SubscriptionEmailStatus subscriptionId={sub.id} updatedAt={sub.updated_at} language={language}/>}
        {owner&&<div className="mykioo-directory-detail"><span>{tr('Customer name','Nom du client')}</span><strong>{name}</strong></div>}
        {owner&&customer?.email&&<div className="mykioo-directory-detail"><span>{tr('Customer email','Courriel du client')}</span><strong>{customer.email}</strong></div>}
        <div className="mykioo-directory-detail"><span>{tr('Devices','Appareils')}</span><strong>{sub.device_count||1}</strong></div>
