@@ -15,3 +15,60 @@
 .mykioo-welcome-confirm:disabled{cursor:wait;opacity:.6}
 .mykioo-welcome-confirm:focus-visible{outline:3px solid white;outline-offset:2px}
 @media(max-width:680px){.mykioo-welcome-grid{grid-template-columns:1fr}.mykioo-welcome-overlay{align-items:flex-start}.mykioo-welcome-dialog{max-height:none}.mykioo-agent-header-actions{justify-content:flex-start}}
+
+/* Agent workspace is an extra page inside the existing member shell. */
+.mykioo-agent-dashboard{width:100%;min-width:0;max-width:100%;display:grid;gap:20px;color:#f6f1f8}
+.mykioo-agent-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;padding:clamp(18px,3vw,30px);border-radius:18px;border:1px solid rgba(222,186,126,.42);background:linear-gradient(120deg,rgba(218,183,120,.14),rgba(39,29,48,.55) 55%,rgba(123,94,165,.12))}
+.mykioo-agent-header>div{flex:1 1 260px;min-width:0}
+.mykioo-agent-kicker{font-size:11px;letter-spacing:.17em;font-weight:800;color:#e9c585}
+.mykioo-agent-header h2{font-size:clamp(23px,3vw,32px);line-height:1.15;margin:9px 0;color:#fff}
+.mykioo-agent-header p{font-size:15px;line-height:1.6;color:#dbd3e0;max-width:680px;margin:0}
+.mykioo-agent-guide-button{flex:0 0 auto;min-height:40px;border:1px solid #dab67c;border-radius:10px;background:rgba(218,183,120,.1);color:#e9cb98;font-weight:700;font-size:14px;padding:9px 15px;cursor:pointer}
+.mykioo-agent-guide-button:hover{background:rgba(218,183,120,.2)}
+.mykioo-agent-summary{font-size:14px;line-height:1.6;color:#cfc7d4;margin:0}
+.mykioo-agent-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.mykioo-agent-stat{min-width:0;display:flex;flex-direction:column;gap:8px;padding:18px;border-radius:14px;background:#1c1926;border:1px solid #403847;box-sizing:border-box}
+.mykioo-agent-stat strong{font-size:clamp(21px,3vw,27px);line-height:1.15;color:#fff;overflow-wrap:anywhere}
+.mykioo-agent-stat small{font-size:12px;line-height:1.45;color:#afa6b9}
+.mykioo-agent-dashboard .mykioo-agent-panel{box-sizing:border-box;min-width:0;width:100%;padding:clamp(16px,2.6vw,26px);border-radius:16px;background:#1b1925;border:1px solid rgba(137,112,151,.38);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.mykioo-agent-dashboard .mykioo-agent-panel h2{font-size:clamp(18px,2.5vw,23px);line-height:1.3;margin:0 0 10px;color:#fff}
+.mykioo-agent-dashboard .mykioo-agent-panel p{font-size:14px;line-height:1.6;margin:0 0 15px;color:#c8bfd0}
+.mykioo-agent-dashboard .mykioo-agent-panel form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:end;min-width:0}
+.mykioo-agent-dashboard .mykioo-agent-panel label{min-width:0;display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:650;color:#ded5e5}
+.mykioo-agent-dashboard .mykioo-agent-panel input,
+.mykioo-agent-dashboard .mykioo-agent-panel select{box-sizing:border-box;width:100%;max-width:100%;height:44px;min-width:0;padding:9px 11px;border-radius:9px;border:1px solid #61546b;background:#11111b;color:#fff;font:inherit;font-size:14px}
+.mykioo-agent-dashboard .mykioo-agent-panel input:focus-visible,
+.mykioo-agent-dashboard .mykioo-agent-panel select:focus-visible{outline:2px solid #e6bd7c;outline-offset:2px}
+.mykioo-agent-dashboard .mykioo-agent-panel form>button{align-self:end;min-height:44px;border:0;border-radius:10px;padding:11px 16px;background:#d9b779;color:#201926;font-size:14px;font-weight:750;cursor:pointer}
+.mykioo-agent-dashboard .mykioo-agent-panel form>button:disabled{opacity:.6;cursor:not-allowed}
+.mykioo-agent-quote{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;border-radius:12px;padding:14px;border:1px solid #54465a;background:#12131e}
+.mykioo-agent-quote>div{display:flex;flex-direction:column;gap:6px;min-width:0}
+.mykioo-agent-quote span{color:#bfb5ca;font-size:12px}
+.mykioo-agent-quote strong{color:#fff;font-size:clamp(15px,2vw,19px);font-weight:800;overflow-wrap:anywhere}
+.mykioo-agent-quote .mykioo-agent-quote-total{border-left:2px solid #d7b377;padding-left:14px}
+.mykioo-agent-quote-total strong{color:#ecd09b}
+.mykioo-agent-quote>p{grid-column:1/-1;color:#ffb9b9!important;margin:0!important}
+.mykioo-agent-dashboard .mykioo-agent-panel ul{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.mykioo-agent-dashboard .mykioo-agent-panel li{padding:12px 14px;border-radius:10px;background:#141420;border:1px solid rgba(126,106,138,.35);font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.mykioo-agent-dashboard .mykioo-agent-panel code{font-size:12px;overflow-wrap:anywhere}
+.mykioo-agent-dashboard .mykioo-profile-error{margin:0}
+.mykioo-agent-dashboard>.outline-button{justify-self:start;min-height:42px}
+@media(max-width:800px){
+ .mykioo-agent-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mykioo-agent-stats .mykioo-agent-stat:last-child{grid-column:1/-1}
+}
+@media(max-width:580px){
+ .mykioo-agent-dashboard{gap:16px}
+ .mykioo-agent-header{padding:18px;border-radius:14px}
+ .mykioo-agent-header h2{font-size:23px}
+ .mykioo-agent-header p{font-size:13px}
+ .mykioo-agent-guide-button{width:100%;font-size:13px}
+ .mykioo-agent-stats{gap:8px}
+ .mykioo-agent-stat{padding:14px}
+ .mykioo-agent-stat strong{font-size:21px}
+ .mykioo-agent-dashboard .mykioo-agent-panel{padding:16px}
+ .mykioo-agent-dashboard .mykioo-agent-panel form{grid-template-columns:1fr;gap:12px}
+ .mykioo-agent-dashboard .mykioo-agent-panel form>button{width:100%}
+ .mykioo-agent-quote{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mykioo-agent-quote .mykioo-agent-quote-total{grid-column:1/-1;border-left:0;border-top:1px solid #5b4b5c;padding:12px 0 0}
+}
