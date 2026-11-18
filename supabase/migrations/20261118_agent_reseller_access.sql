@@ -1,4 +1,4 @@
--- MYKIOO Agent system (STAGED, DO NOT APPLY WITHOUT LIVE-SCHEMA REVIEW)
+-- MYKIOO Agent system production migration (live schema inspected 2026-11-17)
 -- This migration adds isolated agent records without modifying existing member roles,
 -- subscription price tables, provider credentials, or other applications' auth.
 -- Owner/agent mutations MUST go through owner-authenticated server endpoints.
@@ -163,4 +163,41 @@ create policy mykioo_agent_service_read on public.mykioo_agent_service_requests
 -- ownership and computes wholesale pricing from authoritative catalog.
 -- Existing member/support/order RLS and Edge Function authorization MUST
 -- be audited and hardened before enabling these roles in production.
+
+-- Hide pricing from Agent accounts and managed customers at the Data API level.
+-- Keep current approved regular members and owner checkout unchanged.
+drop policy if exists "approved members can view package prices" on public.mykioo_package_prices;
+create policy "approved regular members can view package prices"
+ on public.mykioo_package_prices for select to authenticated using (
+  exists (select 1 from public.mykioo_members m
+   where m.user_id=(select auth.uid()) and m.status='approved')
+  and not exists (select 1 from public.mykioo_agent_accounts a where a.agent_user_id=(select auth.uid()))
+  and not exists (select 1 from public.mykioo_agent_customers c where c.customer_user_id=(select auth.uid()))
+ );
+
+drop policy if exists mykioo_orders_own_approved on public.mykioo_orders;
+create policy mykioo_orders_own_approved on public.mykioo_orders for select to authenticated using (
+ member_id=(select auth.uid())
+ and exists (select 1 from public.mykioo_members m where m.user_id=(select auth.uid()) and m.status='approved')
+ and not exists (select 1 from public.mykioo_agent_accounts a where a.agent_user_id=(select auth.uid()))
+ and not exists (select 1 from public.mykioo_agent_customers c where c.customer_user_id=(select auth.uid()))
+);
+
+drop policy if exists mykioo_subscription_requests_own on public.mykioo_subscription_requests;
+create policy mykioo_subscription_requests_own on public.mykioo_subscription_requests for select to authenticated using (
+ member_id=(select auth.uid())
+ and exists (select 1 from public.mykioo_members m where m.user_id=(select auth.uid()) and m.status='approved')
+ and not exists (select 1 from public.mykioo_agent_accounts a where a.agent_user_id=(select auth.uid()))
+ and not exists (select 1 from public.mykioo_agent_customers c where c.customer_user_id=(select auth.uid()))
+);
+
+drop policy if exists mykioo_billing_invoices_member_read on public.mykioo_billing_invoices;
+create policy mykioo_billing_invoices_member_read on public.mykioo_billing_invoices for select to authenticated using (
+ member_id=(select auth.uid())
+ and exists (select 1 from public.mykioo_members m where m.user_id=(select auth.uid()) and m.status='approved')
+ and not exists (select 1 from public.mykioo_agent_accounts a where a.agent_user_id=(select auth.uid()))
+ and not exists (select 1 from public.mykioo_agent_customers c where c.customer_user_id=(select auth.uid()))
+);
+select pg_notify('pgrst','reload schema');
+
 commit;
