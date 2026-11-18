@@ -30,6 +30,7 @@ function logoFallback(event) {
   if (image.src !== LOGO_FALLBACK) image.src = LOGO_FALLBACK;
 }
 import AdminDashboard from './AdminDashboard.jsx';
+import {useAgentAccess,AgentDashboard,AgentCustomerDashboard} from './AgentAccess.jsx';
 
 function Brand({compact=false}) {return <div className={'brand brand-image '+(compact?'brand-small':'')}><img className="logo-image" src={LOGO_WEBP} onError={logoFallback} alt="MYKIOO" /></div>}
 function Button({children,...props}){return <button className="button" {...props}>{children}</button>}
@@ -324,6 +325,7 @@ function Holding({user,member,logout,language='en',onProfileSaved}) {
  </div></div>;
 }
 export default function App(){const [language,setLanguage]=useState(()=>{try{return localStorage.getItem('mykioo-language')||((navigator.language||'en').toLowerCase().startsWith('fr')?'fr':'en')}catch{return 'en'}});function changeLanguage(value){setLanguage(value);try{localStorage.setItem('mykioo-language',value)}catch{}}useEffect(()=>{document.documentElement.lang=language;window.dispatchEvent(new CustomEvent('mykioo-language-changed',{detail:language}));},[language]);const [user,setUser]=useState(null),[member,setMember]=useState(null),[subscriptions,setSubscriptions]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');const [passwordRecovery,setPasswordRecovery]=useState(()=>new URLSearchParams(window.location.search).has('reset_password')),[recoveryComplete,setRecoveryComplete]=useState(false);const authUserIdRef=useRef(null),authLoadGenerationRef=useRef(0);
+ const agentAccess=useAgentAccess(user?.id);
  const [invitationLink,setInvitationLink]=useState(()=>{
   const query=new URLSearchParams(window.location.search);
   const token=query.get('invite_token');
@@ -454,4 +456,8 @@ if(passwordRecovery&&user)return <div className="mykioo-recovery-screen"><Brand/
  <PasswordSettings mode="recovery" language={language} onComplete={completeRecovery}/>
  <p className="mykioo-recovery-footer">{language==='fr'?'Après la modification, reconnectez-vous avec votre nouveau mot de passe.':'After updating, sign in again with your new password.'}</p>
 </div>;
-if(!user)return <Login onLogin={()=>{}} language={language} onLanguageChange={changeLanguage} recoveryComplete={recoveryComplete}/>;if(error)return <div className="holding"><Brand/><div className="hold-card"><AlertCircle size={32}/><h2>Temporarily unavailable</h2><p>{error}</p><button className="outline-button" onClick={logout}>Sign out</button></div></div>;if(member?.status==='approved' && member.role==='owner')return <AdminDashboard user={user} logout={logout} language={language} onLanguageChange={changeLanguage} logo={LOGO_WEBP} fallbackLogo={LOGO_FALLBACK}/>;if(member?.status==='approved'&&(member.role!=='member'||member.display_name?.trim()))return <Shell user={user} member={member} subscriptions={subscriptions} logout={logout} language={language} onLanguageChange={changeLanguage} onNameSaved={name=>setMember(current=>({...current,display_name:name}))}/>;return <Holding user={user} member={member} logout={logout} language={language} onLanguageChange={changeLanguage} onProfileSaved={name=>setMember(current=>current?{...current,display_name:name}:current)}/>}
+if(!user)return <Login onLogin={()=>{}} language={language} onLanguageChange={changeLanguage} recoveryComplete={recoveryComplete}/>;if(error)return <div className="holding"><Brand/><div className="hold-card"><AlertCircle size={32}/><h2>Temporarily unavailable</h2><p>{error}</p><button className="outline-button" onClick={logout}>Sign out</button></div></div>;if(member?.status==='approved' && member.role==='owner')return <AdminDashboard user={user} logout={logout} language={language} onLanguageChange={changeLanguage} logo={LOGO_WEBP} fallbackLogo={LOGO_FALLBACK}/>;if(member?.status==='approved'&&agentAccess.loading)return <div className="loading"><Brand/><span>Checking agent access…</span></div>;
+if(member?.status==='approved'&&agentAccess.agent?.status==='active')return <AgentDashboard user={user} logout={logout} language={language}/>;
+if(member?.status==='approved'&&agentAccess.agent&&agentAccess.agent.status!=='active')return <Holding user={user} member={{...member,status:'pending'}} logout={logout} language={language}/>;
+if(member?.status==='approved'&&agentAccess.assignment)return <AgentCustomerDashboard user={user} logout={logout} language={language}/>;
+if(member?.status==='approved'&&(member.role!=='member'||member.display_name?.trim()))return <Shell user={user} member={member} subscriptions={subscriptions} logout={logout} language={language} onLanguageChange={changeLanguage} onNameSaved={name=>setMember(current=>({...current,display_name:name}))}/>;return <Holding user={user} member={member} logout={logout} language={language} onLanguageChange={changeLanguage} onProfileSaved={name=>setMember(current=>current?{...current,display_name:name}:current)}/>}
