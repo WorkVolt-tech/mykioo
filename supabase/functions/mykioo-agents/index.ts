@@ -74,13 +74,28 @@ Deno.serve(async request=>{
      return reply({error:"Set a valid fee and a discount from $0 to $1,000 CAD"},400);
    if(accessType==="free"&&(fee!==0||period!=="none"))return reply({error:"Free agents must have no access fee"},400);
    if(accessType==="paid"&&(fee<=0||period==="none"))return reply({error:"Paid agents need an access fee and period"},400);
+   // Reset first-login orientation only for a new promotion/re-promotion, not edits.
+   const {data:previousAgent,error:previousError}=await db.from("mykioo_agent_accounts")
+     .select("status").eq("agent_user_id",target.user_id).maybeSingle();
+   if(previousError)return reply({error:"Unable to verify Agent status"},503);
+   const firstActivation=status==="active"&&previousAgent?.status!=="active";
    // Only an authenticated owner may set the agent discount. No agent can edit it.
    const {data,error}=await db.from("mykioo_agent_accounts").upsert({
     agent_user_id:target.user_id,status,access_type:accessType,access_fee_cad:fee,
-    access_fee_period:period,discount_cad:discount,updated_at:new Date().toISOString()
+    access_fee_period:period,discount_cad:discount,updated_at:new Date().toISOString(),
+    ...(firstActivation?{onboarding_acknowledged_at:null}:{})
    }).select().single();
    if(error)return reply({error:"Agent update failed"},503);
    return reply({ok:true,agent:data});
+  }
+  if(action==="agent_acknowledge_welcome"){
+   if(!await activeAgent())return reply({error:"Active Agent required"},403);
+   const {data,error}=await db.from("mykioo_agent_accounts")
+     .update({onboarding_acknowledged_at:new Date().toISOString()})
+     .eq("agent_user_id",user.id).eq("status","active").is("onboarding_acknowledged_at",null)
+     .select("onboarding_acknowledged_at").maybeSingle();
+   if(error)return reply({error:"Unable to save acknowledgement"},503);
+   return reply({ok:true,acknowledged:true,at:data?.onboarding_acknowledged_at||null});
   }
   if(action==="owner_remove_agent"){
    if(!owner)return reply({error:"Owner only"},403);
