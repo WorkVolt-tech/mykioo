@@ -1,8 +1,9 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 import './AgentWelcome.css';
+import {priceCAD} from './PackagePricing';
 
-// Agent/customer views intentionally exclude retail/wholesale pricing.
+// Agents see their prices in the Agent workspace; assigned-customer views stay price-free.
 // Every order and invitation must use the authenticated server workflow.
 const tr=(lang,en,fr)=>lang==='fr'?fr:en;
 const AGENT_ENDPOINT='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-agents';
@@ -89,8 +90,10 @@ export function AgentDashboard({user,language='en',logout,agent}){
   }
   useEffect(()=>{refresh();},[user.id]);
   const t=(en,fr)=>tr(language,en,fr);
-  return <div className="dashboard"><main className="dash-content" style={{maxWidth:960,margin:'0 auto'}}>
-    <header className="dash-header"><strong>MYKIOO / {t('Agent portal','Portail agent')}</strong><div className="mykioo-agent-header-actions"><button className="outline-button" type="button" onClick={()=>setWelcomeOpen(true)}>{t('Agent guide','Guide de l’agent')}</button><button className="outline-button" onClick={logout}>{t('Sign out','Déconnexion')}</button></div></header>
+  const packageBase=priceCAD(days,devices);
+  const agentDue=packageBase===null?null:Math.round((packageBase-discountCad)*100)/100;
+  return <div className="mykioo-agent-dashboard">
+    <div className="mykioo-agent-header"><div><span className="mykioo-agent-kicker">MYKIOO · {t('AGENT BENEFITS','AVANTAGES AGENT')}</span><h2>{t('An upgrade to your membership','Un avantage pour votre adhésion')}</h2><p>{t('Keep your member dashboard and manage your agent business here. You collect your customers’ payments; MYKIOO collects only what you owe for each package.','Conservez votre espace membre et gérez votre activité d’agent ici. Vous encaissez les paiements de vos clients; MYKIOO perçoit uniquement le montant dû pour chaque forfait.')}</p></div><button className="mykioo-agent-guide-button" type="button" onClick={()=>setWelcomeOpen(true)}>{t('Agent guide','Guide de l’agent')}</button></div>
     {welcomeOpen&&<div className="mykioo-welcome-overlay">
       <section className="mykioo-welcome-dialog" role="dialog" aria-modal="true" aria-labelledby="mykioo-agent-welcome-title" aria-describedby="mykioo-agent-welcome-desc">
         <div className="mykioo-welcome-eyebrow">MYKIOO / {t('AGENT ACCESS','ACCÈS AGENT')}</div>
@@ -125,45 +128,115 @@ export function AgentDashboard({user,language='en',logout,agent}){
         </button>
       </section>
     </div>}
-    <div className="page-eyebrow">{t('AGENT SPACE','ESPACE AGENT')}</div>
-    <h1>{t('My customers','Mes clients')}</h1>
-    <p className="page-sub">{t('Only customers assigned to your agent account appear here. MYKIOO sets your wholesale rate; customer selling prices are private to your business.','Seuls les clients associés à votre compte agent apparaissent ici. MYKIOO fixe votre tarif agent; vous choisissez librement votre prix de vente.')}</p>
+    <p className="mykioo-agent-summary">{t('See your wholesale prices below. Your customer selling price is your decision; the owner verifies your payment and completes the service.','Consultez vos prix agent ci-dessous. Vous fixez le prix de vente à vos clients; le propriétaire vérifie votre paiement et active le service.')}</p>
     {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
-    <div className="shortcut-grid">
-      <article className="shortcut"><strong>{rows.length}</strong><small>{t('Assigned customers','Clients attribués')}</small></article>
-      <article className="shortcut"><strong>{renewals.filter(r=>r.status==='pending').length}</strong><small>{t('Pending renewal requests','Renouvellements en attente')}</small></article>
-      <article className="shortcut"><strong>${discountCad} CAD</strong><small>{t('Permanent discount per eligible order; no coupon stacking','Remise permanente par commande admissible; codes non cumulables')}</small></article>
+    <div className="mykioo-agent-stats">
+      <article className="mykioo-agent-stat"><strong>{rows.length}</strong><small>{t('Assigned customers','Clients attribués')}</small></article>
+      <article className="mykioo-agent-stat"><strong>{renewals.filter(r=>r.status==='pending').length}</strong><small>{t('Pending renewal requests','Renouvellements en attente')}</small></article>
+      <article className="mykioo-agent-stat"><strong>${discountCad} CAD</strong><small>{t('Permanent discount per eligible order; no coupon stacking','Remise permanente par commande admissible; codes non cumulables')}</small></article>
     </div>
-    <section className="mykioo-support-card"><h2>{t('Customers','Clients')}</h2>
-      {loading?<p>{t('Loading…','Chargement…')}</p>:rows.length===0?<p>{t('No customers assigned yet. Agent invitations and order submission will become available after the server integration is activated.','Aucun client attribué pour le moment. Les invitations et commandes seront disponibles après l’activation du serveur.')}</p>:
+    <section className="mykioo-agent-panel"><h2>{t('Customers','Clients')}</h2>
+      {loading?<p>{t('Loading…','Chargement…')}</p>:rows.length===0?<p>{t('No customers assigned yet. Request an invitation below. The owner must approve and assign the customer before you can submit an order.','Aucun client attribué. Demandez une invitation ci-dessous. Le propriétaire doit approuver et attribuer le client avant toute commande.')}</p>:
       <ul>{rows.map(c=><li key={c.customer_user_id}><code>{c.customer_user_id.slice(0,8)}…</code> · {statusDate(c.assigned_at,language)}</li>)}</ul>}
     </section>
-    <section className="mykioo-support-card"><h2>{t('Invite a customer','Inviter un client')}</h2>
+    <section className="mykioo-agent-panel"><h2>{t('Invite a customer','Inviter un client')}</h2>
       <p>{t('Your request goes to the MYKIOO owner for invitation approval and delivery.','Votre demande sera envoyée au propriétaire MYKIOO pour approbation et envoi.')}</p>
       <form onSubmit={invite}><label>{t('Customer email','Courriel du client')}<input type="email" required value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}/></label>
       <button disabled={saving} type="submit">{t('Request invitation','Demander une invitation')}</button></form>
     </section>
-    <section className="mykioo-support-card"><h2>{t('Create a customer order','Créer une commande client')}</h2>
+    <section className="mykioo-agent-panel"><h2>{t('Order for an assigned customer','Commande pour un client attribué')}</h2>
       <p>{t('Your selling price is your choice. MYKIOO automatically deducts '+discountCad+' CAD on eligible wholesale orders; coupons do not apply.','Vous choisissez votre prix de vente. MYKIOO déduit automatiquement '+discountCad+' $ CA des commandes admissibles; aucun code promotionnel ne s’applique.')}</p>
-      <form onSubmit={submitOrder}>
+      <form className="mykioo-agent-order-form" onSubmit={submitOrder}>
        <label>{t('Assigned customer','Client attribué')}<select required value={selectedCustomer} onChange={e=>setSelectedCustomer(e.target.value)}><option value="">{t('Choose a customer','Choisir un client')}</option>{rows.map(r=><option value={r.customer_user_id} key={r.customer_user_id}>{r.customer_user_id.slice(0,8)}…</option>)}</select></label>
        <label>{t('Order type','Type de commande')}<select value={kind} onChange={e=>setKind(e.target.value)}><option value="new">{t('New subscription','Nouvel abonnement')}</option><option value="renewal">{t('Renewal','Renouvellement')}</option></select></label>
        <label>{t('Duration','Durée')}<select value={days} onChange={e=>setDays(Number(e.target.value))}><option value={365}>{t('12 months','12 mois')}</option><option value={730}>{t('24 months','24 mois')}</option></select></label>
        <label>{t('Devices','Appareils')}<select value={devices} onChange={e=>setDevices(Number(e.target.value))}>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n}</option>)}</select></label>
-       <label>{t('Your customer price (CAD)','Votre prix client (CAD)')}<input type="number" required min="0" step="0.01" value={retail} onChange={e=>setRetail(e.target.value)}/></label>
+       <div className="mykioo-agent-quote" aria-live="polite">
+        <div><span>{t('Package price','Prix du forfait')}</span><strong>{packageBase===null?'—':','Votre prix client (CAD)')}<input type="number" required min="0" step="0.01" value={retail} onChange={e=>setRetail(e.target.value)}/></label>
+       <label>{t('How MYKIOO will be paid','Paiement à MYKIOO')}<select value={method} onChange={e=>setMethod(e.target.value)}><option value="interac">Interac e-Transfer</option><option value="manual">{t('Manual transfer','Virement manuel')}</option><option value="cash">{t('Cash','Espèces')}</option><option value="zelle">Zelle</option><option value="btc">Bitcoin</option><option value="shib">SHIB</option></select></label>
+       <button type="submit" disabled={saving||!rows.length||agentDue===null||agentDue<=0}>{t('Submit order for owner review','Envoyer la commande pour vérification')}</button>
+      </form>
+      {notice&&<p role="status">{notice}</p>}
+    </section>
+    <section className="mykioo-agent-panel"><h2>{t('Customer service choices','Choix de services des clients')}</h2>
+     {services.length===0?<p>{t('No service choices submitted yet.','Aucune sélection de service pour le moment.')}</p>:
+      <ul>{services.map(r=><li key={r.id}><strong>{r.status}</strong> · {r.customer_user_id.slice(0,8)}… · {r.contract_days===365?'12':'24'} {t('months','mois')} · {r.device_count} {t('devices','appareils')}{r.notes?' — '+r.notes:''}</li>)}</ul>}
+    </section>
+    <section className="mykioo-agent-panel"><h2>{t('My orders','Mes commandes')}</h2>
+      {orders.length===0?<p>{t('No orders yet','Aucune commande')}</p>:<ul>{orders.map(o=><li key={o.id}><strong>{o.status}</strong> · {o.kind} · {t('Customer price','Prix client')} ${o.customer_price_cad} CAD · {t('Due to MYKIOO','Dû à MYKIOO')} ${o.wholesale_price_cad} CAD</li>)}</ul>}
+    </section>
+    <section className="mykioo-agent-panel"><h2>{t('Renewal requests','Demandes de renouvellement')}</h2>
+      {renewals.length===0?<p>{t('No renewal requests','Aucune demande de renouvellement')}</p>:
+      <ul>{renewals.map(r=><li key={r.id}><strong>{statusDate(r.created_at,language)}</strong> · {r.status} · <code>{r.customer_user_id.slice(0,8)}…</code>{r.message?' — '+r.message:''}</li>)}</ul>}
+    </section>
+    <p className="page-sub">{t('Order submission, customer invitations, payment verification and email alerts require the MYKIOO server endpoint. No order is activated from this screen.','Les commandes, invitations, vérifications des paiements et alertes courriel nécessitent le service sécurisé MYKIOO. Aucun abonnement ne peut être activé depuis cet écran.')}</p>
+    <button className="outline-button" onClick={refresh} disabled={loading}>{t('Refresh','Actualiser')}</button>
+  </div>;
+}
+
++Number(packageBase).toFixed(2)+' CAD'}</strong></div>
+        <div><span>{t('Your discount','Votre remise')}</span><strong>{'- ,'Votre prix client (CAD)')}<input type="number" required min="0" step="0.01" value={retail} onChange={e=>setRetail(e.target.value)}/></label>
        <label>{t('How MYKIOO will be paid','Paiement à MYKIOO')}<select value={method} onChange={e=>setMethod(e.target.value)}><option value="interac">Interac e-Transfer</option><option value="manual">{t('Manual transfer','Virement manuel')}</option><option value="cash">{t('Cash','Espèces')}</option><option value="zelle">Zelle</option><option value="btc">Bitcoin</option><option value="shib">SHIB</option></select></label>
        <button type="submit" disabled={saving||!rows.length}>{t('Submit order for owner review','Envoyer la commande pour vérification')}</button>
       </form>
       {notice&&<p role="status">{notice}</p>}
     </section>
-    <section className="mykioo-support-card"><h2>{t('Customer service choices','Choix de services des clients')}</h2>
+    <section className="mykioo-agent-panel"><h2>{t('Customer service choices','Choix de services des clients')}</h2>
      {services.length===0?<p>{t('No service choices submitted yet.','Aucune sélection de service pour le moment.')}</p>:
       <ul>{services.map(r=><li key={r.id}><strong>{r.status}</strong> · {r.customer_user_id.slice(0,8)}… · {r.contract_days===365?'12':'24'} {t('months','mois')} · {r.device_count} {t('devices','appareils')}{r.notes?' — '+r.notes:''}</li>)}</ul>}
     </section>
-    <section className="mykioo-support-card"><h2>{t('My orders','Mes commandes')}</h2>
+    <section className="mykioo-agent-panel"><h2>{t('My orders','Mes commandes')}</h2>
       {orders.length===0?<p>{t('No orders yet','Aucune commande')}</p>:<ul>{orders.map(o=><li key={o.id}><strong>{o.status}</strong> · {o.kind} · {t('Customer price','Prix client')} ${o.customer_price_cad} CAD · {t('Due to MYKIOO','Dû à MYKIOO')} ${o.wholesale_price_cad} CAD</li>)}</ul>}
     </section>
-    <section className="mykioo-support-card"><h2>{t('Renewal requests','Demandes de renouvellement')}</h2>
+    <section className="mykioo-agent-panel"><h2>{t('Renewal requests','Demandes de renouvellement')}</h2>
+      {renewals.length===0?<p>{t('No renewal requests','Aucune demande de renouvellement')}</p>:
+      <ul>{renewals.map(r=><li key={r.id}><strong>{statusDate(r.created_at,language)}</strong> · {r.status} · <code>{r.customer_user_id.slice(0,8)}…</code>{r.message?' — '+r.message:''}</li>)}</ul>}
+    </section>
+    <p className="page-sub">{t('Order submission, customer invitations, payment verification and email alerts require the MYKIOO server endpoint. No order is activated from this screen.','Les commandes, invitations, vérifications des paiements et alertes courriel nécessitent le service sécurisé MYKIOO. Aucun abonnement ne peut être activé depuis cet écran.')}</p>
+    <button className="outline-button" onClick={refresh} disabled={loading}>{t('Refresh','Actualiser')}</button>
+  </main></div>;
+}
+
++Number(discountCad).toFixed(2)+' CAD'}</strong></div>
+        <div className="mykioo-agent-quote-total"><span>{t('You owe MYKIOO','Vous devez à MYKIOO')}</span><strong>{agentDue===null||agentDue<=0?'—':','Votre prix client (CAD)')}<input type="number" required min="0" step="0.01" value={retail} onChange={e=>setRetail(e.target.value)}/></label>
+       <label>{t('How MYKIOO will be paid','Paiement à MYKIOO')}<select value={method} onChange={e=>setMethod(e.target.value)}><option value="interac">Interac e-Transfer</option><option value="manual">{t('Manual transfer','Virement manuel')}</option><option value="cash">{t('Cash','Espèces')}</option><option value="zelle">Zelle</option><option value="btc">Bitcoin</option><option value="shib">SHIB</option></select></label>
+       <button type="submit" disabled={saving||!rows.length}>{t('Submit order for owner review','Envoyer la commande pour vérification')}</button>
+      </form>
+      {notice&&<p role="status">{notice}</p>}
+    </section>
+    <section className="mykioo-agent-panel"><h2>{t('Customer service choices','Choix de services des clients')}</h2>
+     {services.length===0?<p>{t('No service choices submitted yet.','Aucune sélection de service pour le moment.')}</p>:
+      <ul>{services.map(r=><li key={r.id}><strong>{r.status}</strong> · {r.customer_user_id.slice(0,8)}… · {r.contract_days===365?'12':'24'} {t('months','mois')} · {r.device_count} {t('devices','appareils')}{r.notes?' — '+r.notes:''}</li>)}</ul>}
+    </section>
+    <section className="mykioo-agent-panel"><h2>{t('My orders','Mes commandes')}</h2>
+      {orders.length===0?<p>{t('No orders yet','Aucune commande')}</p>:<ul>{orders.map(o=><li key={o.id}><strong>{o.status}</strong> · {o.kind} · {t('Customer price','Prix client')} ${o.customer_price_cad} CAD · {t('Due to MYKIOO','Dû à MYKIOO')} ${o.wholesale_price_cad} CAD</li>)}</ul>}
+    </section>
+    <section className="mykioo-agent-panel"><h2>{t('Renewal requests','Demandes de renouvellement')}</h2>
+      {renewals.length===0?<p>{t('No renewal requests','Aucune demande de renouvellement')}</p>:
+      <ul>{renewals.map(r=><li key={r.id}><strong>{statusDate(r.created_at,language)}</strong> · {r.status} · <code>{r.customer_user_id.slice(0,8)}…</code>{r.message?' — '+r.message:''}</li>)}</ul>}
+    </section>
+    <p className="page-sub">{t('Order submission, customer invitations, payment verification and email alerts require the MYKIOO server endpoint. No order is activated from this screen.','Les commandes, invitations, vérifications des paiements et alertes courriel nécessitent le service sécurisé MYKIOO. Aucun abonnement ne peut être activé depuis cet écran.')}</p>
+    <button className="outline-button" onClick={refresh} disabled={loading}>{t('Refresh','Actualiser')}</button>
+  </main></div>;
+}
+
++agentDue.toFixed(2)+' CAD'}</strong></div>
+        {agentDue!==null&&agentDue<=0&&<p role="alert">{t('Your discount must be smaller than the package price. Contact the owner.','Votre remise doit être inférieure au prix du forfait. Contactez le propriétaire.')}</p>}
+       </div>
+       <label>{t('Your selling price (CAD) — collected by you','Votre prix client (CAD) — encaissé par vous')}<input type="number" required min="0" step="0.01" value={retail} onChange={e=>setRetail(e.target.value)}/></label>
+       <label>{t('How MYKIOO will be paid','Paiement à MYKIOO')}<select value={method} onChange={e=>setMethod(e.target.value)}><option value="interac">Interac e-Transfer</option><option value="manual">{t('Manual transfer','Virement manuel')}</option><option value="cash">{t('Cash','Espèces')}</option><option value="zelle">Zelle</option><option value="btc">Bitcoin</option><option value="shib">SHIB</option></select></label>
+       <button type="submit" disabled={saving||!rows.length}>{t('Submit order for owner review','Envoyer la commande pour vérification')}</button>
+      </form>
+      {notice&&<p role="status">{notice}</p>}
+    </section>
+    <section className="mykioo-agent-panel"><h2>{t('Customer service choices','Choix de services des clients')}</h2>
+     {services.length===0?<p>{t('No service choices submitted yet.','Aucune sélection de service pour le moment.')}</p>:
+      <ul>{services.map(r=><li key={r.id}><strong>{r.status}</strong> · {r.customer_user_id.slice(0,8)}… · {r.contract_days===365?'12':'24'} {t('months','mois')} · {r.device_count} {t('devices','appareils')}{r.notes?' — '+r.notes:''}</li>)}</ul>}
+    </section>
+    <section className="mykioo-agent-panel"><h2>{t('My orders','Mes commandes')}</h2>
+      {orders.length===0?<p>{t('No orders yet','Aucune commande')}</p>:<ul>{orders.map(o=><li key={o.id}><strong>{o.status}</strong> · {o.kind} · {t('Customer price','Prix client')} ${o.customer_price_cad} CAD · {t('Due to MYKIOO','Dû à MYKIOO')} ${o.wholesale_price_cad} CAD</li>)}</ul>}
+    </section>
+    <section className="mykioo-agent-panel"><h2>{t('Renewal requests','Demandes de renouvellement')}</h2>
       {renewals.length===0?<p>{t('No renewal requests','Aucune demande de renouvellement')}</p>:
       <ul>{renewals.map(r=><li key={r.id}><strong>{statusDate(r.created_at,language)}</strong> · {r.status} · <code>{r.customer_user_id.slice(0,8)}…</code>{r.message?' — '+r.message:''}</li>)}</ul>}
     </section>
