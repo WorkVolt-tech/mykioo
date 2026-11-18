@@ -17,7 +17,7 @@ export default function OwnerAgents({language='en'}){
  const tr=(en,fr)=>language==='fr'?fr:en;
  const [data,setData]=useState({agents:[],customers:[],invites:[],orders:[],members:[]});
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[error,setError]=useState(''),[backendReady,setBackendReady]=useState(false),[memberLoadError,setMemberLoadError]=useState('');
- const [agentId,setAgentId]=useState(''),[status,setStatus]=useState('active'),[type,setType]=useState('free'),[fee,setFee]=useState('0'),[period,setPeriod]=useState('none');
+ const [agentId,setAgentId]=useState(''),[status,setStatus]=useState('active'),[type,setType]=useState('free'),[fee,setFee]=useState('0'),[period,setPeriod]=useState('none'),[discount,setDiscount]=useState('5');
  const [customerId,setCustomerId]=useState(''),[customerAgentId,setCustomerAgentId]=useState('');
  async function refresh(){
    setBusy(true);setError('');setMemberLoadError('');
@@ -50,12 +50,41 @@ export default function OwnerAgents({language='en'}){
    return m?.email||m?.display_name||id?.slice(0,8)||'—';
  };
  const eligible=(data.members||[]).filter(m=>m.status==='approved'&&m.role==='member');
+ const currentAgent=agentId?(data.agents||[]).find(a=>a.agent_user_id===agentId):null;
  const active=(data.agents||[]).filter(a=>a.status==='active');
  const agentsById=useMemo(()=>new Map((data.agents||[]).map(a=>[a.agent_user_id,a])),[data.agents]);
  async function saveAgent(e){
    e.preventDefault();setError('');setNotice('');setBusy(true);
-   try{await call('owner_set_agent',{agent_user_id:agentId,status,access_type:type,access_fee_cad:type==='free'?0:Number(fee),access_fee_period:type==='free'?'none':period});
+   try{await call('owner_set_agent',{agent_user_id:agentId,status,access_type:type,access_fee_cad:type==='free'?0:Number(fee),access_fee_period:type==='free'?'none':period,discount_cad:Number(discount)});
      setNotice(tr('Agent saved.','Agent enregistré.'));await refresh();}
+   catch(e){setError(e.message);}finally{setBusy(false);}
+ }
+ async function removeAgent(id){
+   const count=(data.customers||[]).filter(c=>c.agent_user_id===id).length;
+   if(count>0){setError(tr('Transfer this agent’s '+count+' customer(s) to another active agent before removal.','Transférez les '+count+' client(s) de cet agent à un autre agent actif avant de le retirer.'));return;}
+   if(!window.confirm(tr('Remove Agent access from '+memberName(id)+'? Their member account, previous orders and payment history will be preserved.','Retirer les droits d’agent à '+memberName(id)+' ? Son compte membre, ses commandes et son historique seront conservés.')))return;
+   setBusy(true);setError('');setNotice('');
+   try{await call('owner_remove_agent',{agent_user_id:id});
+     if(agentId===id){setAgentId('');setType('free');setFee('0');setPeriod('none');setDiscount('5');}
+     await refresh();setNotice(tr('Agent access removed. Member account preserved.','Accès agent retiré. Compte membre conservé.'));}
+   catch(e){setError(e.message);}finally{setBusy(false);}
+ }
+ function selectAgent(id){
+   setAgentId(id);
+   const a=agentsById.get(id);
+   if(a&&a.status!=='removed'){
+     setStatus(a.status);setType(a.access_type);setFee(String(a.access_fee_cad));
+     setPeriod(a.access_fee_period);setDiscount(String(a.discount_cad??(a.access_type==='paid'?10:5)));
+   }else{setStatus('active');setType('free');setFee('0');setPeriod('none');setDiscount('5');}
+ }
+ async function downgradeAgent(id){
+   const a=agentsById.get(id);
+   if(!a||a.access_type!=='paid')return;
+   if(!window.confirm(tr('Downgrade '+memberName(id)+' to Free Agent? Their customer assignments and existing orders will be preserved. New order discounts will use $5 CAD.','Rétrograder '+memberName(id)+' en agent gratuit ? Ses clients et commandes seront conservés. Les nouvelles commandes bénéficieront de 5 $ CA de remise.')))return;
+   setBusy(true);setError('');setNotice('');
+   try{await call('owner_set_agent',{agent_user_id:id,status:a.status,access_type:'free',access_fee_cad:0,access_fee_period:'none',discount_cad:5});
+      if(agentId===id){setType('free');setFee('0');setPeriod('none');setDiscount('5');}
+      await refresh();setNotice(tr('Agent downgraded to Free.','Agent rétrogradé en Gratuit.'));}
    catch(e){setError(e.message);}finally{setBusy(false);}
  }
  async function assign(e){
@@ -83,14 +112,16 @@ export default function OwnerAgents({language='en'}){
       <h3>{tr('Create / update agent','Créer ou modifier un agent')}</h3><p>{eligible.length} {tr('approved members available','membres approuvés disponibles')}</p>
       <form onSubmit={saveAgent} className="mykioo-agent-form">
        <label>{tr('Approved member','Membre approuvé')}</label>
-       <select value={agentId} onChange={e=>{const id=e.target.value;setAgentId(id);const row=agentsById.get(id);if(row){setStatus(row.status);setType(row.access_type);setFee(String(row.access_fee_cad));setPeriod(row.access_fee_period);}}} required>
+       <select value={agentId} onChange={e=>selectAgent(e.target.value)} required>
          <option value="">{tr('Choose a member','Choisir un membre')}</option>
          {eligible.map(m=><option key={m.user_id} value={m.user_id}>{m.display_name?m.display_name+' — ':''}{m.email||m.user_id.slice(0,8)}</option>)}
        </select>
        <label>{tr('Status','Statut')}</label><select value={status} onChange={e=>setStatus(e.target.value)}><option value="pending">Pending</option><option value="active">Active</option><option value="suspended">Suspended</option></select>
-       <label>{tr('Agent access','Accès agent')}</label><select value={type} onChange={e=>{setType(e.target.value);if(e.target.value==='free'){setFee('0');setPeriod('none')}else setPeriod('monthly')}}><option value="free">{tr('Free','Gratuit')}</option><option value="paid">{tr('Paid','Payant')}</option></select>
+       <label>{tr('Agent access','Accès agent')}</label><select value={type} onChange={e=>{const newType=e.target.value;setType(newType);if(newType==='free'){setFee('0');setPeriod('none');setDiscount('5')}else{setPeriod('monthly');setDiscount('10')}}}><option value="free">{tr('Free','Gratuit')}</option><option value="paid">{tr('Paid','Payant')}</option></select>
        {type==='paid'&&<><label>{tr('Access fee (CAD)','Frais d’accès (CAD)')}</label><input type="number" min="0.01" step="0.01" value={fee} onChange={e=>setFee(e.target.value)} required/><label>{tr('Billing period','Période de facturation')}</label><select value={period} onChange={e=>setPeriod(e.target.value)}><option value="one_time">{tr('One time','Une fois')}</option><option value="monthly">{tr('Monthly','Mensuel')}</option><option value="yearly">{tr('Yearly','Annuel')}</option></select></>}
-       <p>{tr('Free agents receive $5 CAD off; paid agents receive $10 CAD off every eligible order. Promo codes cannot stack.','Les agents gratuits reçoivent une remise de 5 $ CA; les agents payants reçoivent 10 $ CA sur chaque commande admissible. Les codes promotionnels ne sont pas cumulables.')}</p>
+       <label>{tr('Discount per eligible order (CAD)','Remise par commande admissible (CAD)')}</label>
+       <input type="number" min="0" max="1000" step="0.01" value={discount} onChange={e=>setDiscount(e.target.value)} required/>
+       <p>{tr('You choose the agent discount, based on their agreement and access fee. New orders use this amount automatically; promo codes cannot stack. The discount must be less than the selected package price.','Vous choisissez la remise selon votre entente et les frais payés par l’agent. Les nouvelles commandes appliquent automatiquement ce montant; les codes promotionnels ne sont pas cumulables. La remise doit être inférieure au prix du forfait.')}</p>
        <button type="submit" disabled={busy||!backendReady||!agentId}>{tr('Save agent','Enregistrer l’agent')}</button>
       </form>
     </div>
@@ -102,8 +133,15 @@ export default function OwnerAgents({language='en'}){
       <button type="submit" disabled={busy||!backendReady||!customerId||!customerAgentId}>{tr('Assign customer','Attribuer le client')}</button>
      </form>
     </div>
-    <h3>{tr('Agent directory','Liste des agents')} ({(data.agents||[]).length})</h3>
-    <ul>{(data.agents||[]).map(a=><li key={a.agent_user_id}><strong>{memberName(a.agent_user_id)}</strong> · {a.status} · {a.access_type} · {a.access_type==='paid'?'$10 CAD':'$5 CAD'} {tr('discount','de remise')} · {tr('Customers','Clients')}: {(data.customers||[]).filter(c=>c.agent_user_id===a.agent_user_id).length}</li>)}</ul>
+    <h3>{tr('Agent directory','Liste des agents')} ({(data.agents||[]).filter(a=>a.status!=='removed').length})</h3>
+    <ul>{(data.agents||[]).filter(a=>a.status!=='removed').map(a=><li key={a.agent_user_id} className="mykioo-agent-directory-item">
+      <div><strong>{memberName(a.agent_user_id)}</strong> · {a.status} · {a.access_type} · ${a.discount_cad} CAD {tr('discount','de remise')} · {tr('Access fee','Frais d’accès')}: ${a.access_fee_cad} CAD · {tr('Customers','Clients')}: {(data.customers||[]).filter(c=>c.agent_user_id===a.agent_user_id).length}</div>
+      <div className="mykioo-agent-actions">
+        <button type="button" className="outline-button" disabled={busy} onClick={()=>selectAgent(a.agent_user_id)}>{tr('Edit','Modifier')}</button>
+        {a.access_type==='paid'&&<button type="button" className="outline-button" disabled={busy} onClick={()=>downgradeAgent(a.agent_user_id)}>{tr('Downgrade to Free','Rétrograder en Gratuit')}</button>}
+        <button type="button" className="outline-button" disabled={busy} onClick={()=>removeAgent(a.agent_user_id)}>{tr('Remove Agent','Retirer l’agent')}</button>
+      </div>
+     </li>)}</ul>
     <h3>{tr('Invitation requests','Demandes d’invitation')}</h3>
     <p>{tr('Pending invitations require the existing owner invitation workflow. These requests are not emails sent.','Les invitations en attente doivent passer par la procédure propriétaire existante. Ces demandes ne sont pas des courriels envoyés.')}</p>
     <ul>{(data.invites||[]).map(i=><li key={i.id}>{i.invitee_email} · {memberName(i.agent_user_id)} · <strong>{i.status}</strong></li>)}</ul>
