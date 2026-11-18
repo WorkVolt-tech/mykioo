@@ -60,6 +60,20 @@ create table if not exists public.mykioo_agent_order_intents (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.mykioo_agent_service_requests (
+  id uuid primary key default gen_random_uuid(),
+  customer_user_id uuid not null references auth.users(id),
+  agent_user_id uuid not null references public.mykioo_agent_accounts(agent_user_id),
+  contract_days integer not null check (contract_days in (365,730)),
+  device_count integer not null check (device_count between 1 and 5),
+  service_name text not null default 'MYKIOO TV' check (length(service_name) <= 80),
+  notes text not null default '' check (length(notes) <= 1000),
+  status text not null default 'pending' check (status in ('pending','contacted','closed')),
+  created_at timestamptz not null default now()
+);
+create index if not exists mykioo_agent_service_requests_agent_idx
+  on public.mykioo_agent_service_requests(agent_user_id, created_at desc);
+
 create table if not exists public.mykioo_agent_invitation_requests (
   id uuid primary key default gen_random_uuid(),
   agent_user_id uuid not null references public.mykioo_agent_accounts(agent_user_id),
@@ -88,13 +102,14 @@ alter table public.mykioo_agent_customers enable row level security;
 alter table public.mykioo_agent_renewal_requests enable row level security;
 alter table public.mykioo_agent_order_intents enable row level security;
 alter table public.mykioo_agent_invitation_requests enable row level security;
+alter table public.mykioo_agent_service_requests enable row level security;
 
 revoke all on public.mykioo_agent_accounts, public.mykioo_agent_customers,
   public.mykioo_agent_renewal_requests, public.mykioo_agent_order_intents,
-  public.mykioo_agent_invitation_requests from anon;
+  public.mykioo_agent_invitation_requests, public.mykioo_agent_service_requests from anon;
 grant select on public.mykioo_agent_accounts, public.mykioo_agent_customers,
   public.mykioo_agent_renewal_requests, public.mykioo_agent_order_intents,
-  public.mykioo_agent_invitation_requests to authenticated;
+  public.mykioo_agent_invitation_requests, public.mykioo_agent_service_requests to authenticated;
 grant insert on public.mykioo_agent_renewal_requests to authenticated;
 
 create policy mykioo_agent_account_read on public.mykioo_agent_accounts
@@ -134,6 +149,14 @@ create policy mykioo_agent_order_read on public.mykioo_agent_order_intents
 create policy mykioo_agent_invite_read on public.mykioo_agent_invitation_requests
   for select to authenticated using
   (agent_user_id = (select auth.uid()) or public.mykioo_is_owner_for_agents());
+
+create policy mykioo_agent_service_read on public.mykioo_agent_service_requests
+  for select to authenticated using
+  (customer_user_id = (select auth.uid()) or
+   (agent_user_id = (select auth.uid()) and exists (
+     select 1 from public.mykioo_agent_accounts a
+     where a.agent_user_id = (select auth.uid()) and a.status = 'active'
+   )) or public.mykioo_is_owner_for_agents());
 
 -- Deliberately NO browser insert/update/delete policy for agent accounts,
 -- agent/customer assignments, or order intents. Privileged server checks
