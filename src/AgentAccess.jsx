@@ -41,14 +41,14 @@ export function useAgentAccess(userId){
 }
 
 export function AgentDashboard({user,language='en',logout}){
-  const [rows,setRows]=useState([]),[renewals,setRenewals]=useState([]),[orders,setOrders]=useState([]),[invites,setInvites]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
+  const [rows,setRows]=useState([]),[renewals,setRenewals]=useState([]),[orders,setOrders]=useState([]),[invites,setInvites]=useState([]),[services,setServices]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
   const [inviteEmail,setInviteEmail]=useState(''),[selectedCustomer,setSelectedCustomer]=useState(''),[kind,setKind]=useState('new'),[days,setDays]=useState(365),[devices,setDevices]=useState(1),[retail,setRetail]=useState(''),[method,setMethod]=useState('interac'),[notice,setNotice]=useState(''),[saving,setSaving]=useState(false);
   async function refresh(){
     setLoading(true);
     try{
       const result=await agentAction('agent_list');
       setRows(result.customers||[]);setRenewals(result.renewals||[]);
-      setOrders(result.orders||[]);setInvites(result.invites||[]);setError('');
+      setOrders(result.orders||[]);setInvites(result.invites||[]);setServices(result.services||[]);setError('');
     }catch(e){setError(e.message||'Unable to load your customers');}
     finally{setLoading(false);}
   }
@@ -106,6 +106,10 @@ export function AgentDashboard({user,language='en',logout}){
       </form>
       {notice&&<p role="status">{notice}</p>}
     </section>
+    <section className="mykioo-support-card"><h2>{t('Customer service choices','Choix de services des clients')}</h2>
+     {services.length===0?<p>{t('No service choices submitted yet.','Aucune sélection de service pour le moment.')}</p>:
+      <ul>{services.map(r=><li key={r.id}><strong>{r.status}</strong> · {r.customer_user_id.slice(0,8)}… · {r.contract_days===365?'12':'24'} {t('months','mois')} · {r.device_count} {t('devices','appareils')}{r.notes?' — '+r.notes:''}</li>)}</ul>}
+    </section>
     <section className="mykioo-support-card"><h2>{t('My orders','Mes commandes')}</h2>
       {orders.length===0?<p>{t('No orders yet','Aucune commande')}</p>:<ul>{orders.map(o=><li key={o.id}><strong>{o.status}</strong> · {o.kind} · {t('Customer price','Prix client')} ${o.customer_price_cad} CAD · {t('Due to MYKIOO','Dû à MYKIOO')} ${o.wholesale_price_cad} CAD</li>)}</ul>}
     </section>
@@ -122,6 +126,7 @@ export function AgentCustomerDashboard({user,language='en',logout}){
   const t=(en,fr)=>tr(language,en,fr);
   const [subscriptions,setSubscriptions]=useState([]),[renewals,setRenewals]=useState([]),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[ticketSubject,setTicketSubject]=useState(''),[ticketBody,setTicketBody]=useState(''),[ticketBusy,setTicketBusy]=useState(false),[ticketNotice,setTicketNotice]=useState('');
   const [agentId,setAgentId]=useState(null);
+  const [serviceDays,setServiceDays]=useState(365),[serviceDevices,setServiceDevices]=useState(1),[serviceNotes,setServiceNotes]=useState(''),[serviceBusy,setServiceBusy]=useState(false),[serviceNotice,setServiceNotice]=useState('');
   useEffect(()=>{
     let live=true;
     async function load(){
@@ -147,6 +152,19 @@ export function AgentCustomerDashboard({user,language='en',logout}){
         :t('Renewal requested. Your agent can see it in their dashboard; email delivery was not confirmed.','Demande enregistrée. Votre agent la voit dans son espace; l’envoi du courriel n’est pas confirmé.'));
     }catch(error){setMessage(t('Unable to record your request. Please contact your agent.','Impossible d’enregistrer la demande. Contactez votre agent.'));}
     finally{setBusy(false);}
+  }
+  async function requestService(e){
+    e.preventDefault();setServiceBusy(true);setServiceNotice('');
+    try{
+      const response=await agentAction('customer_service_request',{
+        contract_days:serviceDays,device_count:serviceDevices,notes:serviceNotes.trim()
+      });
+      setServiceNotes('');
+      setServiceNotice(response.agent_email_accepted
+        ?t('Your service selection was sent to your agent.','Votre sélection de service a été envoyée à votre agent.')
+        :t('Your selection was recorded for your agent. Email delivery was not confirmed.','Votre sélection a été enregistrée pour votre agent. L’envoi du courriel n’est pas confirmé.'));
+    }catch{setServiceNotice(t('Could not submit your selection.','Impossible de soumettre votre sélection.'));}
+    finally{setServiceBusy(false);}
   }
   async function submitTicket(e){
     e.preventDefault();setTicketBusy(true);setTicketNotice('');
@@ -176,6 +194,17 @@ export function AgentCustomerDashboard({user,language='en',logout}){
       <button type="button" className="outline-button" onClick={()=>requestRenewal(s.id)} disabled={busy||!agentId}>{busy?t('Submitting…','Envoi…'):t('Request renewal from my agent','Demander un renouvellement à mon agent')}</button>
     </section>)}
     {message&&<p role="status">{message}</p>}
+    <section className="mykioo-support-card"><h2>{t('Service options','Options de service')}</h2>
+     <p>{t('Choose what you are interested in. Your agent will contact you. No price or payment is shown here.','Choisissez le service qui vous intéresse. Votre agent vous contactera. Aucun prix ni paiement n’est affiché ici.')}</p>
+     <form onSubmit={requestService}>
+       <label>{t('Service','Service')}<select disabled><option>MYKIOO TV</option></select></label>
+       <label>{t('Duration','Durée')}<select value={serviceDays} onChange={e=>setServiceDays(Number(e.target.value))}><option value={365}>{t('12 months','12 mois')}</option><option value={730}>{t('24 months','24 mois')}</option></select></label>
+       <label>{t('Devices','Appareils')}<select value={serviceDevices} onChange={e=>setServiceDevices(Number(e.target.value))}>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n}</option>)}</select></label>
+       <label>{t('Preferences (optional)','Préférences (facultatif)')}<textarea maxLength={1000} value={serviceNotes} onChange={e=>setServiceNotes(e.target.value)} placeholder={t('Preferred countries or language packs','Pays ou bouquets linguistiques souhaités')}/></label>
+       <button type="submit" disabled={serviceBusy}>{serviceBusy?t('Submitting…','Envoi…'):t('Send choice to agent','Envoyer ma sélection à l’agent')}</button>
+     </form>
+     {serviceNotice&&<p role="status">{serviceNotice}</p>}
+    </section>
     <section className="mykioo-support-card"><h2>{t('Open a support ticket','Ouvrir une demande d’assistance')}</h2>
       <form onSubmit={submitTicket}>
         <label>{t('Subject','Sujet')}<input value={ticketSubject} onChange={e=>setTicketSubject(e.target.value)} minLength={3} maxLength={120} required/></label>
