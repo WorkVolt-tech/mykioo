@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
+import './AgentWelcome.css';
 
 // Agent/customer views intentionally exclude retail/wholesale pricing.
 // Every order and invitation must use the authenticated server workflow.
@@ -25,7 +26,7 @@ export function useAgentAccess(userId){
     let active=true;
     async function load(){
       const [agent,assignment]=await Promise.all([
-        supabase.from('mykioo_agent_accounts').select('agent_user_id,status,access_type,display_name,discount_cad').eq('agent_user_id',userId).maybeSingle(),
+        supabase.from('mykioo_agent_accounts').select('agent_user_id,status,access_type,display_name,discount_cad,onboarding_acknowledged_at').eq('agent_user_id',userId).maybeSingle(),
         supabase.from('mykioo_agent_customers').select('customer_user_id,agent_user_id').eq('customer_user_id',userId).maybeSingle()
       ]);
       if(!active)return;
@@ -42,6 +43,20 @@ export function useAgentAccess(userId){
 
 export function AgentDashboard({user,language='en',logout,agent}){
   const discountCad=Number(agent?.discount_cad??(agent?.access_type==='paid'?10:5));
+  const [welcomeOpen,setWelcomeOpen]=useState(!agent?.onboarding_acknowledged_at);
+  const [welcomeRead,setWelcomeRead]=useState(Boolean(agent?.onboarding_acknowledged_at));
+  const [welcomeSaving,setWelcomeSaving]=useState(false);
+  const [welcomeError,setWelcomeError]=useState('');
+  async function acknowledgeWelcome(){
+    if(welcomeRead){setWelcomeOpen(false);return;}
+    setWelcomeSaving(true);setWelcomeError('');
+    try{
+      await agentAction('agent_acknowledge_welcome');
+      setWelcomeRead(true);setWelcomeOpen(false);
+    }catch(error){
+      setWelcomeError(t('Could not save your confirmation. Try again.','Impossible d’enregistrer votre confirmation. Réessayez.'));
+    }finally{setWelcomeSaving(false);}
+  }
   const [rows,setRows]=useState([]),[renewals,setRenewals]=useState([]),[orders,setOrders]=useState([]),[invites,setInvites]=useState([]),[services,setServices]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
   const [inviteEmail,setInviteEmail]=useState(''),[selectedCustomer,setSelectedCustomer]=useState(''),[kind,setKind]=useState('new'),[days,setDays]=useState(365),[devices,setDevices]=useState(1),[retail,setRetail]=useState(''),[method,setMethod]=useState('interac'),[notice,setNotice]=useState(''),[saving,setSaving]=useState(false);
   async function refresh(){
@@ -75,7 +90,41 @@ export function AgentDashboard({user,language='en',logout,agent}){
   useEffect(()=>{refresh();},[user.id]);
   const t=(en,fr)=>tr(language,en,fr);
   return <div className="dashboard"><main className="dash-content" style={{maxWidth:960,margin:'0 auto'}}>
-    <header className="dash-header"><strong>MYKIOO / {t('Agent portal','Portail agent')}</strong><button className="outline-button" onClick={logout}>{t('Sign out','Déconnexion')}</button></header>
+    <header className="dash-header"><strong>MYKIOO / {t('Agent portal','Portail agent')}</strong><div className="mykioo-agent-header-actions"><button className="outline-button" type="button" onClick={()=>setWelcomeOpen(true)}>{t('Agent guide','Guide de l’agent')}</button><button className="outline-button" onClick={logout}>{t('Sign out','Déconnexion')}</button></div></header>
+    {welcomeOpen&&<div className="mykioo-welcome-overlay">
+      <section className="mykioo-welcome-dialog" role="dialog" aria-modal="true" aria-labelledby="mykioo-agent-welcome-title" aria-describedby="mykioo-agent-welcome-desc">
+        <div className="mykioo-welcome-eyebrow">MYKIOO / {t('AGENT ACCESS','ACCÈS AGENT')}</div>
+        <h2 id="mykioo-agent-welcome-title">{t('You have been promoted to Agent!','Vous avez été promu agent !')}</h2>
+        <p id="mykioo-agent-welcome-desc">{t('Your account now includes an Agent dashboard. Here is what you can manage and what your customers can see.','Votre compte comprend maintenant un espace agent. Voici ce que vous pouvez gérer et ce que vos clients peuvent voir.')}</p>
+        <div className="mykioo-welcome-grid">
+          <div className="mykioo-welcome-panel">
+            <h3>{t('What you can do','Ce que vous pouvez faire')}</h3>
+            <ul>
+              <li>{t('Request invitations for customers (MYKIOO owner approves and sends them).','Demander des invitations pour vos clients (le propriétaire MYKIOO les approuve et les envoie).')}</li>
+              <li>{t('See only the customers assigned to you and their service requests.','Voir uniquement vos clients attribués et leurs demandes de service.')}</li>
+              <li>{t('Choose your own customer selling price and submit new subscriptions or renewals.','Fixer librement vos prix clients et soumettre des abonnements ou renouvellements.')}</li>
+              <li>{t('Receive customer renewal requests in your dashboard. Email delivery may vary.','Recevoir les demandes de renouvellement dans votre espace. Les courriels peuvent être retardés.')}</li>
+              <li>{t('Pay MYKIOO the package price minus your assigned discount.','Payer MYKIOO au prix du forfait moins votre remise attribuée.')}</li>
+            </ul>
+          </div>
+          <div className="mykioo-welcome-panel">
+            <h3>{t('What your customers see','Ce que vos clients voient')}</h3>
+            <ul>
+              <li>{t('Their service status and expiration date.','Le statut de leur service et sa date d’expiration.')}</li>
+              <li>{t('Available service options without any prices.','Les options de service sans aucun prix.')}</li>
+              <li>{t('A button to request a renewal from you.','Un bouton pour vous demander un renouvellement.')}</li>
+              <li>{t('A form to open a support ticket.','Un formulaire pour ouvrir un billet d’assistance.')}</li>
+              <li>{t('No wholesale prices, agent discounts or billing information.','Aucun tarif de gros, remise agent ni renseignement de facturation.')}</li>
+            </ul>
+          </div>
+        </div>
+        <p className="mykioo-welcome-note">{t('Your discount:','Votre remise :')} <strong>${discountCad} CAD</strong>. {t('Discount codes do not stack. MYKIOO owner verifies payment and completes each service; orders are never activated automatically.','Les codes promotionnels ne sont pas cumulables. Le propriétaire MYKIOO vérifie le paiement et active chaque service; aucune commande n’est activée automatiquement.')}</p>
+        {welcomeError&&<p role="alert" className="mykioo-welcome-error">{welcomeError}</p>}
+        <button type="button" className="mykioo-welcome-confirm" disabled={welcomeSaving} onClick={acknowledgeWelcome}>
+          {welcomeSaving?t('Saving…','Enregistrement…'):t('Got it — Open my Agent dashboard','Compris — Accéder à mon espace agent')}
+        </button>
+      </section>
+    </div>}
     <div className="page-eyebrow">{t('AGENT SPACE','ESPACE AGENT')}</div>
     <h1>{t('My customers','Mes clients')}</h1>
     <p className="page-sub">{t('Only customers assigned to your agent account appear here. MYKIOO sets your wholesale rate; customer selling prices are private to your business.','Seuls les clients associés à votre compte agent apparaissent ici. MYKIOO fixe votre tarif agent; vous choisissez librement votre prix de vente.')}</p>
