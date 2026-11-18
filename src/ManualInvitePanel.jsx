@@ -18,7 +18,7 @@ export default function ManualInvitePanel({delivery,language='en',onDismiss}){
   <div className="mykioo-manual-invite-heading">
    <MailWarning size={21}/>
    <div><h3 id="mykioo-manual-invite-title">{tr('Private invitation ready — send it manually','Invitation privée prête — envoi manuel')}</h3>
-    <p>{tr('Automatic invitation emails are unavailable. The link is valid for 48 hours. Copy the prepared message and send it from your Gmail or Outlook account. Nothing has been emailed automatically.','Les invitations automatiques sont indisponibles. Le lien est valable 48 heures. Copiez le message préparé et envoyez-le depuis Gmail ou Outlook. Aucun courriel n’a été envoyé automatiquement.')}</p>
+    <p>{tr('Automatic invitation emails are unavailable. The link is valid for 48 hours. Copy the prepared message and send it using IONOS Webmail. Nothing has been emailed automatically.','Les invitations automatiques sont indisponibles. Le lien est valable 48 heures. Copiez le message préparé et envoyez-le depuis IONOS Webmail. Aucun courriel n’a été envoyé automatiquement.')}</p>
    </div>
    <button type="button" className="mykioo-manual-invite-close" aria-label={tr('Close invitation','Fermer l’invitation')} onClick={onDismiss}><X size={19}/></button>
   </div>
@@ -26,7 +26,7 @@ export default function ManualInvitePanel({delivery,language='en',onDismiss}){
   <div className="mykioo-manual-invite-actions">
    <button type="button" onClick={()=>copy(emailText,'email')}><Copy size={16}/>{tr('Copy full invitation email','Copier tout le courriel d’invitation')}</button>
    <button type="button" onClick={()=>copy(delivery.link,'link')}><Copy size={16}/>{tr('Copy invitation link','Copier le lien d’invitation')}</button>
-   <a href="https://mail.google.com/mail/u/0/#inbox?compose=new" target="_blank" rel="noopener noreferrer"><ExternalLink size={16}/>{tr('Open Gmail','Ouvrir Gmail')}</a>
+   <a href="https://mail.ionos.com/" target="_blank" rel="noopener noreferrer"><ExternalLink size={16}/>{tr('Open IONOS Webmail','Ouvrir IONOS Webmail')}</a>
   </div>
   {copied==='error'&&<p role="alert" className="mykioo-manual-invite-error">{tr('Copy failed. Please use a supported browser or select and copy the link below.','Copie impossible. Utilisez un navigateur compatible ou sélectionnez le lien ci-dessous.')}</p>}
   {(copied==='email'||copied==='link')&&<p role="status" className="mykioo-manual-invite-success"><CheckCircle2 size={15}/>{tr('Copied. Paste it into your email to the recipient.','Copié. Collez-le dans le courriel destiné à cette personne.')}</p>}
