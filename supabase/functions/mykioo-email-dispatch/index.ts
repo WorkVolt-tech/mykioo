@@ -1,9 +1,7 @@
 import nodemailer from "npm:nodemailer@10.5.0";
 
 // Internal-only transactional mail gateway for MYKIOO.
-// The Gmail app password belongs in Supabase Edge Function secrets,
-// NOT source control or browser environment variables.
-const gmailAddress="mykiootv@gmail.com";
+// IONOS is the only transactional sender; credentials stay in private Supabase secrets.
 const ionosAddress="iptv@mykioo.icu";
 const senderName="MYKIOO";
 const reply=(payload:unknown,status=200)=>new Response(JSON.stringify(payload),{
@@ -34,22 +32,20 @@ Deno.serve(async request=>{
  if(!expected||request.headers.get("api-key")!==expected)return reply({error:"Unauthorized"},401);
  const url=new URL(request.url);
  if(request.method==="GET"&&url.searchParams.get("route")==="status"){
-  const provider=Deno.env.get("MYKIOO_IONOS_SMTP_PASSWORD")?"ionos":Deno.env.get("MYKIOO_SMTP_APP_PASSWORD")?"gmail":null;
-  return reply({ready:Boolean(provider),provider},provider?200:503);
+  const ready=Boolean(Deno.env.get("MYKIOO_IONOS_SMTP_PASSWORD")?.trim());
+  return reply({ready,provider:ready?"ionos":null,sender:ionosAddress},ready?200:503);
  }
  if(request.method==="GET"&&url.searchParams.get("route")==="template"){
   const id=Number(url.searchParams.get("id"));
   if(![1,2,3,4].includes(id))return reply({error:"Template unavailable"},404);
-  return reply({id,sender:{email:Deno.env.get("MYKIOO_IONOS_SMTP_PASSWORD")?ionosAddress:gmailAddress,name:senderName}});
+  return reply({id,sender:{email:ionosAddress,name:senderName}});
  }
  if(request.method!=="POST"||url.searchParams.get("route")!=="email")return reply({error:"Unsupported action"},400);
- const ionosPassword=Deno.env.get("MYKIOO_IONOS_SMTP_PASSWORD");
- const gmailPassword=Deno.env.get("MYKIOO_SMTP_APP_PASSWORD");
- const provider=ionosPassword?"ionos":"gmail";
- const password=ionosPassword||gmailPassword;
- if(!password)return reply({error:"Transactional SMTP secret is not configured"},503);
- const senderAddress=provider==="ionos"?ionosAddress:gmailAddress;
- const smtpHost=provider==="ionos"?"smtp.ionos.com":"smtp.gmail.com";
+ const password=Deno.env.get("MYKIOO_IONOS_SMTP_PASSWORD");
+ const provider="ionos";
+ if(!password?.trim())return reply({error:"IONOS SMTP password is not configured",provider},503);
+ const senderAddress=ionosAddress;
+ const smtpHost="smtp.ionos.com";
  let body:any;
  try{body=await request.json()}catch{return reply({error:"Invalid JSON"},400)}
  const to=body?.to;
@@ -68,7 +64,7 @@ Deno.serve(async request=>{
    return reply({error:"Invalid email content"},400);
  const transport=nodemailer.createTransport({
   host:smtpHost,port:465,secure:true,pool:false,
-  auth:{user:senderAddress,pass:provider==="ionos"?password:password.replace(/\s/g,"")},
+  auth:{user:senderAddress,pass:password},
   connectionTimeout:12000,greetingTimeout:12000,socketTimeout:15000,
   tls:{servername:smtpHost}
  });
