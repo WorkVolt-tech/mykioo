@@ -11,6 +11,7 @@ import ReminderSettings from './ReminderSettings';
 import ActivityHistory from './ActivityHistory';
 import {OwnerBilling} from './Billing';
 import OwnerSubscriptionQueue from './OwnerSubscriptionQueue';
+import OwnerAgents from './OwnerAgents';
 import WebsiteAnnouncements from './WebsiteAnnouncements';
 import OwnerWebsiteAnnouncements from './OwnerWebsiteAnnouncements';
 import OwnerMailCenter from './OwnerMailCenter';
@@ -31,16 +32,16 @@ import {useResumeScroll} from './useResumeScroll';
 import {useRememberedState} from './useRememberedState';
 import {Users,MailPlus,ShieldCheck,CalendarDays,Receipt,Headphones,LogOut,RefreshCw,Clock3,LockKeyhole,AlertCircle,CheckCircle2,Bell,BookOpen,History,Menu,X,ClipboardList,BarChart3,SlidersHorizontal,Megaphone,Settings2,Inbox,Download} from 'lucide-react';
 import {supabase} from './supabase';
-const tabs=[{id:'overview',name:'Overview',icon:ShieldCheck},{id:'members',name:'Members',icon:Users},{id:'invitations',name:'Invitations',icon:MailPlus},{id:'subscriptions',name:'Subscriptions',icon:CalendarDays},{id:'create-request',name:'Create request',icon:MailPlus},{id:'orders',name:'Orders',icon:Receipt},{id:'billing',name:'Billing',icon:Receipt},{id:'guides',name:'Guides',icon:BookOpen},{id:'announcements',name:'Website Announcements',icon:Megaphone},{id:'apps',name:'App Downloads',icon:Download},{id:'support',name:'Support',icon:Headphones},{id:'activity',name:'Activity',icon:History},{id:'notifications',name:'Notifications',icon:Bell},{id:'security',name:'Security',icon:LockKeyhole},{id:'mail',name:'Mail Center',icon:Inbox}];
+const tabs=[{id:'overview',name:'Overview',icon:ShieldCheck},{id:'members',name:'Members',icon:Users},{id:'agents',name:'Agents',icon:Users},{id:'invitations',name:'Invitations',icon:MailPlus},{id:'subscriptions',name:'Subscriptions',icon:CalendarDays},{id:'create-request',name:'Create request',icon:MailPlus},{id:'orders',name:'Orders',icon:Receipt},{id:'billing',name:'Billing',icon:Receipt},{id:'guides',name:'Guides',icon:BookOpen},{id:'announcements',name:'Website Announcements',icon:Megaphone},{id:'apps',name:'App Downloads',icon:Download},{id:'support',name:'Support',icon:Headphones},{id:'activity',name:'Activity',icon:History},{id:'notifications',name:'Notifications',icon:Bell},{id:'security',name:'Security',icon:LockKeyhole},{id:'mail',name:'Mail Center',icon:Inbox}];
 const ownerNavGroups=[
  {name:['WORKSPACE','ESPACE DE TRAVAIL'],ids:['overview','mail','notifications','security']},
- {name:['CUSTOMERS','CLIENTS'],ids:['members','invitations']},
+ {name:['CUSTOMERS','CLIENTS'],ids:['members','agents','invitations']},
  {name:['SUBSCRIPTIONS & PAYMENTS','ABONNEMENTS ET PAIEMENTS'],ids:['subscriptions','create-request','orders','billing']},
  {name:['SUPPORT & CONTENT','ASSISTANCE ET CONTENU'],ids:['support','announcements','guides','apps']},
  {name:['RECORDS','HISTORIQUE'],ids:['activity']}
 ];
 const ownerLabels={
- overview:['Overview','Vue d’ensemble'],members:['Members','Membres'],invitations:['Invitations','Invitations'],
+ overview:['Overview','Vue d’ensemble'],members:['Members','Membres'],agents:['Agents','Agents'],invitations:['Invitations','Invitations'],
  subscriptions:['Subscriptions','Abonnements'],'create-request':['Create request','Créer une demande'],orders:['Orders','Commandes'],billing:['Billing','Facturation'],
  guides:['Help content','Contenu d’aide'],announcements:['Website announcements','Annonces du site'],apps:['App Downloads','Téléchargement d’applications'],support:['Support','Assistance'],activity:['Activity history','Historique des activités'],
  notifications:['Notifications','Notifications'],mail:['Mail Center','Messagerie'],security:['Account security','Sécurité du compte']
@@ -48,6 +49,7 @@ const ownerLabels={
 const ownerDescriptions={
  overview:['Your priorities, recent activity and key numbers in one place.','Vos priorités, activités récentes et chiffres clés en un seul endroit.'],
  members:['Review and manage access for your members.','Consultez et gérez les accès de vos membres.'],
+ agents:['Manage agent accounts, customers, invitations and payments.','Gérez les agents, leurs clients, invitations et paiements.'],
  invitations:['Invite new members and track invitations.','Invitez de nouveaux membres et suivez les invitations.'],
  subscriptions:['Review requests, manage services and handle renewals.','Consultez les demandes, gérez les services et les renouvellements.'],
  'create-request':['Submit a new or renewal subscription request for an approved member.','Soumettez une nouvelle demande d’abonnement ou de renouvellement pour un membre approuvé.'],
@@ -588,6 +590,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
   {tab==='security'&&<section className="admin-workspace-section admin-owner-security">
    <PasswordSettings language={language}/>
   </section>}
+  {tab==='agents'&&<OwnerAgents language={language}/>}
   {tab==='invitations'&&<section className="admin-workspace-section admin-owner-invitations">
    <div className="admin-panel-content">
     <div className="admin-invite" style={{marginBottom:18,padding:16,border:'1px solid rgba(218,183,124,.35)',borderRadius:12}}>
