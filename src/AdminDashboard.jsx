@@ -132,9 +132,9 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      const result=await response.json().catch(()=>({}));
      if(!response.ok || !result.ok) throw new Error(result.error||'Action failed.');
      if(payload.action==='set_status'){
-       if(result.notification==='accepted')setNotice(tr('Member updated. Gmail accepted the notification email (inbox delivery not guaranteed).','Membre mis à jour. Gmail a accepté le courriel de notification (réception non garantie).'));
-       else if(result.notification==='not_configured')setNotice(tr('Member updated. Email not sent: configure the Gmail SMTP secret in Supabase Edge Functions.','Membre mis à jour. Courriel non envoyé : configurez le secret SMTP de Gmail dans les fonctions Edge de Supabase.'));
-       else if(result.notification==='failed')setNotice(tr('Member updated, but the notification email failed. Check the Gmail mailer configuration.','Membre mis à jour, mais l’envoi du courriel a échoué. Vérifiez la configuration du service Gmail.'));
+       if(result.notification==='accepted')setNotice(tr('Member updated. IONOS accepted the notification email (inbox delivery not guaranteed).','Membre mis à jour. IONOS a accepté le courriel de notification (réception non garantie).'));
+       else if(result.notification==='not_configured')setNotice(tr('Member updated. Email not sent: configure the IONOS SMTP password in Supabase Edge Functions.','Membre mis à jour. Courriel non envoyé : configurez le mot de passe SMTP IONOS dans les fonctions Edge de Supabase.'));
+       else if(result.notification==='failed')setNotice(tr('Member updated, but the notification email failed. Check the IONOS SMTP configuration.','Membre mis à jour, mais l’envoi du courriel a échoué. Vérifiez la configuration SMTP IONOS.'));
        else setNotice(tr('Member updated.','Membre mis à jour.'));
      }else setNotice(result.message||tr('Updated successfully.','Mise à jour effectuée.'));
      if(result.delivery?.link&&['invite','review_invite','resend_invite_setup'].includes(payload.action)){
@@ -602,7 +602,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    <div className="admin-panel-content">
     <div className="admin-invite" style={{marginBottom:18,padding:16,border:'1px solid rgba(218,183,124,.35)',borderRadius:12}}>
       <div><strong>{tr('Test automated MYKIOO emails','Tester les courriels automatiques MYKIOO')}</strong>
-        <p>{tr('Send two branded test emails to ancmarx@gmail.com: an invitation preview and a completion/account-details preview. Test-only links and credentials; no member, invitation, or subscription changes.','Envoyer deux courriels de test à ancmarx@gmail.com : aperçu de l’invitation et aperçu des identifiants de service. Liens et identifiants fictifs; aucune modification des membres ou abonnements.')}</p>
+        <p>{tr('Send two branded test emails FROM IONOS to ancmarx@gmail.com: an invitation preview and a completion/account-details preview. Test-only links and credentials; no member, invitation, or subscription changes.','Envoyer deux courriels de test depuis IONOS à ancmarx@gmail.com : aperçu de l’invitation et aperçu des identifiants de service. Liens et identifiants fictifs; aucune modification des membres ou abonnements.')}</p>
       </div>
       <button type="button" className="admin-action primary" disabled={saving}
         onClick={()=>runAction({action:'test_email_templates',language})}>{saving?tr('Sending tests…','Envoi des tests…'):tr('Send both test emails','Envoyer les deux courriels tests')}</button>
@@ -615,7 +615,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      <summary>{tr('Invite someone directly as owner','Inviter directement comme propriétaire')}</summary>
      <form className="admin-invite" onSubmit={invite}>
       <div><strong>{tr('Invite a customer','Inviter un client')}</strong>
-       <p>{tr('MYKIOO tries to email invitations using the configured provider. If sending fails, you can copy a private invitation link and email it manually. Membership still requires your approval.','MYKIOO tente d’envoyer les invitations avec le fournisseur configuré. En cas d’échec, copiez le lien privé pour l’envoyer manuellement. L’adhésion nécessite votre approbation.')}</p>
+       <p>{tr('MYKIOO sends invitations from iptv@mykioo.icu via IONOS. If IONOS cannot accept an email, copy the private invitation link and send it manually. Membership still requires your approval.','MYKIOO envoie les invitations depuis iptv@mykioo.icu via IONOS. En cas d’échec, copiez le lien privé pour l’envoyer manuellement. L’adhésion nécessite votre approbation.')}</p>
       </div>
       <div className="admin-invite-row">
        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="customer@example.com" required maxLength={254} aria-label={tr('Invitee email','Courriel du destinataire')}/>
