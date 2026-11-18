@@ -4,6 +4,18 @@ import {supabase} from './supabase';
 // Agent/customer views intentionally exclude retail/wholesale pricing.
 // Every order and invitation must use the authenticated server workflow.
 const tr=(lang,en,fr)=>lang==='fr'?fr:en;
+const AGENT_ENDPOINT='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-agents';
+async function agentAction(action,details={}){
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session)throw Error('Session expired');
+  const res=await fetch(AGENT_ENDPOINT,{method:'POST',headers:{
+    'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
+    'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+  },body:JSON.stringify({action,...details})});
+  const result=await res.json().catch(()=>({}));
+  if(!res.ok||!result.ok)throw Error(result.error||'Request failed');
+  return result;
+}
 const statusDate=(date,lang)=>date?new Date(date).toLocaleDateString(lang==='fr'?'fr-CA':'en-CA',{year:'numeric',month:'long',day:'numeric'}):'—';
 
 export function useAgentAccess(userId){
@@ -29,15 +41,35 @@ export function useAgentAccess(userId){
 }
 
 export function AgentDashboard({user,language='en',logout}){
-  const [rows,setRows]=useState([]),[renewals,setRenewals]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
+  const [rows,setRows]=useState([]),[renewals,setRenewals]=useState([]),[orders,setOrders]=useState([]),[invites,setInvites]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
+  const [inviteEmail,setInviteEmail]=useState(''),[selectedCustomer,setSelectedCustomer]=useState(''),[kind,setKind]=useState('new'),[days,setDays]=useState(365),[devices,setDevices]=useState(1),[retail,setRetail]=useState(''),[method,setMethod]=useState('interac'),[notice,setNotice]=useState(''),[saving,setSaving]=useState(false);
   async function refresh(){
     setLoading(true);
-    const [customers,requests]=await Promise.all([
-      supabase.from('mykioo_agent_customers').select('customer_user_id,assigned_at').eq('agent_user_id',user.id).order('assigned_at',{ascending:false}),
-      supabase.from('mykioo_agent_renewal_requests').select('id,customer_user_id,status,created_at,message').eq('agent_user_id',user.id).order('created_at',{ascending:false})
-    ]);
-    setRows(customers.data||[]);setRenewals(requests.data||[]);
-    setError(customers.error?.message||requests.error?.message||'');setLoading(false);
+    try{
+      const result=await agentAction('agent_list');
+      setRows(result.customers||[]);setRenewals(result.renewals||[]);
+      setOrders(result.orders||[]);setInvites(result.invites||[]);setError('');
+    }catch(e){setError(e.message||'Unable to load your customers');}
+    finally{setLoading(false);}
+  }
+  async function invite(e){
+    e.preventDefault();setSaving(true);setNotice('');setError('');
+    try{const result=await agentAction('agent_invite_request',{email:inviteEmail});
+      setNotice(t('Invitation requested. The owner must approve and send it.','Invitation demandée. Le propriétaire doit l’approuver et l’envoyer.'));
+      setInviteEmail('');await refresh();
+    }catch(e){setError(e.message);}finally{setSaving(false);}
+  }
+  async function submitOrder(e){
+    e.preventDefault();setSaving(true);setNotice('');setError('');
+    try{
+      const result=await agentAction('agent_submit_order',{
+        customer_user_id:selectedCustomer,kind,contract_days:Number(days),
+        device_count:Number(devices),customer_price_cad:Number(retail),payment_method:method
+      });
+      setNotice(t('Order recorded. You owe MYKIOO $','Commande enregistrée. Vous devez à MYKIOO ')+result.order.wholesale_price_cad+
+        t(' CAD. The owner must verify payment and complete the service.',' $ CA. Le propriétaire doit vérifier le paiement et compléter le service.'));
+      await refresh();
+    }catch(e){setError(e.message);}finally{setSaving(false);}
   }
   useEffect(()=>{refresh();},[user.id]);
   const t=(en,fr)=>tr(language,en,fr);
@@ -55,6 +87,27 @@ export function AgentDashboard({user,language='en',logout}){
     <section className="mykioo-support-card"><h2>{t('Customers','Clients')}</h2>
       {loading?<p>{t('Loading…','Chargement…')}</p>:rows.length===0?<p>{t('No customers assigned yet. Agent invitations and order submission will become available after the server integration is activated.','Aucun client attribué pour le moment. Les invitations et commandes seront disponibles après l’activation du serveur.')}</p>:
       <ul>{rows.map(c=><li key={c.customer_user_id}><code>{c.customer_user_id.slice(0,8)}…</code> · {statusDate(c.assigned_at,language)}</li>)}</ul>}
+    </section>
+    <section className="mykioo-support-card"><h2>{t('Invite a customer','Inviter un client')}</h2>
+      <p>{t('Your request goes to the MYKIOO owner for invitation approval and delivery.','Votre demande sera envoyée au propriétaire MYKIOO pour approbation et envoi.')}</p>
+      <form onSubmit={invite}><label>{t('Customer email','Courriel du client')}<input type="email" required value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}/></label>
+      <button disabled={saving} type="submit">{t('Request invitation','Demander une invitation')}</button></form>
+    </section>
+    <section className="mykioo-support-card"><h2>{t('Create a customer order','Créer une commande client')}</h2>
+      <p>{t('Your selling price is your choice. MYKIOO applies your permanent $5 CAD wholesale discount automatically. Coupons do not apply.','Vous choisissez votre prix de vente. MYKIOO applique automatiquement votre remise permanente de 5 $ CA. Les codes promotionnels ne s’appliquent pas.')}</p>
+      <form onSubmit={submitOrder}>
+       <label>{t('Assigned customer','Client attribué')}<select required value={selectedCustomer} onChange={e=>setSelectedCustomer(e.target.value)}><option value="">{t('Choose a customer','Choisir un client')}</option>{rows.map(r=><option value={r.customer_user_id} key={r.customer_user_id}>{r.customer_user_id.slice(0,8)}…</option>)}</select></label>
+       <label>{t('Order type','Type de commande')}<select value={kind} onChange={e=>setKind(e.target.value)}><option value="new">{t('New subscription','Nouvel abonnement')}</option><option value="renewal">{t('Renewal','Renouvellement')}</option></select></label>
+       <label>{t('Duration','Durée')}<select value={days} onChange={e=>setDays(Number(e.target.value))}><option value={365}>{t('12 months','12 mois')}</option><option value={730}>{t('24 months','24 mois')}</option></select></label>
+       <label>{t('Devices','Appareils')}<select value={devices} onChange={e=>setDevices(Number(e.target.value))}>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n}</option>)}</select></label>
+       <label>{t('Your customer price (CAD)','Votre prix client (CAD)')}<input type="number" required min="0" step="0.01" value={retail} onChange={e=>setRetail(e.target.value)}/></label>
+       <label>{t('How MYKIOO will be paid','Paiement à MYKIOO')}<select value={method} onChange={e=>setMethod(e.target.value)}><option value="interac">Interac e-Transfer</option><option value="manual">{t('Manual transfer','Virement manuel')}</option><option value="cash">{t('Cash','Espèces')}</option><option value="zelle">Zelle</option><option value="btc">Bitcoin</option><option value="shib">SHIB</option></select></label>
+       <button type="submit" disabled={saving||!rows.length}>{t('Submit order for owner review','Envoyer la commande pour vérification')}</button>
+      </form>
+      {notice&&<p role="status">{notice}</p>}
+    </section>
+    <section className="mykioo-support-card"><h2>{t('My orders','Mes commandes')}</h2>
+      {orders.length===0?<p>{t('No orders yet','Aucune commande')}</p>:<ul>{orders.map(o=><li key={o.id}><strong>{o.status}</strong> · {o.kind} · {t('Customer price','Prix client')} ${o.customer_price_cad} CAD · {t('Due to MYKIOO','Dû à MYKIOO')} ${o.wholesale_price_cad} CAD</li>)}</ul>}
     </section>
     <section className="mykioo-support-card"><h2>{t('Renewal requests','Demandes de renouvellement')}</h2>
       {renewals.length===0?<p>{t('No renewal requests','Aucune demande de renouvellement')}</p>:
@@ -86,10 +139,14 @@ export function AgentCustomerDashboard({user,language='en',logout}){
     if(!agentId||busy)return;
     if(renewals.some(r=>r.subscription_id===id&&r.status==='pending')){setMessage(t('A request is already pending.','Une demande est déjà en attente.'));return;}
     setBusy(true);setMessage('');
-    const {data,error}=await supabase.from('mykioo_agent_renewal_requests').insert({customer_user_id:user.id,agent_user_id:agentId,subscription_id:id,status:'pending'}).select('id,subscription_id,status,created_at').single();
-    if(error)setMessage(t('Unable to record your request. Please contact your agent.','Impossible d’enregistrer la demande. Contactez votre agent.'));
-    else{setRenewals(current=>[data,...current]);setMessage(t('Renewal requested. Your agent can see it in their dashboard.','Demande enregistrée. Votre agent peut la voir dans son espace.'));}
-    setBusy(false);
+    try{
+      const result=await agentAction('customer_renewal_request',{subscription_id:id});
+      setRenewals(current=>[{id:result.request_id,subscription_id:id,status:'pending',created_at:new Date().toISOString()},...current]);
+      setMessage(result.agent_email_accepted
+        ?t('Renewal requested. Your agent was emailed.','Renouvellement demandé. Votre agent a reçu un courriel.')
+        :t('Renewal requested. Your agent can see it in their dashboard; email delivery was not confirmed.','Demande enregistrée. Votre agent la voit dans son espace; l’envoi du courriel n’est pas confirmé.'));
+    }catch(error){setMessage(t('Unable to record your request. Please contact your agent.','Impossible d’enregistrer la demande. Contactez votre agent.'));}
+    finally{setBusy(false);}
   }
   async function submitTicket(e){
     e.preventDefault();setTicketBusy(true);setTicketNotice('');
