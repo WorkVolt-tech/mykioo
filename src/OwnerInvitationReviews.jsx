@@ -19,7 +19,7 @@ export default function OwnerInvitationReviews({requests=[],invitations=[],membe
   <div className="mykioo-invitation-intro">
    <MailPlus size={24}/>
    <div><h2>{tr('Member invitation approvals','Approbation des invitations')}</h2>
-    <p>{tr('Members can recommend someone, but only you approve invitations. MYKIOO tries Gmail first and shows a private link you can send manually if delivery fails.','Les membres peuvent recommander une personne, mais vous seul approuvez les invitations. MYKIOO tente l’envoi par Gmail et fournit un lien privé à envoyer manuellement en cas d’échec.')}</p></div>
+    <p>{tr('Members can recommend someone, but only you approve invitations. MYKIOO uses IONOS to send them. If IONOS cannot accept the email, you will receive a private link for manual delivery.','Les membres peuvent recommander une personne, mais vous seul approuvez les invitations. MYKIOO utilise IONOS pour l’envoi. En cas d’échec, un lien privé sera fourni pour un envoi manuel.')}</p></div>
   </div>
   <div className="mykioo-invitations-list-title">
    <div><h3>{tr('Invitation requests','Demandes d’invitation')} {pending.length>0&&<span className="mykioo-owner-count">{pending.length}</span>}</h3></div>
@@ -56,7 +56,7 @@ export default function OwnerInvitationReviews({requests=[],invitations=[],membe
      {item.status==='approved'&&item.invited_user_id&&<div className="mykioo-owner-invitation-actions">
       <button type="button" className="approve" disabled={saving}
        onClick={()=>onAction?.({action:'resend_invite_setup',request_id:item.id})}>
-       <MailPlus size={16}/>{tr('Generate new setup link','Générer un nouveau lien d’inscription')}
+       <MailPlus size={16}/>{tr('Resend setup invitation','Renvoyer l’invitation d’inscription')}
       </button>
      </div>}
     </article>
@@ -68,7 +68,7 @@ export default function OwnerInvitationReviews({requests=[],invitations=[],membe
     {['requested','pending','accepted','expired','revoked'].map(status=><option key={status} value={status}>{statusLabel(status)} ({invitations.filter(inv=>invitationStatus(inv)===status).length})</option>)}
    </select></label>
   </div>
-  <p>{tr('Approval and acceptance are separate. Links expire after 48 hours. Copy the generated link and send it to the invitee yourself.','L’approbation et l’acceptation sont distinctes. Les liens expirent après 48 heures. Copiez le lien créé et envoyez-le vous-même à la personne invitée.')}</p>
+  <p>{tr('Approval and acceptance are separate. Links expire after 48 hours. IONOS sends invitations automatically when available; otherwise you can copy the private link from the manual delivery panel.','L’approbation et l’acceptation sont distinctes. Les liens expirent après 48 heures. IONOS envoie les invitations automatiquement lorsqu’il est disponible; sinon, copiez le lien privé dans le panneau d’envoi manuel.')}</p>
   <div className="mykioo-owner-invitation-list">{tracked.map(inv=>{
    const status=invitationStatus(inv),profile=byId.get(inv.accepted_by);
    const complete=Boolean(inv.accepted_at&&profile?.display_name?.trim());
@@ -82,7 +82,7 @@ export default function OwnerInvitationReviews({requests=[],invitations=[],membe
     </div></div>
     <span className={'mykioo-invitation-status '+(status==='accepted'?'approved':status==='expired'?'rejected':'pending')}>{statusLabel(status)}</span>
     {status!=='revoked'&&!complete&&<div className="mykioo-owner-invitation-actions"><button type="button" className="approve" disabled={saving}
-     onClick={()=>onAction?.({action:'resend_invite_setup',invitation_id:inv.id})}><MailPlus size={16}/>{tr('Generate new link','Générer un nouveau lien')}</button></div>}
+     onClick={()=>onAction?.({action:'resend_invite_setup',invitation_id:inv.id})}><MailPlus size={16}/>{tr('Resend invitation / new link','Renvoyer l’invitation / nouveau lien')}</button></div>}
    </article>;
   })}</div>
   {!tracked.length&&<p>{tr('No invitations match this filter.','Aucune invitation pour ce filtre.')}</p>}
