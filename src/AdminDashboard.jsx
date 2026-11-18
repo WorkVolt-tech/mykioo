@@ -97,7 +97,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  async function refresh({silent=false}={}){
   if(!silent){setLoading(true);setError('')}
   try{
-   const collections={members:'mykioo_members',invitations:'mykioo_invitations',invitation_requests:'mykioo_invitation_requests',subscriptions:'mykioo_subscriptions',orders:'mykioo_orders',support:'mykioo_support_tickets',subscription_requests:'mykioo_subscription_requests',cancellation_requests:'mykioo_subscription_cancellation_requests'};
+   const collections={agent_accounts:'mykioo_agent_accounts',members:'mykioo_members',invitations:'mykioo_invitations',invitation_requests:'mykioo_invitation_requests',subscriptions:'mykioo_subscriptions',orders:'mykioo_orders',support:'mykioo_support_tickets',subscription_requests:'mykioo_subscription_requests',cancellation_requests:'mykioo_subscription_cancellation_requests'};
    const all=await Promise.all(Object.entries(collections).map(async ([key,table])=>{
     const {data,error}=await supabase.from(table).select('*').order('created_at',{ascending:false}).limit(100);
     if(error)throw Error(table+': '+error.message);
@@ -307,7 +307,14 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    return member?.display_name||member?.email||String(value).slice(0,8);
   }
   if(key==='status')return <span className={'admin-data-chip status-'+String(value)}>{statusLabels[value]?tr(...statusLabels[value]):String(value).replaceAll('_',' ')}</span>;
-  if(key==='role')return String(value)==='owner'?tr('Owner','Propriétaire'):String(value)==='member'?tr('Member','Membre'):String(value);
+  if(key==='role'){
+   if(value==='owner')return tr('Owner','Propriétaire');
+   const agent=(rows.agent_accounts||[]).find(a=>a.agent_user_id===row.user_id);
+   if(agent?.status==='active')return tr('Agent','Agent');
+   if(agent?.status==='suspended')return tr('Agent (suspended)','Agent (suspendu)');
+   if(agent?.status==='pending')return tr('Agent (pending)','Agent (en attente)');
+   return value==='member'?tr('Member','Membre'):String(value);
+  }
   if(['created_at','starts_at','expires_at'].includes(key)){
    const d=new Date(value);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString(fr?'fr-CA':'en-CA');
   }
