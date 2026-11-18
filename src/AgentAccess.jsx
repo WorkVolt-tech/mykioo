@@ -40,7 +40,8 @@ export function useAgentAccess(userId){
   return state;
 }
 
-export function AgentDashboard({user,language='en',logout}){
+export function AgentDashboard({user,language='en',logout,agent}){
+  const discountCad=agent?.access_type==='paid'?10:5;
   const [rows,setRows]=useState([]),[renewals,setRenewals]=useState([]),[orders,setOrders]=useState([]),[invites,setInvites]=useState([]),[services,setServices]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
   const [inviteEmail,setInviteEmail]=useState(''),[selectedCustomer,setSelectedCustomer]=useState(''),[kind,setKind]=useState('new'),[days,setDays]=useState(365),[devices,setDevices]=useState(1),[retail,setRetail]=useState(''),[method,setMethod]=useState('interac'),[notice,setNotice]=useState(''),[saving,setSaving]=useState(false);
   async function refresh(){
@@ -82,7 +83,7 @@ export function AgentDashboard({user,language='en',logout}){
     <div className="shortcut-grid">
       <article className="shortcut"><strong>{rows.length}</strong><small>{t('Assigned customers','Clients attribués')}</small></article>
       <article className="shortcut"><strong>{renewals.filter(r=>r.status==='pending').length}</strong><small>{t('Pending renewal requests','Renouvellements en attente')}</small></article>
-      <article className="shortcut"><strong>$5 CAD</strong><small>{t('Permanent discount per eligible order; no coupon stacking','Remise permanente par commande admissible; codes non cumulables')}</small></article>
+      <article className="shortcut"><strong>${discountCad} CAD</strong><small>{t('Permanent discount per eligible order; no coupon stacking','Remise permanente par commande admissible; codes non cumulables')}</small></article>
     </div>
     <section className="mykioo-support-card"><h2>{t('Customers','Clients')}</h2>
       {loading?<p>{t('Loading…','Chargement…')}</p>:rows.length===0?<p>{t('No customers assigned yet. Agent invitations and order submission will become available after the server integration is activated.','Aucun client attribué pour le moment. Les invitations et commandes seront disponibles après l’activation du serveur.')}</p>:
@@ -94,7 +95,7 @@ export function AgentDashboard({user,language='en',logout}){
       <button disabled={saving} type="submit">{t('Request invitation','Demander une invitation')}</button></form>
     </section>
     <section className="mykioo-support-card"><h2>{t('Create a customer order','Créer une commande client')}</h2>
-      <p>{t('Your selling price is your choice. MYKIOO applies your permanent $5 CAD wholesale discount automatically. Coupons do not apply.','Vous choisissez votre prix de vente. MYKIOO applique automatiquement votre remise permanente de 5 $ CA. Les codes promotionnels ne s’appliquent pas.')}</p>
+      <p>{t('Your selling price is your choice. MYKIOO automatically deducts '+discountCad+' CAD on eligible wholesale orders; coupons do not apply.','Vous choisissez votre prix de vente. MYKIOO déduit automatiquement '+discountCad+' $ CA des commandes admissibles; aucun code promotionnel ne s’applique.')}</p>
       <form onSubmit={submitOrder}>
        <label>{t('Assigned customer','Client attribué')}<select required value={selectedCustomer} onChange={e=>setSelectedCustomer(e.target.value)}><option value="">{t('Choose a customer','Choisir un client')}</option>{rows.map(r=><option value={r.customer_user_id} key={r.customer_user_id}>{r.customer_user_id.slice(0,8)}…</option>)}</select></label>
        <label>{t('Order type','Type de commande')}<select value={kind} onChange={e=>setKind(e.target.value)}><option value="new">{t('New subscription','Nouvel abonnement')}</option><option value="renewal">{t('Renewal','Renouvellement')}</option></select></label>

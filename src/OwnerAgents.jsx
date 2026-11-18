@@ -90,7 +90,7 @@ export default function OwnerAgents({language='en'}){
        <label>{tr('Status','Statut')}</label><select value={status} onChange={e=>setStatus(e.target.value)}><option value="pending">Pending</option><option value="active">Active</option><option value="suspended">Suspended</option></select>
        <label>{tr('Agent access','Accès agent')}</label><select value={type} onChange={e=>{setType(e.target.value);if(e.target.value==='free'){setFee('0');setPeriod('none')}else setPeriod('monthly')}}><option value="free">{tr('Free','Gratuit')}</option><option value="paid">{tr('Paid','Payant')}</option></select>
        {type==='paid'&&<><label>{tr('Access fee (CAD)','Frais d’accès (CAD)')}</label><input type="number" min="0.01" step="0.01" value={fee} onChange={e=>setFee(e.target.value)} required/><label>{tr('Billing period','Période de facturation')}</label><select value={period} onChange={e=>setPeriod(e.target.value)}><option value="one_time">{tr('One time','Une fois')}</option><option value="monthly">{tr('Monthly','Mensuel')}</option><option value="yearly">{tr('Yearly','Annuel')}</option></select></>}
-       <p>{tr('Every qualifying agent order receives an automatic permanent $5 CAD discount. Promo codes cannot stack.','Chaque commande admissible reçoit une remise permanente de 5 $ CA. Les codes promotionnels ne sont pas cumulables.')}</p>
+       <p>{tr('Free agents receive $5 CAD off; paid agents receive $10 CAD off every eligible order. Promo codes cannot stack.','Les agents gratuits reçoivent une remise de 5 $ CA; les agents payants reçoivent 10 $ CA sur chaque commande admissible. Les codes promotionnels ne sont pas cumulables.')}</p>
        <button type="submit" disabled={busy||!backendReady||!agentId}>{tr('Save agent','Enregistrer l’agent')}</button>
       </form>
     </div>
@@ -103,7 +103,7 @@ export default function OwnerAgents({language='en'}){
      </form>
     </div>
     <h3>{tr('Agent directory','Liste des agents')} ({(data.agents||[]).length})</h3>
-    <ul>{(data.agents||[]).map(a=><li key={a.agent_user_id}><strong>{memberName(a.agent_user_id)}</strong> · {a.status} · {a.access_type} · {tr('Customers','Clients')}: {(data.customers||[]).filter(c=>c.agent_user_id===a.agent_user_id).length}</li>)}</ul>
+    <ul>{(data.agents||[]).map(a=><li key={a.agent_user_id}><strong>{memberName(a.agent_user_id)}</strong> · {a.status} · {a.access_type} · {a.access_type==='paid'?'$10 CAD':'$5 CAD'} {tr('discount','de remise')} · {tr('Customers','Clients')}: {(data.customers||[]).filter(c=>c.agent_user_id===a.agent_user_id).length}</li>)}</ul>
     <h3>{tr('Invitation requests','Demandes d’invitation')}</h3>
     <p>{tr('Pending invitations require the existing owner invitation workflow. These requests are not emails sent.','Les invitations en attente doivent passer par la procédure propriétaire existante. Ces demandes ne sont pas des courriels envoyés.')}</p>
     <ul>{(data.invites||[]).map(i=><li key={i.id}>{i.invitee_email} · {memberName(i.agent_user_id)} · <strong>{i.status}</strong></li>)}</ul>

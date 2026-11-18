@@ -72,10 +72,10 @@ Deno.serve(async request=>{
    if(!status||!accessType||!period||fee===null)return reply({error:"Invalid agent settings"},400);
    if(accessType==="free"&&(fee!==0||period!=="none"))return reply({error:"Free agents must have no access fee"},400);
    if(accessType==="paid"&&(fee<=0||period==="none"))return reply({error:"Paid agents need an access fee and period"},400);
-   // No discount from the client is ever accepted; fixed $5 wholesale reduction.
+   // Never accept a browser-supplied discount: the owner-selected tier controls it.
    const {data,error}=await db.from("mykioo_agent_accounts").upsert({
     agent_user_id:target.user_id,status,access_type:accessType,access_fee_cad:fee,
-    access_fee_period:period,discount_cad:5,updated_at:new Date().toISOString()
+    access_fee_period:period,discount_cad:accessType==="paid"?10:5,updated_at:new Date().toISOString()
    }).select().single();
    if(error)return reply({error:"Agent update failed"},503);
    return reply({ok:true,agent:data});
@@ -141,7 +141,14 @@ Deno.serve(async request=>{
    const {data:price,error:priceError}=await db.from("mykioo_package_prices")
      .select("price_cad").eq("contract_days",days).eq("device_count",devices).maybeSingle();
    if(priceError||!price)return reply({error:"Package unavailable"},503);
-   const wholesale=Math.max(0,Math.round((Number(price.price_cad)-5)*100)/100);
+   // Re-read the active agent tier for EVERY order; the UI, old orders and
+   // the agent profile's discount field are never trusted for pricing.
+   const {data:agentTier,error:tierError}=await db.from("mykioo_agent_accounts")
+     .select("access_type,status").eq("agent_user_id",user.id).maybeSingle();
+   if(tierError||agentTier?.status!=="active"||!["free","paid"].includes(agentTier.access_type))
+     return reply({error:"Active agent pricing unavailable"},403);
+   const discountCad=agentTier.access_type==="paid"?10:5;
+   const wholesale=Math.max(0,Math.round((Number(price.price_cad)-discountCad)*100)/100);
    if(!Number.isFinite(wholesale))return reply({error:"Package price unavailable"},503);
    const {data:order,error:orderError}=await db.from("mykioo_agent_order_intents").insert({
     agent_user_id:user.id,customer_user_id:customerId,kind,
@@ -151,7 +158,7 @@ Deno.serve(async request=>{
    if(orderError)return reply({error:"Unable to create order"},503);
    // IMPORTANT: no account activation or subscription request completion here.
    // Owner must verify funds and submit via the existing canonical order pipeline.
-   return reply({ok:true,order,discount_cad:5,payment_verified:false});
+   return reply({ok:true,order,discount_cad:discountCad,payment_verified:false});
   }
   if(action==="owner_verify_agent_order"){
    if(!owner)return reply({error:"Owner only"},403);
