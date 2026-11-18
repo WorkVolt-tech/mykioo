@@ -39,6 +39,15 @@ Deno.serve(async (req)=>{
   const input=await req.json().catch(()=>null);
   if(!input||typeof input!=="object")return reply({error:"Invalid request"},400);
   const action=safe(input.action,40);
+  // Agent/customer accounts must not access retail billing, coupons or prices.
+  if(!owner){
+    const [agent,assigned]=await Promise.all([
+      db.from("mykioo_agent_accounts").select("agent_user_id").eq("agent_user_id",user.id).maybeSingle(),
+      db.from("mykioo_agent_customers").select("customer_user_id").eq("customer_user_id",user.id).maybeSingle()
+    ]);
+    if(agent.error||assigned.error)return reply({error:"Billing authorization unavailable"},503);
+    if(agent.data||assigned.data)return reply({error:"Billing is managed by the assigned agent"},403);
+  }
   const audit=async(name:string,record:{id:string,member_id:string},extra:Record<string,unknown>={})=>{
    const {error}=await db.from("mykioo_audit_logs").insert({actor_id:user.id,action:name,entity_type:"billing_invoice",entity_id:record.id,
     details:{member_id:record.member_id,...extra}});
