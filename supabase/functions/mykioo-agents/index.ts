@@ -49,15 +49,16 @@ Deno.serve(async request=>{
 
   if(action==="owner_list"){
    if(!owner)return reply({error:"Owner only"},403);
-   const [agents,customers,invites,orders,members]=await Promise.all([
+   const [agents,customers,invites,orders,members,services]=await Promise.all([
     db.from("mykioo_agent_accounts").select("*").order("created_at",{ascending:false}),
     db.from("mykioo_agent_customers").select("*").order("assigned_at",{ascending:false}),
     db.from("mykioo_agent_invitation_requests").select("*").order("created_at",{ascending:false}).limit(100),
     db.from("mykioo_agent_order_intents").select("*").order("created_at",{ascending:false}).limit(100),
-    db.from("mykioo_members").select("user_id,email,display_name,role,status").order("created_at",{ascending:false}).limit(1000)
+    db.from("mykioo_members").select("user_id,email,display_name,role,status").limit(1000),
+    db.from("mykioo_agent_service_requests").select("*").order("created_at",{ascending:false}).limit(100)
    ]);
-   if([agents,customers,invites,orders,members].some(x=>x.error))return reply({error:"Unable to load agent records"},503);
-   return reply({ok:true,agents:agents.data,customers:customers.data,invites:invites.data,orders:orders.data,members:members.data});
+   if([agents,customers,invites,orders,members,services].some(x=>x.error))return reply({error:"Unable to load agent records"},503);
+   return reply({ok:true,agents:agents.data,customers:customers.data,invites:invites.data,orders:orders.data,members:members.data,services:services.data});
   }
   if(action==="owner_set_agent"){
    if(!owner)return reply({error:"Owner only"},403);
@@ -111,7 +112,7 @@ Deno.serve(async request=>{
   }
   if(action==="agent_list"){
    if(!await activeAgent())return reply({error:"Active agent required"},403);
-   const [customers,renewals,orders,invites]=await Promise.all([
+   const [customers,renewals,orders,invites,services]=await Promise.all([
     db.from("mykioo_agent_customers").select("customer_user_id,assigned_at")
       .eq("agent_user_id",user.id).order("assigned_at",{ascending:false}),
     db.from("mykioo_agent_renewal_requests").select("id,customer_user_id,status,message,created_at")
@@ -119,16 +120,18 @@ Deno.serve(async request=>{
     db.from("mykioo_agent_order_intents").select("id,customer_user_id,kind,contract_days,device_count,customer_price_cad,wholesale_price_cad,status,created_at")
       .eq("agent_user_id",user.id).order("created_at",{ascending:false}),
     db.from("mykioo_agent_invitation_requests").select("id,invitee_email,status,created_at")
+      .eq("agent_user_id",user.id).order("created_at",{ascending:false}),
+    db.from("mykioo_agent_service_requests").select("id,customer_user_id,contract_days,device_count,service_name,notes,status,created_at")
       .eq("agent_user_id",user.id).order("created_at",{ascending:false})
    ]);
-   if([customers,renewals,orders,invites].some(x=>x.error))return reply({error:"Unable to load agent dashboard"},503);
-   return reply({ok:true,customers:customers.data,renewals:renewals.data,orders:orders.data,invites:invites.data});
+   if([customers,renewals,orders,invites,services].some(x=>x.error))return reply({error:"Unable to load agent dashboard"},503);
+   return reply({ok:true,customers:customers.data,renewals:renewals.data,orders:orders.data,invites:invites.data,services:services.data});
   }
   if(action==="agent_submit_order"){
    if(!await activeAgent())return reply({error:"Active agent required"},403);
    const customerId=String(input.customer_user_id||"");
    if(!uuid(customerId)||!await isAssigned(customerId))return reply({error:"Customer is not assigned to you"},403);
-   const kind=["new","renewal","trial"].includes(input.kind)?input.kind:null;
+   const kind=["new","renewal"].includes(input.kind)?input.kind:null;
    const days=Number(input.contract_days),devices=Number(input.device_count);
    const retail=amount(input.customer_price_cad);
    const method=["interac","zelle","cash","manual","btc","shib"].includes(input.payment_method)?input.payment_method:null;
@@ -163,6 +166,42 @@ Deno.serve(async request=>{
     .select("id,status,payment_verified_at").maybeSingle();
    if(error||!data)return reply({error:"Payment verification failed"},409);
    return reply({ok:true,order:data});
+  }
+  if(action==="customer_service_request"){
+   const {data:assignment}=await db.from("mykioo_agent_customers").select("agent_user_id")
+    .eq("customer_user_id",user.id).maybeSingle();
+   if(!assignment)return reply({error:"No assigned agent"},403);
+   const {data:agent}=await db.from("mykioo_agent_accounts").select("status")
+    .eq("agent_user_id",assignment.agent_user_id).maybeSingle();
+   if(agent?.status!=="active")return reply({error:"Assigned agent unavailable"},409);
+   const days=Number(input.contract_days),devices=Number(input.device_count);
+   const notes=typeof input.notes==="string"?input.notes.trim():"";
+   if(![365,730].includes(days)||!Number.isInteger(devices)||devices<1||devices>5||notes.length>1000)
+    return reply({error:"Invalid service selection"},400);
+   const {data:recent}=await db.from("mykioo_agent_service_requests").select("id")
+    .eq("customer_user_id",user.id).gte("created_at",new Date(Date.now()-86400000).toISOString()).limit(5);
+   if((recent||[]).length>=5)return reply({error:"Too many requests; contact your agent"},429);
+   const {data:record,error}=await db.from("mykioo_agent_service_requests").insert({
+    customer_user_id:user.id,agent_user_id:assignment.agent_user_id,
+    contract_days:days,device_count:devices,service_name:"MYKIOO TV",notes,status:"pending"
+   }).select("id,status").single();
+   if(error)return reply({error:"Unable to save service request"},503);
+   let emailed=false;
+   const {data:agentMember}=await db.from("mykioo_members").select("email")
+    .eq("user_id",assignment.agent_user_id).maybeSingle();
+   if(validEmail(agentMember?.email)){
+    try{
+     const response=await fetch(url+"/functions/v1/mykioo-email-dispatch?route=email",{
+      method:"POST",headers:{"api-key":secret,"Content-Type":"application/json"},
+      body:JSON.stringify({
+       to:[{email:agentMember!.email}],subject:"MYKIOO | Customer service selection",
+       textContent:"An assigned customer requested a "+days+"-day MYKIOO TV service for "+devices+" device(s). Review the request in your Agent dashboard. No payment has been taken."
+      })
+     });
+     emailed=response.ok&&Boolean((await response.json().catch(()=>null))?.messageId);
+    }catch{}
+   }
+   return reply({ok:true,request:record,agent_email_accepted:emailed});
   }
   if(action==="customer_renewal_request"){
    const {data:assignment}=await db.from("mykioo_agent_customers").select("agent_user_id")
