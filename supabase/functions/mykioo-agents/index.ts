@@ -31,6 +31,99 @@ Deno.serve(async request=>{
   if(!input||typeof input!=="object")return reply({error:"Invalid request"},400);
   const owner=member.role==="owner";
   const action=String(input.action||"");
+
+  // Prepaid 10 device-year packages. Client cannot authorize payments or credits.
+  if(action==="agent_package_list"){
+    const [tiers,purchases]=await Promise.all([
+      db.from("mykioo_agent_package_tiers").select("fee_cad,discount_per_device_cad,device_allowance,is_reseller,purchase_enabled").order("fee_cad"),
+      db.from("mykioo_agent_package_purchases").select("id,fee_cad,discount_per_device_cad,device_allowance,reserved_devices,used_devices,status,created_at,activated_at").eq("agent_user_id",user.id).order("created_at",{ascending:false})
+    ]);
+    if(tiers.error||purchases.error)return reply({error:"Unable to load agent packages"},503);
+    const {data:account}=await db.from("mykioo_agent_accounts").select("status,access_type").eq("agent_user_id",user.id).maybeSingle();
+    return reply({ok:true,tiers:tiers.data,purchases:purchases.data,account});
+  }
+  if(action==="agent_apply"){
+    const {data:prior,error:priorError}=await db.from("mykioo_agent_accounts").select("status").eq("agent_user_id",user.id).maybeSingle();
+    if(priorError)return reply({error:"Unable to check agent application"},503);
+    if(prior?.status==="removed"||prior?.status==="suspended")return reply({error:"Contact MYKIOO support about your agent status"},403);
+    if(prior)return reply({ok:true,status:prior.status,existing:true});
+    const {error}=await db.from("mykioo_agent_accounts").insert({
+      agent_user_id:user.id,status:"pending",access_type:"free",access_fee_cad:0,
+      access_fee_period:"none",discount_cad:0
+    });
+    if(error)return reply({error:"Unable to submit agent application"},503);
+    return reply({ok:true,status:"pending"});
+  }
+  if(action==="agent_purchase_package"){
+    const fee=Number(input.fee_cad);
+    const method=["interac","zelle","btc","shib"].includes(input.payment_method)?input.payment_method:null;
+    if(!method||![100,150,200,250,300,350,400].includes(fee))return reply({error:"Invalid package or payment method"},400);
+    const {data:tier}=await db.from("mykioo_agent_package_tiers").select("*").eq("fee_cad",fee).maybeSingle();
+    if(!tier?.purchase_enabled)return reply({error:"Paid agent packages are not yet available"},409);
+    const {data:a}=await db.from("mykioo_agent_accounts").select("status").eq("agent_user_id",user.id).maybeSingle();
+    if(!a||!["pending","active"].includes(a.status))return reply({error:"Apply to become an agent first"},403);
+    const {data:existing}=await db.from("mykioo_agent_package_purchases")
+      .select("id").eq("agent_user_id",user.id).in("status",["awaiting_payment","payment_submitted"]).limit(1);
+    if(existing?.length)return reply({error:"You already have a package awaiting payment approval"},409);
+    const {data:purchase,error}=await db.from("mykioo_agent_package_purchases").insert({
+      agent_user_id:user.id,fee_cad:tier.fee_cad,discount_per_device_cad:tier.discount_per_device_cad,
+      device_allowance:10,payment_method:method,status:"awaiting_payment"
+    }).select("id,status,fee_cad").single();
+    if(error)return reply({error:"Unable to create package payment request"},503);
+    return reply({ok:true,purchase,payment_verified:false});
+  }
+  if(action==="agent_submit_package_payment"){
+    if(!uuid(input.purchase_id))return reply({error:"Invalid purchase"},400);
+    const reference=typeof input.payment_reference==="string"?input.payment_reference.trim().slice(0,160):"";
+    if(!reference)return reply({error:"Provide a payment reference or sender name"},400);
+    const {data,error}=await db.from("mykioo_agent_package_purchases")
+      .update({status:"payment_submitted",payment_reference:reference,updated_at:new Date().toISOString()})
+      .eq("id",input.purchase_id).eq("agent_user_id",user.id).eq("status","awaiting_payment")
+      .select("id,status").maybeSingle();
+    if(error||!data)return reply({error:"Package request not awaiting payment"},409);
+    return reply({ok:true,purchase:data});
+  }
+  if(action==="owner_package_list"){
+    if(!owner)return reply({error:"Owner only"},403);
+    const {data,error}=await db.from("mykioo_agent_package_purchases")
+      .select("id,agent_user_id,fee_cad,discount_per_device_cad,device_allowance,reserved_devices,used_devices,status,payment_method,payment_reference,created_at,activated_at,payment_verified_at")
+      .order("created_at",{ascending:false}).limit(150);
+    if(error)return reply({error:"Cannot load packages"},503);
+    return reply({ok:true,purchases:data});
+  }
+  if(action==="owner_activate_agent_package"){
+    if(!owner)return reply({error:"Owner only"},403);
+    if(!uuid(input.purchase_id)||input.verified!==true)return reply({error:"Payment verification required"},400);
+    const {data:purchase}=await db.from("mykioo_agent_package_purchases")
+      .select("id,agent_user_id,status,fee_cad").eq("id",input.purchase_id).maybeSingle();
+    if(!purchase||purchase.status!=="payment_submitted")return reply({error:"Package not awaiting payment confirmation"},409);
+    const target=await approvedMember(purchase.agent_user_id);
+    if(!target)return reply({error:"Approved member required"},409);
+    const now=new Date().toISOString();
+    const {data:changed,error}=await db.from("mykioo_agent_package_purchases")
+      .update({status:"active",payment_verified_at:now,payment_verified_by:user.id,activated_at:now,updated_at:now})
+      .eq("id",purchase.id).eq("status","payment_submitted")
+      .select("id,status").maybeSingle();
+    if(error||!changed)return reply({error:"Package activation was not completed"},409);
+    await db.from("mykioo_agent_accounts").update({status:"active",access_type:"paid",discount_cad:0,access_fee_cad:0,access_fee_period:"none",updated_at:now})
+      .eq("agent_user_id",purchase.agent_user_id);
+    return reply({ok:true,purchase:changed});
+  }
+  if(action==="owner_settle_agent_order"){
+    if(!owner)return reply({error:"Owner only"},403);
+    if(!uuid(input.order_id)||!uuid(input.subscription_request_id))return reply({error:"Order and completed subscription request required"},400);
+    const {data,error}=await db.rpc("mykioo_agent_settle_prepaid_order",{p_order:input.order_id,p_request:input.subscription_request_id});
+    if(error)return reply({error:error.message},409);
+    return reply({ok:true,result:data});
+  }
+  if(action==="owner_cancel_prepaid_agent_order"){
+    if(!owner)return reply({error:"Owner only"},403);
+    if(!uuid(input.order_id))return reply({error:"Invalid order"},400);
+    const {data,error}=await db.rpc("mykioo_agent_release_prepaid_order",{p_order:input.order_id});
+    if(error)return reply({error:error.message},409);
+    return reply({ok:true,result:data});
+  }
+
   async function activeAgent(){
    const {data,error}=await db.from("mykioo_agent_accounts").select("agent_user_id,status")
       .eq("agent_user_id",user!.id).maybeSingle();
@@ -188,31 +281,32 @@ Deno.serve(async request=>{
    if(!kind||!method||retail===null||![365,730].includes(days)||!Number.isInteger(devices)||devices<1||devices>5)
      return reply({error:"Invalid order details"},400);
    if(input.discount_code)return reply({error:"Discount codes do not apply to agent orders"},400);
+
+   const {data:agentTier,error:tierError}=await db.from("mykioo_agent_accounts")
+     .select("access_type,status,discount_cad").eq("agent_user_id",user.id).maybeSingle();
+   if(tierError||agentTier?.status!=="active")return reply({error:"Agent pricing unavailable"},403);
+   if(agentTier.access_type==="paid"){
+     const {data:order,error}=await db.rpc("mykioo_agent_reserve_prepaid_order",{
+       p_agent:user.id,p_customer:customerId,p_kind:kind,p_days:days,p_devices:devices,
+       p_retail:retail,p_method:method
+     });
+     if(error)return reply({error:error.message},409);
+     return reply({ok:true,order,discount_cad:null,credits_reserved:order.credits_reserved,payment_verified:false});
+   }
    const {data:price,error:priceError}=await db.from("mykioo_package_prices")
      .select("price_cad").eq("contract_days",days).eq("device_count",devices).maybeSingle();
    if(priceError||!price)return reply({error:"Package unavailable"},503);
-   // Re-read the owner-assigned discount and active status for every order.
-   const {data:agentTier,error:tierError}=await db.from("mykioo_agent_accounts")
-     .select("access_type,status,discount_cad").eq("agent_user_id",user.id).maybeSingle();
-   if(tierError||agentTier?.status!=="active"||!["free","paid"].includes(agentTier.access_type))
-     return reply({error:"Active agent pricing unavailable"},403);
    const discountCad=Number(agentTier.discount_cad);
    const basePrice=Number(price.price_cad);
-   if(!Number.isFinite(discountCad)||discountCad<0||discountCad>1000||
-      !Number.isFinite(basePrice)||basePrice<=0)
-     return reply({error:"Package or agent discount unavailable"},503);
-   if(discountCad>=basePrice)return reply({
-     error:"Agent discount must be less than this package's base price; contact the MYKIOO owner."
-   },409);
+   if(!Number.isFinite(discountCad)||discountCad<0||!Number.isFinite(basePrice)||basePrice<=discountCad)
+     return reply({error:"Agent discount not available"},409);
    const wholesale=Math.round((basePrice-discountCad)*100)/100;
    const {data:order,error:orderError}=await db.from("mykioo_agent_order_intents").insert({
-    agent_user_id:user.id,customer_user_id:customerId,kind,
-    contract_days:days,device_count:devices,customer_price_cad:retail,
-    wholesale_price_cad:wholesale,payment_method:method,status:"pending_payment"
+     agent_user_id:user.id,customer_user_id:customerId,kind,
+     contract_days:days,device_count:devices,customer_price_cad:retail,
+     wholesale_price_cad:wholesale,payment_method:method,status:"pending_payment"
    }).select("id,status,wholesale_price_cad,customer_price_cad").single();
    if(orderError)return reply({error:"Unable to create order"},503);
-   // IMPORTANT: no account activation or subscription request completion here.
-   // Owner must verify funds and submit via the existing canonical order pipeline.
    return reply({ok:true,order,discount_cad:discountCad,payment_verified:false});
   }
   if(action==="owner_verify_agent_order"){
