@@ -165,6 +165,28 @@ Deno.serve(async request=>{
     if(error)return reply({error:error.message},409);
     return reply({ok:true,purchase:changed});
   }
+  if(action==="owner_find_completed_agent_subscriptions"){
+    if(!owner)return reply({error:"Owner only"},403);
+    if(!uuid(input.order_id))return reply({error:"Invalid agent order"},400);
+    const {data:order,error:orderError}=await db.from("mykioo_agent_order_intents")
+      .select("id,agent_user_id,customer_user_id,contract_days,device_count,status,payment_verified_at,owner_request_id")
+      .eq("id",input.order_id).maybeSingle();
+    if(orderError||!order)return reply({error:"Agent order not found"},404);
+    if(order.status!=="owner_review"||!order.payment_verified_at)return reply({error:"Verify agent order payment first"},409);
+    const {data:completed,error:completedError}=await db.from("mykioo_subscription_requests")
+      .select("id,member_id,status,service_name,contract_days,device_count,completed_at,subscription_id,created_at,request_type")
+      .eq("member_id",order.customer_user_id).eq("status","fulfilled")
+      .eq("contract_days",order.contract_days).eq("device_count",order.device_count)
+      .not("completed_at","is",null).not("subscription_id","is",null)
+      .order("completed_at",{ascending:false}).limit(30);
+    if(completedError)return reply({error:"Cannot load fulfilled subscriptions"},503);
+    const {data:linked,error:linkedError}=await db.from("mykioo_agent_order_intents")
+      .select("owner_request_id").not("owner_request_id","is",null).limit(1000);
+    if(linkedError)return reply({error:"Cannot check existing agent order links"},503);
+    const reserved=new Set((linked||[]).map(row=>row.owner_request_id));
+    const results=(completed||[]).filter(row=>!reserved.has(row.id));
+    return reply({ok:true,requests:results,order:{id:order.id,contract_days:order.contract_days,device_count:order.device_count}});
+  }
   if(action==="owner_settle_agent_order"){
     if(!owner)return reply({error:"Owner only"},403);
     if(!uuid(input.order_id)||!uuid(input.subscription_request_id))return reply({error:"Order and completed subscription request required"},400);
