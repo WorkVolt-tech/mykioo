@@ -36,7 +36,7 @@ Deno.serve(async request=>{
   if(action==="agent_package_list"){
     const [tiers,purchases]=await Promise.all([
       db.from("mykioo_agent_package_tiers").select("fee_cad,discount_per_device_cad,device_allowance,is_reseller,purchase_enabled").order("fee_cad"),
-      db.from("mykioo_agent_package_purchases").select("id,fee_cad,discount_per_device_cad,device_allowance,reserved_devices,used_devices,status,created_at,activated_at").eq("agent_user_id",user.id).order("created_at",{ascending:false})
+      db.from("mykioo_agent_package_purchases").select("id,fee_cad,discount_per_device_cad,device_allowance,reserved_devices,used_devices,status,created_at,activated_at,payment_method,payment_destination,payment_amount,payment_currency,payment_network,instructions_issued_at,quote_expires_at").eq("agent_user_id",user.id).order("created_at",{ascending:false})
     ]);
     if(tiers.error||purchases.error)return reply({error:"Unable to load agent packages"},503);
     const {data:account}=await db.from("mykioo_agent_accounts").select("status,access_type").eq("agent_user_id",user.id).maybeSingle();
@@ -75,7 +75,16 @@ Deno.serve(async request=>{
   if(action==="agent_submit_package_payment"){
     if(!uuid(input.purchase_id))return reply({error:"Invalid purchase"},400);
     const reference=typeof input.payment_reference==="string"?input.payment_reference.trim().slice(0,160):"";
-    if(!reference)return reply({error:"Provide a payment reference or sender name"},400);
+    if(reference.length<3)return reply({error:"Provide a payment reference or sender name"},400);
+    const {data:current,error:currentError}=await db.from("mykioo_agent_package_purchases")
+      .select("id,status,payment_method,payment_destination,payment_amount,payment_currency,instructions_issued_at,quote_expires_at")
+      .eq("id",input.purchase_id).eq("agent_user_id",user.id).maybeSingle();
+    if(currentError||!current||current.status!=="awaiting_payment")return reply({error:"Package not awaiting payment"},409);
+    if(!current.instructions_issued_at||!current.payment_destination||!(Number(current.payment_amount)>0)||!current.payment_currency)
+      return reply({error:"Wait for MYKIOO payment instructions before sending money"},409);
+    if(["btc","shib"].includes(current.payment_method)&&
+      (!current.quote_expires_at||new Date(current.quote_expires_at).getTime()<=Date.now()))
+      return reply({error:"Crypto quote expired. Ask the owner for updated instructions"},409);
     const {data,error}=await db.from("mykioo_agent_package_purchases")
       .update({status:"payment_submitted",payment_reference:reference,updated_at:new Date().toISOString()})
       .eq("id",input.purchase_id).eq("agent_user_id",user.id).eq("status","awaiting_payment")
@@ -86,10 +95,53 @@ Deno.serve(async request=>{
   if(action==="owner_package_list"){
     if(!owner)return reply({error:"Owner only"},403);
     const {data,error}=await db.from("mykioo_agent_package_purchases")
-      .select("id,agent_user_id,fee_cad,discount_per_device_cad,device_allowance,reserved_devices,used_devices,status,payment_method,payment_reference,created_at,activated_at,payment_verified_at")
+      .select("id,agent_user_id,fee_cad,discount_per_device_cad,device_allowance,reserved_devices,used_devices,status,payment_method,payment_reference,created_at,activated_at,payment_verified_at,payment_destination,payment_amount,payment_currency,payment_network,instructions_issued_at,quote_expires_at")
       .order("created_at",{ascending:false}).limit(150);
     if(error)return reply({error:"Cannot load packages"},503);
     return reply({ok:true,purchases:data});
+  }
+  if(action==="owner_issue_package_instructions"){
+    if(!owner)return reply({error:"Owner only"},403);
+    if(!uuid(input.purchase_id))return reply({error:"Invalid purchase"},400);
+    const {data:purchase,error:lookupError}=await db.from("mykioo_agent_package_purchases")
+      .select("id,fee_cad,status,payment_method").eq("id",input.purchase_id).maybeSingle();
+    if(lookupError||!purchase||purchase.status!=="awaiting_payment")
+      return reply({error:"Package cannot be quoted in this state"},409);
+    const {data:settings,error:settingsError}=await db.from("mykioo_billing_settings")
+      .select("interac_destination,zelle_destination").eq("id",1).maybeSingle();
+    if(settingsError)return reply({error:"Unable to load MYKIOO payment settings"},503);
+    const method=String(purchase.payment_method||"");
+    let destination="",currency="",network="",amountDue=0;
+    if(method==="interac"){
+      destination=String(settings?.interac_destination||"").trim();
+      currency="CAD";amountDue=Number(purchase.fee_cad);
+    }else if(method==="zelle"){
+      destination=String(settings?.zelle_destination||"").trim();
+      currency="USD";amountDue=Number(input.amount_due);
+    }else if(method==="btc"||method==="shib"){
+      destination=String(input.destination||"").trim();
+      currency=method==="btc"?"BTC":"SHIB";
+      network=method==="btc"?"Bitcoin Mainnet":"Ethereum ERC-20";
+      amountDue=Number(input.amount_due);
+      if(method==="btc"&&!/^(bc1[a-z0-9]{20,90}|[13][a-km-zA-HJ-NP-Z1-9]{24,35})$/.test(destination))
+        return reply({error:"Valid Bitcoin mainnet address required"},400);
+      if(method==="shib"&&!/^0x[a-fA-F0-9]{40}$/.test(destination))
+        return reply({error:"Valid Ethereum ERC-20 receiving address required"},400);
+    }else return reply({error:"Unsupported payment method"},400);
+    if(!destination||destination.length>255)return reply({error:"Configure the MYKIOO payment destination first"},409);
+    if(!Number.isFinite(amountDue)||amountDue<=0||amountDue>1e9)
+      return reply({error:"A valid owner-confirmed payment amount is required"},400);
+    if(currency==="CAD"&&amountDue!==Number(purchase.fee_cad))
+      return reply({error:"CAD package amount must equal package fee"},400);
+    if(["BTC","SHIB"].includes(currency)&&amountDue<=0)return reply({error:"Invalid crypto quote"},400);
+    const now=new Date(),expires=["BTC","SHIB"].includes(currency)?new Date(now.getTime()+24*60*60*1000).toISOString():null;
+    const {data:issued,error}=await db.from("mykioo_agent_package_purchases")
+      .update({payment_destination:destination,payment_currency:currency,payment_amount:amountDue,payment_network:network||null,
+       instructions_issued_at:now.toISOString(),quote_expires_at:expires,updated_at:now.toISOString()})
+      .eq("id",purchase.id).eq("status","awaiting_payment")
+      .select("id,status,payment_currency,payment_amount,instructions_issued_at,quote_expires_at").maybeSingle();
+    if(error||!issued)return reply({error:"Instructions could not be issued"},409);
+    return reply({ok:true,instructions:issued});
   }
   if(action==="owner_activate_agent_package"){
     if(!owner)return reply({error:"Owner only"},403);
