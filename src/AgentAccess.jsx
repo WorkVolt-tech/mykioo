@@ -44,7 +44,7 @@ export function useAgentAccess(userId){
 
 export function AgentDashboard({user,language='en',logout,agent}){
   const [prepaid,setPrepaid]=useState([]);
-  useEffect(()=>{if(agent?.access_type!=='paid')return;agentAction('agent_package_list').then(r=>setPrepaid(r.purchases||[])).catch(()=>{});},[user.id,agent?.access_type]);
+  // Prepaid credits are refreshed with orders, so each reservation updates the quote.
   const activePrepaid=prepaid.find(p=>p.status==='active'&&p.device_allowance-p.used_devices-p.reserved_devices>0);
   const discountCad=agent?.access_type==='paid'?Number(activePrepaid?.discount_per_device_cad||0):Number(agent?.discount_cad??5);
   const creditsLeft=activePrepaid?activePrepaid.device_allowance-activePrepaid.used_devices-activePrepaid.reserved_devices:0;
@@ -69,7 +69,12 @@ export function AgentDashboard({user,language='en',logout,agent}){
     try{
       const result=await agentAction('agent_list');
       setRows(result.customers||[]);setRenewals(result.renewals||[]);
-      setOrders(result.orders||[]);setInvites(result.invites||[]);setServices(result.services||[]);setError('');
+      setOrders(result.orders||[]);setInvites(result.invites||[]);setServices(result.services||[]);
+      if(agent?.access_type==='paid'){
+        const packages=await agentAction('agent_package_list');
+        setPrepaid(packages.purchases||[]);
+      }else setPrepaid([]);
+      setError('');
     }catch(e){setError(e.message||'Unable to load your customers');}
     finally{setLoading(false);}
   }
@@ -92,7 +97,7 @@ export function AgentDashboard({user,language='en',logout,agent}){
       await refresh();
     }catch(e){setError(e.message);}finally{setSaving(false);}
   }
-  useEffect(()=>{refresh();},[user.id]);
+  useEffect(()=>{refresh();},[user.id,agent?.access_type]);
   const t=(en,fr)=>tr(language,en,fr);
   const packageBase=priceCAD(days,devices);
   const neededCredits=devices*(days===730?2:1);
