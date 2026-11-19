@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {mykiooConfirm} from './MykiooDialog.jsx';
 import {supabase} from './supabase';
 import SubscriptionDirectory from './SubscriptionDirectory';
 import SubscriptionEmailStatus from './SubscriptionEmailStatus';
@@ -54,7 +55,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
 }
  async function resendLoginDetails(subscription){
   if(!subscription?.id||subscription.status!=='active'||!subscription.has_password||!subscription.service_username||saving||resendingId)return;
-  if(!window.confirm(tr('Resend this service username, password and server URL to the member’s registered email?','Renvoyer l’identifiant, le mot de passe et l’adresse du serveur à l’adresse courriel enregistrée du membre ?')))return;
+  if(!await mykiooConfirm(tr('Resend this service username, password and server URL to the member’s registered email?','Renvoyer l’identifiant, le mot de passe et l’adresse du serveur à l’adresse courriel enregistrée du membre ?')))return;
   setResendingId(subscription.id);setResendFeedback(null);setError('');setNotice('');
   try{
    const {data:{session},error:authError}=await supabase.auth.getSession();
@@ -96,7 +97,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
  }
  async function markActivated(r){
   if(saving||r.service_activated_at||!['pending','in_review'].includes(r.status))return;
-  if(!window.confirm(tr(
+  if(!await mykiooConfirm(tr(
    'Confirm this service was ALREADY activated outside MYKIOO? This records an irreversible activation event and denies any pending cancellation request. It does not finish entering the subscription details. Continue?',
    'Confirmez-vous que ce service a DÉJÀ été activé en dehors de MYKIOO ? Cette action enregistre l’activation de façon irréversible et refuse toute demande d’annulation en attente. Elle ne termine pas la saisie des détails de l’abonnement. Continuer ?'
   )))return;
@@ -142,7 +143,7 @@ export default function SubscriptionManager({members=[],subscriptions=[],request
  async function save(e){
   e.preventDefault();if(saving)return;
   if(form.request_id&&pendingCancellationIds.has(form.request_id)&&
-    !window.confirm(tr('A member has requested cancellation approval. Completing this subscription will deny the cancellation and activate or extend service. Statutory refund rights remain unaffected. Continue?','Un membre a demandé une approbation d’annulation. Finaliser cet abonnement refusera l’annulation et activera ou prolongera le service. Les droits légaux au remboursement restent applicables. Continuer ?')))return;
+    !await mykiooConfirm(tr('A member has requested cancellation approval. Completing this subscription will deny the cancellation and activate or extend service. Statutory refund rights remain unaffected. Continue?','Un membre a demandé une approbation d’annulation. Finaliser cet abonnement refusera l’annulation et activera ou prolongera le service. Les droits légaux au remboursement restent applicables. Continuer ?')))return;
   setSaving(true);setError('');setNotice('');
   let invitationSent=false;
   try{
