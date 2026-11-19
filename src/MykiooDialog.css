@@ -1,0 +1,14 @@
+.mykioo-confirm-backdrop{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(2,2,7,.78);backdrop-filter:blur(5px)}
+.mykioo-confirm-dialog{position:relative;width:min(100%,440px);padding:30px;background:linear-gradient(155deg,#17121f,#0c0a13 75%);border:1px solid rgba(209,177,105,.45);box-shadow:0 22px 80px rgba(0,0,0,.68);border-radius:19px;color:#f4ecdc;text-align:left}
+.mykioo-confirm-icon{width:42px;height:42px;display:grid;place-items:center;color:#e5c58a;background:rgba(198,155,79,.10);border:1px solid rgba(218,181,103,.3);border-radius:12px;margin-bottom:17px}
+.mykioo-confirm-icon.danger{color:#f6a09f;background:rgba(185,61,67,.13);border-color:rgba(217,91,96,.3)}
+.mykioo-confirm-dialog h2{font-size:1.3rem;line-height:1.3;color:#f4e4b9;margin:0 34px 10px 0}
+.mykioo-confirm-dialog p{font-size:.96rem;line-height:1.6;color:#dfd7e4;margin:0 0 24px;white-space:pre-line;overflow-wrap:anywhere}
+.mykioo-confirm-close{position:absolute;right:16px;top:16px;border:0;background:transparent;color:#b6aebc;cursor:pointer;padding:6px}
+.mykioo-confirm-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.mykioo-confirm-actions button{border-radius:10px;padding:11px 18px;min-height:42px;font:inherit;font-weight:650;cursor:pointer}
+.mykioo-confirm-cancel{color:#e2d8e6;background:#24202c;border:1px solid #52485d}
+.mykioo-confirm-accept{color:#1a1420;background:#d9bd7f;border:1px solid #d9bd7f}
+.mykioo-confirm-accept.danger{background:#b9434b;border-color:#d36a70;color:#fff}
+.mykioo-confirm-dialog button:focus-visible{outline:3px solid #a88ce5;outline-offset:3px}
+@media(max-width:480px){.mykioo-confirm-dialog{padding:23px}.mykioo-confirm-actions button{flex:1}}
