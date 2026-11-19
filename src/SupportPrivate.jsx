@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useState} from 'react';
+import {mykiooConfirm} from './MykiooDialog.jsx';
 import {Clock3,NotebookPen,CheckCircle2,AlertCircle,CalendarClock,ArrowUpRight} from 'lucide-react';
 import {supabase} from './supabase';
 
@@ -130,7 +131,7 @@ export function OwnerPrivateTicketPanel({ticket,language='en',followup=null,onCh
   if(ok){setBody('');setEditing(null)}
  }
  async function removeNote(note){
-  if(!window.confirm(tr('Delete this private note?','Supprimer cette note privée ?')))return;
+  if(!await mykiooConfirm(tr('Delete this private note?','Supprimer cette note privée ?')))return;
   await act({action:'delete_note',note_id:note.id},tr('Note deleted.','Note supprimée.'));
   if(editing?.id===note.id){setEditing(null);setBody('')}
  }
