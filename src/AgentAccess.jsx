@@ -102,8 +102,10 @@ export function AgentDashboard({user,language='en',logout,agent}){
         device_count:Number(devices),customer_price_cad:Number(retail),payment_method:method,
         ...(agent?.access_type==='paid'?{package_fee_cad:Number(selectedTier)}:{})
       });
-      setNotice(t('Order recorded. You owe MYKIOO $','Commande enregistrée. Vous devez à MYKIOO ')+result.order.wholesale_price_cad+
-        t(' CAD. The owner must verify payment and complete the service.',' $ CA. Le propriétaire doit vérifier le paiement et compléter le service.'));
+      const due=Number(result.order.wholesale_price_cad);
+       setNotice(due===0
+         ?t('Order received. Your verified prepaid reseller credits cover the activation charge. No additional payment is required. MYKIOO must still activate the customer service.','Commande reçue. Vos crédits revendeur prépayés vérifiés couvrent les frais d’activation. Aucun paiement supplémentaire n’est requis. MYKIOO doit toujours activer le service client.')
+         :t('Order recorded. You owe MYKIOO $','Commande enregistrée. Vous devez à MYKIOO ')+due.toFixed(2)+t(' CAD. The owner must verify payment and complete the service.',' $ CA. Le propriétaire doit vérifier le paiement et compléter le service.'));
       await refresh();
     }catch(e){setError(e.message);}finally{setSaving(false);}
   }
@@ -151,7 +153,7 @@ export function AgentDashboard({user,language='en',logout,agent}){
         </button>
       </section>
     </div>}
-    <p className="mykioo-agent-summary">{t('Your customer selling price is your decision. The owner verifies your payment before completing the service.','Vous fixez librement votre prix de vente. Le propriétaire vérifie votre paiement avant d’activer le service.')}</p>
+    <p className="mykioo-agent-summary">{t('Choose your customer selling price. MYKIOO verifies applicable payments and activates each service manually. No additional payment is due on prepaid reseller orders.','Choisissez votre prix de vente. MYKIOO vérifie les paiements applicables et active chaque service manuellement. Aucun paiement supplémentaire pour les commandes revendeur prépayées.')}</p>
     {error&&<p role="alert" className="mykioo-profile-error">{error}</p>}
     <div className="mykioo-agent-stats">
       <article className="mykioo-agent-stat"><strong>{rows.length}</strong><small>{t('Assigned customers','Clients attribués')}</small></article>
