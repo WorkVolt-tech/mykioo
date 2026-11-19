@@ -1264,3 +1264,48 @@
 .mykioo-vega-switch:hover{filter:brightness(1.08)}
 .mykioo-vega-switch:focus-visible{outline:2px solid #f5d6a0;outline-offset:3px}
 @media(max-width:600px){.mykioo-vega-switch{width:100%}}
+
+
+/* MYKIOO Agent packages — consistent midnight/champagne-gold workspace */
+.mykioo-agent-packages{min-width:0;max-width:100%;margin-bottom:24px;padding:clamp(16px,2.4vw,26px);background:linear-gradient(145deg,rgba(35,30,44,.97),rgba(16,16,26,.98));border:1px solid rgba(190,156,100,.32);border-radius:18px;box-shadow:0 15px 40px rgba(0,0,0,.12)}
+.mykioo-agent-packages *{box-sizing:border-box}
+.mykioo-agent-packages>h2{margin:0 0 12px;color:#f1d9ac;font-size:clamp(19px,2vw,25px);letter-spacing:-.015em}
+.mykioo-agent-packages p{line-height:1.6}
+.mykioo-agent-purchase-controls{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin:19px 0 17px;padding:15px 18px;background:rgba(209,173,118,.07);border:1px solid rgba(201,166,112,.27);border-radius:12px}
+.mykioo-agent-purchase-controls strong{color:#f1d9ac;font-size:14px}
+.mykioo-agent-purchase-controls p{color:#c9c1ce;font-size:12px;margin:4px 0 0}
+.mykioo-agent-packages select,.mykioo-agent-packages input{background:#211e2b!important;color:#f7eae0!important;border:1px solid #977e60!important;border-radius:9px!important;min-height:42px!important;padding:9px 12px!important;font-size:13px!important;max-width:100%;width:auto;box-shadow:none!important}
+.mykioo-agent-packages select:focus-visible,.mykioo-agent-packages input:focus-visible,.mykioo-agent-packages button:focus-visible{outline:2px solid #f0cc8c!important;outline-offset:3px}
+.mykioo-agent-packages select option{background:#211e2b;color:#f7eae0}
+.mykioo-agent-payment-method{display:flex;align-items:center;gap:10px;color:#e6d2ad;font-size:12px;font-weight:700}
+.mykioo-agent-tier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:14px;margin-top:14px;align-items:stretch}
+.mykioo-agent-tier{min-width:0;display:flex;flex-direction:column;gap:11px;padding:18px!important;border:1px solid rgba(195,164,109,.42)!important;border-radius:14px!important;background:linear-gradient(150deg,#26212e,#171722);transition:border-color .2s ease,transform .2s ease,box-shadow .2s ease}
+.mykioo-agent-tier:hover{border-color:#e0bc7c!important;transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.17)}
+.mykioo-agent-tier-reseller{background:linear-gradient(135deg,#393020,#221d27);border-color:#d5ae6b!important}
+.mykioo-agent-tier-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.mykioo-agent-tier-heading>strong{font-size:clamp(18px,1.5vw,23px)!important;font-weight:850;letter-spacing:-.02em;color:#f7e7c5!important;line-height:1.2}
+.mykioo-agent-tier-chip{color:#2a2020;background:#e4c28b;border-radius:40px;padding:5px 9px;font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.06em}
+.mykioo-agent-tier-discount{min-height:50px;display:block;margin:0!important;color:#e5d9d0!important;font-size:13px;line-height:1.48!important}
+.mykioo-agent-tier-discount strong{display:inline-block;font-size:15px;color:#e5bd7b}
+.mykioo-agent-tier-credits{display:flex;align-items:center;gap:7px;color:#c6bac7;font-size:12px;margin:0 0 3px}
+.mykioo-agent-tier-credits:before{content:"✦";font-size:12px;color:#e6be7c}
+.mykioo-agent-packages .mykioo-agent-tier-action{display:flex!important;align-items:center;justify-content:center;width:100%!important;min-width:0!important;min-height:43px;margin:auto 0 0!important;padding:10px 12px!important;background:#d9ba82!important;border:1px solid #e2c792!important;border-radius:9px!important;color:#221a25!important;font:800 12px/1.35 inherit!important;letter-spacing:.01em;text-align:center;white-space:normal;cursor:pointer}
+.mykioo-agent-packages .mykioo-agent-tier-action:hover:not(:disabled){background:#f0d39b!important}
+.mykioo-agent-packages button:disabled{opacity:.48;cursor:not-allowed}
+.mykioo-agent-price-preview{margin:20px 0 15px;padding:clamp(16px,2vw,23px)!important;border:1px solid rgba(197,164,107,.38)!important;border-radius:14px!important;background:linear-gradient(135deg,rgba(215,174,106,.07),rgba(27,25,37,.58))}
+.mykioo-agent-price-preview h3{color:#f3d7a7;font-size:18px;margin:0 0 8px}
+.mykioo-agent-price-preview>p{font-size:12px;color:#cac2cd;margin:7px 0 13px}
+.mykioo-agent-preview-selector{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:#ead7bb;font-size:13px;font-weight:750;margin:12px 0}
+.mykioo-agent-preview-selector select{min-width:205px}
+.mykioo-agent-table-scroll{overflow-x:auto;max-width:100%;border:1px solid #51465a;border-radius:11px;margin:14px 0 12px}
+.mykioo-agent-price-table{border-collapse:collapse!important;width:100%!important;min-width:490px;margin:0!important;font-size:13px!important;color:#f6f0ec;text-align:left;table-layout:fixed}
+.mykioo-agent-price-table thead{background:#30283a}
+.mykioo-agent-price-table th,.mykioo-agent-price-table td{padding:13px 15px!important;border:0!important;border-bottom:1px solid rgba(187,166,134,.16)!important;text-align:left;font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1.45}
+.mykioo-agent-price-table thead th{color:#e8c995!important;font-size:11px;letter-spacing:.035em;text-transform:uppercase;font-weight:800}
+.mykioo-agent-price-table tbody th{color:#e6d4b8!important;font-weight:750}
+.mykioo-agent-price-table tbody tr:nth-child(even){background:rgba(230,212,182,.035)}
+.mykioo-agent-price-table tbody tr:hover{background:rgba(232,195,131,.085)}
+.mykioo-agent-price-table tbody td:nth-child(2),.mykioo-agent-price-table tbody td:nth-child(3){color:#f7e6c6;font-weight:750}
+.mykioo-agent-packages>p[role=status]{color:#cbbdd3;font-size:12px}
+@media(max-width:650px){.mykioo-agent-packages{padding:14px;border-radius:12px}.mykioo-agent-purchase-controls{align-items:stretch;flex-direction:column;padding:13px}.mykioo-agent-payment-method{justify-content:space-between}.mykioo-agent-payment-method select{flex:1;min-width:0}.mykioo-agent-tier-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mykioo-agent-tier{padding:13px!important}.mykioo-agent-tier-discount{min-height:59px}.mykioo-agent-tier-heading>strong{font-size:17px!important}.mykioo-agent-preview-selector{display:grid;gap:7px}.mykioo-agent-preview-selector select{width:100%;min-width:0}.mykioo-agent-price-table th,.mykioo-agent-price-table td{padding:10px!important}}
+@media(max-width:390px){.mykioo-agent-tier-grid{grid-template-columns:1fr}.mykioo-agent-tier-discount{min-height:0}}
