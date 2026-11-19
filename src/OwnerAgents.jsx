@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {supabase} from './supabase';
 import './OwnerAgents.css';
+import {OwnerAgentPackages} from './AgentPackages.jsx';
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-agents';
 async function call(action,details={}){
  const {data:{session}}=await supabase.auth.getSession();
@@ -133,6 +134,7 @@ export default function OwnerAgents({language='en'}){
       <button type="submit" disabled={busy||!backendReady||!customerId||!customerAgentId}>{tr('Assign customer','Attribuer le client')}</button>
      </form>
     </div>
+    <OwnerAgentPackages language={language}/>
     <h3>{tr('Agent directory','Liste des agents')} ({(data.agents||[]).filter(a=>a.status!=='removed').length})</h3>
     <ul>{(data.agents||[]).filter(a=>a.status!=='removed').map(a=><li key={a.agent_user_id} className="mykioo-agent-directory-item">
       <div><strong>{memberName(a.agent_user_id)}</strong> · {a.status} · {a.access_type} · ${a.discount_cad} CAD {tr('discount','de remise')} · {tr('Access fee','Frais d’accès')}: ${a.access_fee_cad} CAD · {tr('Customers','Clients')}: {(data.customers||[]).filter(c=>c.agent_user_id===a.agent_user_id).length}</div>
