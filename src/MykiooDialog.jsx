@@ -1,4 +1,4 @@
-import React,{useEffect,useRef,useState} from 'react';
+import React,{useEffect,useRef} from 'react';
 import {createRoot} from 'react-dom/client';
 import {AlertTriangle,X} from 'lucide-react';
 import './MykiooDialog.css';
@@ -7,9 +7,13 @@ import './MykiooDialog.css';
  * Promise-based branded confirmation, for event handlers that previously used
  * window.confirm. Does not modify window globals or bypass the owner's choice.
  */
-export function mykiooConfirm(message,{title='Please confirm',confirmText='Confirm',cancelText='Cancel',danger=false}={}){
+export function mykiooConfirm(message,{title,confirmText,cancelText,danger=false}={}){
  return new Promise(resolve=>{
   if(typeof document==='undefined'){resolve(false);return;}
+  const fr=document.documentElement.lang?.toLowerCase().startsWith('fr');
+  title=title||(fr?'Veuillez confirmer':'Please confirm');
+  confirmText=confirmText||(fr?'Confirmer':'Confirm');
+  cancelText=cancelText||(fr?'Annuler':'Cancel');
   const mount=document.createElement('div');
   document.body.appendChild(mount);
   const root=createRoot(mount);
