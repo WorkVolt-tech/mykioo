@@ -53,12 +53,13 @@ export function AgentPackages({language='en',onChange}){
      <p>{fmt(t.discount_per_device_cad)} {tr('off per device','de remise par appareil')}</p>
      <small>{tr('10 device-year credits','10 crédits appareil-année')}</small>
      <button style={{display:'block',marginTop:12}} type="button"
-      disabled={busy||!account||!t.purchase_enabled||pending.length>0}
+      disabled={busy||!approved||!t.purchase_enabled||pending.length>0||active.some(p=>p.status==='active')}
       onClick={()=>send('agent_purchase_package',{fee_cad:Number(t.fee_cad),payment_method:method})}>
       {t.purchase_enabled?tr('Request this package','Demander ce forfait'):tr('Coming soon','Bientôt disponible')}
      </button>
     </article>)}
    </div>
+   {active.some(p=>p.status==='active')&&<p role="status">{tr('Your current ten-credit package must be fully used before you can purchase another.','Vous devez utiliser les 10 crédits de votre forfait actuel avant d’en acheter un autre.')}</p>}
    <label style={{display:'block',marginTop:14}}>{tr('Payment method for a package','Mode de paiement du forfait')} <select value={method} onChange={e=>setMethod(e.target.value)}><option value="interac">Interac</option><option value="zelle">Zelle</option><option value="btc">BTC</option><option value="shib">SHIB</option></select></label>
    {pending.map(p=><div key={p.id} style={{border:'1px solid #777',borderRadius:12,padding:12,marginTop:12}}>
     <strong>{fmt(p.fee_cad)} · {p.status}</strong>
