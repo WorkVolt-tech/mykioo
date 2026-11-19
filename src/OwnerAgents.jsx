@@ -22,6 +22,18 @@ export default function OwnerAgents({language='en'}){
  const [agentId,setAgentId]=useState(''),[status,setStatus]=useState('active'),[type,setType]=useState('free'),[fee,setFee]=useState('0'),[period,setPeriod]=useState('none'),[discount,setDiscount]=useState('5');
  const [customerId,setCustomerId]=useState(''),[customerAgentId,setCustomerAgentId]=useState('');
  const [completionRequests,setCompletionRequests]=useState({});
+ const [completedOptions,setCompletedOptions]=useState({});
+ const [lookingUp,setLookingUp]=useState(null);
+ async function findCompletedAgentServices(orderId){
+   setLookingUp(orderId);setError('');
+   try{
+     const result=await call('owner_find_completed_agent_subscriptions',{order_id:orderId});
+     const matches=result.requests||[];
+     setCompletedOptions(previous=>({...previous,[orderId]:matches}));
+     setCompletionRequests(previous=>({...previous,[orderId]:matches.length===1?matches[0].id:''}));
+   }catch(e){setError(e.message)}
+   finally{setLookingUp(null)}
+ }
  async function refresh(){
    setBusy(true);setError('');setMemberLoadError('');
    // Approved members are already readable by the existing owner dashboard.
@@ -154,11 +166,35 @@ export default function OwnerAgents({language='en'}){
       <strong>{memberName(o.agent_user_id)}</strong> · {memberName(o.customer_user_id)} · {o.kind} · {o.status}
       <div>{tr('MYKIOO due','Dû à MYKIOO')}: <strong>${o.wholesale_price_cad} CAD</strong> / {tr('Agent retail','Prix client')}: ${o.customer_price_cad} CAD</div>
       {o.status==='pending_payment'&&<button type="button" className="outline-button" onClick={()=>verify(o.id)} disabled={busy||!backendReady}>{tr('Confirm received payment','Confirmer le paiement reçu')}</button>}
-      {o.status==='owner_review'&&<div style={{padding:10,border:'1px solid #777',marginTop:8,borderRadius:8}}>
-       <label>{tr('Completed subscription request ID (required to consume credits)','ID de la demande d’abonnement terminée (requis pour utiliser les crédits)')}</label>
-       <input type="text" placeholder="UUID" value={completionRequests[o.id]||''} onChange={e=>setCompletionRequests(v=>({...v,[o.id]:e.target.value}))}/>
-       <button type="button" className="outline-button" disabled={busy||!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(completionRequests[o.id]||'')}
-        onClick={async()=>{if(await mykiooConfirm(tr('I confirm the subscription request is completed and activated. Consume prepaid credits?','Je confirme que l’abonnement est activé. Consommer les crédits ?')))call('owner_settle_agent_order',{order_id:o.id,subscription_request_id:completionRequests[o.id]}).then(()=>refresh()).catch(e=>setError(e.message))}}>
+      {o.status==='owner_review'&&<div style={{padding:12,border:'1px solid #777',marginTop:8,borderRadius:10}}>
+       <p>{tr('Select a completed subscription for this customer. Only matching customer, duration, device count and order type are eligible.','Sélectionnez un abonnement terminé pour ce client. Seuls le client, la durée, le nombre d’appareils et le type de commande correspondants sont admissibles.')}</p>
+       <button type="button" className="outline-button" disabled={busy||lookingUp===o.id}
+        onClick={()=>findCompletedAgentServices(o.id)}>
+        {lookingUp===o.id?tr('Searching…','Recherche…'):tr('Find matching completed subscriptions','Trouver les abonnements terminés correspondants')}
+       </button>
+       {Array.isArray(completedOptions[o.id])&&<>
+        <label>{tr('Completed subscription','Abonnement terminé')}
+         <select value={completionRequests[o.id]||''}
+          onChange={e=>setCompletionRequests(previous=>({...previous,[o.id]:e.target.value}))}>
+          <option value="">{tr('Choose a completed subscription','Choisir un abonnement terminé')}</option>
+          {completedOptions[o.id].map(req=><option key={req.id} value={req.id}>
+           {req.service_name||'MYKIOO TV'} · {req.contract_days===730?'24':'12'} {tr('months','mois')} · {req.device_count} {tr('devices','appareils')} · {new Date(req.completed_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA')} · {req.id.slice(0,8)}
+          </option>)}
+         </select>
+        </label>
+        {completedOptions[o.id].length===0&&<p role="status">{tr('No eligible completed subscriptions found. Activate the customer service through the usual owner workflow, then search again.','Aucun abonnement terminé admissible. Activez le service à partir du processus habituel, puis relancez la recherche.')}</p>}
+       </>}
+       <button type="button" className="outline-button" disabled={busy||!completionRequests[o.id]}
+        onClick={async()=>{
+         const requestId=completionRequests[o.id];
+         if(!requestId||!await mykiooConfirm(tr('Confirm this subscription is activated and consume its reserved prepaid credits?','Confirmer que cet abonnement est activé et consommer les crédits prépayés réservés ?')))return;
+         setBusy(true);setError('');setNotice('');
+         try{await call('owner_settle_agent_order',{order_id:o.id,subscription_request_id:requestId});
+          setNotice(tr('Prepaid agent credits consumed for the completed subscription.','Crédits agent prépayés consommés pour l’abonnement terminé.'));
+          setCompletedOptions(previous=>({...previous,[o.id]:undefined}));
+          await refresh();
+         }catch(e){setError(e.message)}finally{setBusy(false)}
+        }}>
         {tr('Confirm activated service & consume credits','Confirmer le service activé et utiliser les crédits')}
        </button>
       </div>}
