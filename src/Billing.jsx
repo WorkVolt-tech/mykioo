@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useState} from 'react';
+import {mykiooConfirm} from './MykiooDialog.jsx';
 import {QRCodeSVG} from 'qrcode.react';
 import {supabase} from './supabase';
 import {useRememberedState} from './useRememberedState';
@@ -163,8 +164,8 @@ function InvoiceCard({invoice,language,onAction,busy,owner=false,memberName}){
      {tr('I personally verified the correct amount and recipient in my bank or Coinbase account.','J’ai personnellement vérifié le montant et le destinataire dans ma banque ou mon compte Coinbase.')}</label>
     <button type="submit" className="mykioo-billing-primary" disabled={!verified||busy}>{tr('Mark verified & paid','Marquer comme vérifié et payé')}</button>
    </form>}
-  {owner&&invoice.state==='payment_submitted'&&<button type="button" className="mykioo-billing-outline" disabled={busy} onClick={()=>{if(window.confirm(tr('Return this claim for correction? No refund or charge occurs.','Retourner cette déclaration pour correction ? Aucun remboursement ni prélèvement.')))onAction({action:'reject_submission',invoice_id:invoice.id})}}>{tr('Return claim for correction','Retourner la déclaration pour correction')}</button>}
-  {owner&&!paidStatus(invoice)&&invoice.state!=='cancelled'&&<button type="button" className="mykioo-billing-outline" disabled={busy} onClick={()=>{if(window.confirm(tr('Cancel this unpaid invoice? This does not cancel the subscription request.','Annuler cette facture impayée ? Cela n’annule pas la demande d’abonnement.')))onAction({action:'cancel_invoice',invoice_id:invoice.id})}}>{tr('Cancel unpaid invoice','Annuler la facture impayée')}</button>}
+  {owner&&invoice.state==='payment_submitted'&&<button type="button" className="mykioo-billing-outline" disabled={busy} onClick={async()=>{if(await mykiooConfirm(tr('Return this claim for correction? No refund or charge occurs.','Retourner cette déclaration pour correction ? Aucun remboursement ni prélèvement.')))onAction({action:'reject_submission',invoice_id:invoice.id})}}>{tr('Return claim for correction','Retourner la déclaration pour correction')}</button>}
+  {owner&&!paidStatus(invoice)&&invoice.state!=='cancelled'&&<button type="button" className="mykioo-billing-outline" disabled={busy} onClick={async()=>{if(await mykiooConfirm(tr('Cancel this unpaid invoice? This does not cancel the subscription request.','Annuler cette facture impayée ? Cela n’annule pas la demande d’abonnement.')))onAction({action:'cancel_invoice',invoice_id:invoice.id})}}>{tr('Cancel unpaid invoice','Annuler la facture impayée')}</button>}
   {localNotice&&<p role="status" className="mykioo-billing-muted">{localNotice}</p>}
  </article>;
 }
