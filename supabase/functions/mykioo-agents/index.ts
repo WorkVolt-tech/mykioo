@@ -99,14 +99,8 @@ Deno.serve(async request=>{
     if(!purchase||purchase.status!=="payment_submitted")return reply({error:"Package not awaiting payment confirmation"},409);
     const target=await approvedMember(purchase.agent_user_id);
     if(!target)return reply({error:"Approved member required"},409);
-    const now=new Date().toISOString();
-    const {data:changed,error}=await db.from("mykioo_agent_package_purchases")
-      .update({status:"active",payment_verified_at:now,payment_verified_by:user.id,activated_at:now,updated_at:now})
-      .eq("id",purchase.id).eq("status","payment_submitted")
-      .select("id,status").maybeSingle();
-    if(error||!changed)return reply({error:"Package activation was not completed"},409);
-    await db.from("mykioo_agent_accounts").update({status:"active",access_type:"paid",discount_cad:0,access_fee_cad:0,access_fee_period:"none",updated_at:now})
-      .eq("agent_user_id",purchase.agent_user_id);
+    const {data:changed,error}=await db.rpc("mykioo_agent_activate_verified_package",{p_purchase:purchase.id,p_verifier:user.id});
+    if(error)return reply({error:error.message},409);
     return reply({ok:true,purchase:changed});
   }
   if(action==="owner_settle_agent_order"){
