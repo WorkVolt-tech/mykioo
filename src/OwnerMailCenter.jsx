@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useMemo,useState} from 'react';
+import {mykiooConfirm} from './MykiooDialog.jsx';
 import {Inbox,Send,FilePenLine,Archive,RefreshCw,Mail,Search,Paperclip,Reply,ArrowLeft,Check,Trash2,Folder,Link2,Save,Plus,AlertCircle,Download,MailOpen,Star} from 'lucide-react';
 import {supabase} from './supabase';
 import './OwnerMailCenter.css';
@@ -85,7 +86,7 @@ export default function OwnerMailCenter({language='en',members=[]}){
  }
  async function resetAnnouncementRecipients(){
   if(!announcement||resettingAnnouncement||sendingAnnouncement||editingAnnouncement)return;
-  if(!window.confirm(tr(
+  if(!await mykiooConfirm(tr(
    'Reset the recipients for this announcement? Previously emailed members will become eligible again. Prior delivery records remain, and NO emails are sent now.',
    'Réinitialiser les destinataires de cette annonce ? Les membres déjà contactés pourront la recevoir de nouveau. L’historique reste intact et AUCUN courriel ne sera envoyé maintenant.'
   )))return;
@@ -100,7 +101,7 @@ export default function OwnerMailCenter({language='en',members=[]}){
  }
  async function sendAnnouncement(){
   if(!announcement?.remaining||sendingAnnouncement||editingAnnouncement)return;
-  if(!window.confirm(tr('Send this announcement to '+announcement.remaining+' remaining approved members? This cannot be undone.',
+  if(!await mykiooConfirm(tr('Send this announcement to '+announcement.remaining+' remaining approved members? This cannot be undone.',
    'Envoyer cette annonce aux '+announcement.remaining+' membres approuvés restants ? Cette action est irréversible.')))return;
   setSendingAnnouncement(true);setError('');setNotice('');
   try{
@@ -150,7 +151,7 @@ export default function OwnerMailCenter({language='en',members=[]}){
  }
  async function move(destination){
   if(!selected)return;
-  if(destination==='archive'&&!window.confirm(tr('Archive this message?','Archiver ce message?')))return;
+  if(destination==='archive'&&!await mykiooConfirm(tr('Archive this message?','Archiver ce message?')))return;
   setBusy(true);setError('');
   try{await api({action:'move',folder,uid:selected.uid,destination});setMessage(null);setSelected(null);setNotice(destination==='archive'?tr('Message archived.','Message archivé.'):tr('Message moved.','Message déplacé.'));await refreshFolders();await load(folder,search)}
   catch(e){setError(e.message)}finally{setBusy(false)}
