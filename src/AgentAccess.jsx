@@ -111,7 +111,7 @@ export function AgentDashboard({user,language='en',logout,agent}){
   const t=(en,fr)=>tr(language,en,fr);
   const packageBase=priceCAD(days,devices);
   const neededCredits=devices*(days===730?2:1);
-  const discountTotal=discountCad*devices;
+  const discountTotal=discountCad*(agent?.access_type==='paid'?neededCredits:devices);
   const prepaidBlocked=agent?.access_type==='paid'&&(!selectedPool||creditsLeft<neededCredits);
   const agentDue=packageBase===null?null:(Number(selectedPool?.fee)===400?0:Math.max(0,Math.round((packageBase-discountTotal)*100)/100));
   const appliedDiscount=packageBase===null?null:(Number(selectedPool?.fee)===400?Number(packageBase):Math.min(discountTotal,Number(packageBase)));
@@ -130,7 +130,7 @@ export function AgentDashboard({user,language='en',logout,agent}){
               <li>{t('See only the customers assigned to you and their service requests.','Voir uniquement vos clients attribués et leurs demandes de service.')}</li>
               <li>{t('Choose your own customer selling price and submit new subscriptions or renewals.','Fixer librement vos prix clients et soumettre des abonnements ou renouvellements.')}</li>
               <li>{t('Receive customer renewal requests in your dashboard. Email delivery may vary.','Recevoir les demandes de renouvellement dans votre espace. Les courriels peuvent être retardés.')}</li>
-              <li>{t('Pay MYKIOO the subscription price less the discount per device, provided your prepaid device-year credits cover the order.','Payer MYKIOO le prix de l’abonnement moins la remise par appareil, si vos crédits prépayés couvrent la commande.')}</li>
+              <li>{t('Pay MYKIOO the subscription price less your package discount per device-year, provided your prepaid credits cover the order. The $400 reseller has no extra activation charge.','Payer MYKIOO le prix de l’abonnement moins la remise par appareil-année, si vos crédits prépayés couvrent la commande. Le forfait revendeur de 400 $ ne comporte pas de frais d’activation supplémentaires.')}</li>
             </ul>
           </div>
           <div className="mykioo-welcome-panel">
@@ -156,7 +156,7 @@ export function AgentDashboard({user,language='en',logout,agent}){
     <div className="mykioo-agent-stats">
       <article className="mykioo-agent-stat"><strong>{rows.length}</strong><small>{t('Assigned customers','Clients attribués')}</small></article>
       <article className="mykioo-agent-stat"><strong>{renewals.filter(r=>r.status==='pending').length}</strong><small>{t('Pending renewal requests','Renouvellements en attente')}</small></article>
-      <article className="mykioo-agent-stat"><strong>${discountCad} CAD</strong><small>{t('Discount per device; 10 device-year credits per paid package','Remise par appareil; 10 crédits appareil-année par forfait payé')}</small></article>
+      <article className="mykioo-agent-stat"><strong>${discountCad} CAD</strong><small>{t('Discount per device-year; 10 credits per paid package','Remise par appareil-année; 10 crédits par forfait payé')}</small></article>
     </div>
     <section className="mykioo-agent-panel"><h2>{t('Customers','Clients')}</h2>
       {loading?<p>{t('Loading…','Chargement…')}</p>:rows.length===0?<p>{t('No customers assigned yet. Request an invitation below. The owner must approve and assign the customer before you can submit an order.','Aucun client attribué. Demandez une invitation ci-dessous. Le propriétaire doit approuver et attribuer le client avant toute commande.')}</p>:
@@ -168,13 +168,13 @@ export function AgentDashboard({user,language='en',logout,agent}){
       <button disabled={saving} type="submit">{t('Request invitation','Demander une invitation')}</button></form>
     </section>
     <section className="mykioo-agent-panel"><h2>{t('Order for an assigned customer','Commande pour un client attribué')}</h2>
-      <p>{Number(selectedPool?.fee)===400?t('Reseller package: no additional wholesale payment for eligible 12- or 24-month customer orders while prepaid credits remain.','Forfait revendeur : aucun paiement de gros supplémentaire pour les commandes de 12 ou 24 mois tant que des crédits prépayés sont disponibles.'):t('Your selling price is your choice. MYKIOO deducts '+discountCad+' CAD per device on eligible wholesale orders; coupons do not apply.','Vous choisissez votre prix de vente. MYKIOO déduit '+discountCad+' $ CA par appareil sur les commandes admissibles; les codes promo ne s’appliquent pas.')}</p>
+      <p>{Number(selectedPool?.fee)===400?t('Reseller package: no additional wholesale payment for eligible 12- or 24-month customer orders while prepaid credits remain.','Forfait revendeur : aucun paiement de gros supplémentaire pour les commandes de 12 ou 24 mois tant que des crédits prépayés sont disponibles.'):t('Your selling price is your choice. MYKIOO deducts '+discountCad+' CAD per device-year on eligible wholesale orders; coupons do not apply.','Vous choisissez votre prix de vente. MYKIOO déduit '+discountCad+' $ CA par appareil-année sur les commandes admissibles; les codes promo ne s’appliquent pas.')}</p>
       <form className="mykioo-agent-order-form" onSubmit={submitOrder}>
        {agent?.access_type==='paid'&&<label>{t('Apply discount from package tier','Appliquer la remise du forfait')}
          <select required value={selectedTier} onChange={e=>setSelectedTier(e.target.value)}>
           <option value="">{t('Choose the paid discount package','Choisir le forfait de remise payé')}</option>
           {eligibleTiers.map(tier=><option key={tier.fee} value={String(tier.fee)}>
-            {tier.fee} CAD · {tier.fee===400?t('Reseller · no extra wholesale payment','Revendeur · aucun paiement de gros supplémentaire'):(tier.discount+' CAD '+t('off per device','de remise par appareil'))} · {tier.credits} {t('credits available','crédits disponibles')} · {tier.packages} {t('packages','forfaits')}
+            {tier.fee} CAD · {tier.fee===400?t('Reseller · no extra wholesale payment','Revendeur · aucun paiement de gros supplémentaire'):(tier.discount+' CAD '+t('off per device-year','de remise par appareil-année'))} · {tier.credits} {t('credits available','crédits disponibles')} · {tier.packages} {t('packages','forfaits')}
           </option>)}
          </select>
        </label>}
