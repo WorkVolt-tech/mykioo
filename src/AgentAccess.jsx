@@ -161,7 +161,7 @@ export function AgentDashboard({user,language='en',logout,agent}){
        <label>{t('Devices','Appareils')}<select value={devices} onChange={e=>setDevices(Number(e.target.value))}>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n}</option>)}</select></label>
        <div className="mykioo-agent-quote" aria-live="polite">
         <div><span>{t('Package price','Prix du forfait')}</span><strong>{packageBase===null?'—':'$'+Number(packageBase).toFixed(2)+' CAD'}</strong></div>
-        <div><span>{t('Your discount','Votre remise')}</span><strong>{'- </div>
+         <div><span>{t('Your discount','Votre remise')}</span><strong>{'- $' + Number(discountTotal).toFixed(2) + ' CAD'}</strong></div>
         <div className="mykioo-agent-quote-total"><span>{t('You owe MYKIOO','Vous devez à MYKIOO')}</span><strong>{agentDue===null||agentDue<=0?'—':'$'+agentDue.toFixed(2)+' CAD'}</strong></div>
         {agentDue!==null&&agentDue<=0&&<p role="alert">{t('Discount must be less than the package price. Contact the owner.','La remise doit être inférieure au prix du forfait. Contactez le propriétaire.')}</p>}
        </div>
