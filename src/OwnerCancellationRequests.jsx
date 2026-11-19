@@ -1,4 +1,5 @@
 import React,{useState} from 'react';
+import {mykiooConfirm} from './MykiooDialog.jsx';
 import {AlertTriangle,CheckCircle2,ShieldCheck,XCircle} from 'lucide-react';
 import {supabase} from './supabase';
 
@@ -19,7 +20,7 @@ export default function OwnerCancellationRequests({requests=[],cancellations=[],
   const ask=decision==='approve'
    ?tr('Approve cancellation only if this order has NOT been completed or activated. An approval will cancel the unfulfilled request. Continue?','Approuvez l’annulation uniquement si la commande n’a PAS été terminée ni activée. Cela annulera la demande non finalisée. Continuer ?')
    :tr('Deny this cancellation request? The subscription order will remain in effect. Refund rights required by law remain unaffected.','Refuser cette demande d’annulation ? La commande restera valide. Les droits au remboursement prévus par la loi demeurent applicables.');
-  if(!window.confirm(ask))return;
+  if(!await mykiooConfirm(ask))return;
   setWorkingId(c.request_id);setError('');setNotice('');
   try{
    const {data:{session},error:authError}=await supabase.auth.getSession();
