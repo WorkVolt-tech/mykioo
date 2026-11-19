@@ -30,20 +30,23 @@ export function AgentPackages({language='en',onChange}){
   try{await prepaidAction(action,details);setNotice(tr('Request received.','Demande reçue.'));await reload();onChange?.()}
   catch(e){setError(e.message)}finally{setBusy(false)}
  }
+ const approved=account?.status==='active';
  const active=purchases.filter(p=>['active','exhausted'].includes(p.status));
  const pending=purchases.filter(p=>['awaiting_payment','payment_submitted'].includes(p.status));
  return <section className="mykioo-agent-panel" style={{marginBottom:24}}>
-  <h2>{tr('Agent packages · 10 device-year credits','Forfaits agent · 10 crédits appareil-année')}</h2>
-  <p>{tr('One credit = one device for one year. Two years cost two credits per device. Discounts are per device, not per year. You choose your resale price.','Un crédit = un appareil pendant un an. Deux ans coûtent deux crédits par appareil. La remise est par appareil, non par année. Vous fixez votre prix de revente.')}</p>
-  <p>{tr('The $400 reseller package currently supports only two-year services. Orders and payments require owner verification.','Le forfait revendeur de 400 $ prend actuellement en charge seulement les abonnements de deux ans. Les paiements et commandes doivent être vérifiés par le propriétaire.')}</p>
+  <h2>{approved?tr('Agent packages · 10 device-year credits','Forfaits agent · 10 crédits appareil-année'):tr('Become a MYKIOO Agent','Devenir agent MYKIOO')}</h2>
+  {approved?<><p>{tr('One credit = one device for one year. Two years cost two credits per device. Discounts apply once per device, not per year. You choose your resale price.','Un crédit = un appareil pendant un an. Deux ans coûtent deux crédits par appareil. La remise s’applique une fois par appareil et non par année. Vous fixez votre prix de revente.')}</p>
+  <p>{tr('The $400 reseller package currently supports only two-year services. Payments require owner verification.','Le forfait revendeur de 400 $ prend actuellement en charge seulement les abonnements de deux ans. Les paiements nécessitent une vérification par le propriétaire.')}</p></>:<p>{tr('Interested in becoming an Agent? Send your request to MYKIOO. Once the owner approves your account, agent packages and wholesale pricing will appear here.','Vous souhaitez devenir agent ? Envoyez une demande à MYKIOO. Après approbation par le propriétaire, les forfaits et tarifs agents apparaîtront ici.')}</p>}
   {error&&<p role="alert" className="admin-error">{error}</p>}
   {notice&&<p role="status" className="admin-success">{notice}</p>}
   {loading?<p>{tr('Loading packages…','Chargement des forfaits…')}</p>:<>
    {!account&&<div style={{padding:14,marginBottom:12,border:'1px solid #777',borderRadius:12}}>
-     <p>{tr('Already a member? Apply for an Agent account here. Your existing membership stays intact.','Déjà membre ? Demandez un compte agent ici. Votre adhésion reste intacte.')}</p>
-     <button type="button" disabled={busy} onClick={()=>send('agent_apply',{})}>{tr('Apply to become an Agent','Devenir agent')}</button>
+     <p>{tr('Your existing membership will remain active. Agent access requires owner approval.','Votre adhésion reste active. L’accès agent nécessite l’approbation du propriétaire.')}</p>
+     <button type="button" disabled={busy} onClick={()=>send('agent_apply',{})}>{tr('Submit Agent interest request','Envoyer une demande pour devenir agent')}</button>
    </div>}
-   {account?.status==='pending'&&<p role="status">{tr('Agent application awaiting approval or a verified paid package.','Demande agent en attente d’approbation ou d’un forfait payé et vérifié.')}</p>}
+   {account?.status==='pending'&&<p role="status">{tr('Your Agent request is pending owner approval. Packages and prices will appear after approval.','Votre demande d’agent attend l’approbation du propriétaire. Les forfaits et prix apparaîtront après approbation.')}</p>}
+   {account&&account.status!=='active'&&account.status!=='pending'&&<p role="status">{tr('Agent access is currently unavailable. Contact MYKIOO support.','L’accès agent est actuellement indisponible. Contactez l’assistance MYKIOO.')}</p>}
+   {approved&&<>
    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:10}}>
     {tiers.map(t=><article key={t.fee_cad} style={{padding:14,border:'1px solid #8c805b',borderRadius:12}}>
      <strong>{fmt(t.fee_cad)}</strong>{t.is_reseller&&<span> · Reseller</span>}
@@ -74,7 +77,8 @@ export function AgentPackages({language='en',onChange}){
      <strong>{fmt(p.fee_cad)} · {p.status}</strong>
      <p>{tr('Used','Utilisés')}: {p.used_devices}/10 · {tr('Reserved','Réservés')}: {p.reserved_devices}/10 · {tr('Available','Disponibles')}: {p.device_allowance-p.used_devices-p.reserved_devices}/10</p>
     </div>)}
-  </>}
+   </>}
+  </>
  </section>
 }
 export function OwnerAgentPackages({language='en'}){
@@ -88,7 +92,7 @@ export function OwnerAgentPackages({language='en'}){
  }
  return <section style={{marginTop:24}}>
   <h3>{tr('Paid package purchases','Achats de forfaits payants')}</h3>
-  <p>{tr('Verify the actual payment before activation. Package purchases are unavailable to members until the launch switch is enabled.','Vérifiez le paiement réel avant l’activation. Les achats sont indisponibles tant que la vente n’est pas activée.')}</p>
+  <p>{tr('Verify actual payment before activating any agent package. Only owner-approved agents can request packages; ordinary members cannot view agent pricing.','Vérifiez le paiement réel avant toute activation. Seuls les agents approuvés peuvent demander des forfaits ; les membres ordinaires ne voient pas les tarifs agents.')}</p>
   {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
   <button type="button" disabled={busy} className="outline-button" onClick={reload}>{tr('Refresh','Actualiser')}</button>
   {purchases.length===0?<p>{tr('No package purchases yet.','Aucun achat de forfait pour le moment.')}</p>:
