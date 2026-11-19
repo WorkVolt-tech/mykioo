@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {mykiooConfirm} from './MykiooDialog.jsx';
 import {Plus,Save,RefreshCw,ExternalLink,Trash2,ArrowUp,ArrowDown,Copy,ShieldCheck,Link2,BookOpen,AlertTriangle} from 'lucide-react';
 import {supabase} from './supabase';
 import './OwnerAppDirectory.css';
@@ -36,7 +37,7 @@ export default function OwnerAppDirectory({language='en'}){
   return()=>{active=false};
  },[fr]);
  async function reload(){
-  if(changed&&!window.confirm(tr('Discard unsaved edits and reload?','Abandonner les modifications et actualiser ?')))return;
+  if(changed&&!await mykiooConfirm(tr('Discard unsaved edits and reload?','Abandonner les modifications et actualiser ?')))return;
   setLoading(true);setError('');setNotice('');
   try{
    const r=await api({action:'read'});
@@ -53,7 +54,7 @@ export default function OwnerAppDirectory({language='en'}){
  const edit=(id,patch)=>{setApps(rows=>rows.map(r=>r.id===id?{...r,...patch}:r));setChanged(true);setNotice('')};
  const add=()=>{if(apps.length>=60){setError(tr('Maximum of 60 apps.','Maximum de 60 applications.'));return}
   const entry=makeEntry();setApps(rows=>[...rows,entry]);setExpanded(entry.id);setChanged(true);setNotice('')};
- const remove=id=>{if(!window.confirm(tr('Remove this app from the library? Save to confirm.','Retirer cette application de la bibliothèque ? Enregistrez pour confirmer.')))return;
+ const remove=async id=>{if(!await mykiooConfirm(tr('Remove this app from the library? Save to confirm.','Retirer cette application de la bibliothèque ? Enregistrez pour confirmer.')))return;
   setApps(rows=>rows.filter(a=>a.id!==id));setChanged(true);setExpanded(null)};
  const move=(id,delta)=>{setApps(rows=>{const a=[...rows],i=a.findIndex(x=>x.id===id),j=i+delta;if(i<0||j<0||j>=a.length)return rows;[a[i],a[j]]=[a[j],a[i]];return a});setChanged(true)};
  function changePlatform(row,id,on){edit(row.id,{platforms:on?[...new Set([...row.platforms,id])]:row.platforms.filter(p=>p!==id),
