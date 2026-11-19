@@ -143,6 +143,16 @@ Deno.serve(async request=>{
     if(error||!issued)return reply({error:"Instructions could not be issued"},409);
     return reply({ok:true,instructions:issued});
   }
+  if(action==="owner_cancel_agent_package"){
+    if(!owner)return reply({error:"Owner only"},403);
+    if(!uuid(input.purchase_id))return reply({error:"Invalid package purchase"},400);
+    const {data,error}=await db.from("mykioo_agent_package_purchases")
+      .update({status:"cancelled",updated_at:new Date().toISOString()})
+      .eq("id",input.purchase_id).in("status",["awaiting_payment","payment_submitted"])
+      .select("id,status").maybeSingle();
+    if(error||!data)return reply({error:"Only unapproved package purchases can be cancelled"},409);
+    return reply({ok:true,purchase:data});
+  }
   if(action==="owner_activate_agent_package"){
     if(!owner)return reply({error:"Owner only"},403);
     if(!uuid(input.purchase_id)||input.verified!==true)return reply({error:"Payment verification required"},400);
