@@ -185,8 +185,8 @@ export function AgentDashboard({user,language='en',logout,agent}){
        <label>{t('Devices','Appareils')}<select value={devices} onChange={e=>setDevices(Number(e.target.value))}>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n}</option>)}</select></label>
        <div className="mykioo-agent-quote" aria-live="polite">
         <div><span>{t('Package price','Prix du forfait')}</span><strong>{packageBase===null?'—':'$'+Number(packageBase).toFixed(2)+' CAD'}</strong></div>
-         <div><span>{t('Your discount','Votre remise')}</span><strong>{appliedDiscount===null?'—':'- </div>
-        <div className="mykioo-agent-quote-total"><span>{t('You owe MYKIOO','Vous devez à MYKIOO')}</span><strong>{agentDue===null?'—':'</div>
+         <div><span>{t('Your discount','Votre remise')}</span><strong>{appliedDiscount===null?'—':('- $'+Number(appliedDiscount).toFixed(2)+' CAD')}</strong></div>
+         <div className="mykioo-agent-quote-total"><span>{t('You owe MYKIOO','Vous devez à MYKIOO')}</span><strong>{agentDue===null?'—':('$'+agentDue.toFixed(2)+' CAD')}</strong></div>
         {agentDue===0&&Number(selectedPool?.fee)===400&&<p role="status">{t('Covered by your verified prepaid reseller package. No additional wholesale payment is due; the owner must still activate the service.','Couvert par votre forfait revendeur prépayé vérifié. Aucun paiement de gros supplémentaire; le propriétaire doit toujours activer le service.')}</p>}
        </div>
        {agent?.access_type==='paid'&&<p role="status">{t('Credits required','Crédits requis')}: {neededCredits} · {t('Selected tier credits available','Crédits disponibles du forfait choisi')}: {creditsLeft}{prepaidBlocked?' · '+t('This order is not eligible under your active package.','Cette commande n’est pas admissible avec votre forfait actif.'):''}</p>}
