@@ -33,6 +33,15 @@ export function AgentPackages({language='en',onChange}){
  const approved=account?.status==='active';
  const active=purchases.filter(p=>['active','exhausted'].includes(p.status));
  const pending=purchases.filter(p=>['awaiting_payment','payment_submitted'].includes(p.status));
+ const totals=active.reduce((all,p)=>{
+  const fee=String(Number(p.fee_cad));
+  if(!all[fee])all[fee]={fee:Number(p.fee_cad),discount:Number(p.discount_per_device_cad),packages:0,used:0,reserved:0,remaining:0};
+  all[fee].packages++;
+  all[fee].used+=Number(p.used_devices);
+  all[fee].reserved+=Number(p.reserved_devices);
+  all[fee].remaining+=Number(p.device_allowance)-Number(p.used_devices)-Number(p.reserved_devices);
+  return all;
+ },{});
  return <section className="mykioo-agent-panel" style={{marginBottom:24}}>
   <h2>{approved?tr('Agent packages · 10 device-year credits','Forfaits agent · 10 crédits appareil-année'):tr('Become a MYKIOO Agent','Devenir agent MYKIOO')}</h2>
   {approved?<><p>{tr('One credit = one device for one year. Two years cost two credits per device. Discounts apply once per device, not per year. You choose your resale price.','Un crédit = un appareil pendant un an. Deux ans coûtent deux crédits par appareil. La remise s’applique une fois par appareil et non par année. Vous fixez votre prix de revente.')}</p>
@@ -53,13 +62,20 @@ export function AgentPackages({language='en',onChange}){
      <p>{fmt(t.discount_per_device_cad)} {tr('off per device','de remise par appareil')}</p>
      <small>{tr('10 device-year credits','10 crédits appareil-année')}</small>
      <button style={{display:'block',marginTop:12}} type="button"
-      disabled={busy||!approved||!t.purchase_enabled||pending.length>0||active.some(p=>p.status==='active')}
+      disabled={busy||!approved||!t.purchase_enabled}
       onClick={()=>send('agent_purchase_package',{fee_cad:Number(t.fee_cad),payment_method:method})}>
-      {t.purchase_enabled?tr('Request this package','Demander ce forfait'):tr('Coming soon','Bientôt disponible')}
+      {t.purchase_enabled?tr('Purchase another package','Acheter un autre forfait'):tr('Coming soon','Bientôt disponible')}
      </button>
     </article>)}
    </div>
-   {active.some(p=>p.status==='active')&&<p role="status">{tr('Your current ten-credit package must be fully used before you can purchase another.','Vous devez utiliser les 10 crédits de votre forfait actuel avant d’en acheter un autre.')}</p>}
+   <p role="status">{tr('You may purchase multiple packages at any time. Packages at the same price share credits; choose the discount tier when submitting each agent order.','Vous pouvez acheter plusieurs forfaits à tout moment. Les forfaits au même prix partagent leurs crédits ; choisissez la remise au moment de chaque commande agent.')}</p>
+   {Object.values(totals).length>0&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(215px,1fr))',gap:10,marginTop:12}}>
+     {Object.values(totals).sort((a,b)=>a.fee-b.fee).map(tier=><div key={tier.fee} style={{padding:12,border:'1px solid #8c805b',borderRadius:12}}>
+       <strong>{fmt(tier.fee)} · -{fmt(tier.discount)} {tr('per device','par appareil')}</strong>
+       <p>{tier.packages} {tr('purchased packages','forfaits achetés')} · {tier.packages*10} {tr('total credits','crédits au total')}</p>
+       <p>{tr('Available','Disponibles')}: <strong>{tier.remaining}</strong> · {tr('Reserved','Réservés')}: {tier.reserved} · {tr('Used','Utilisés')}: {tier.used}</p>
+     </div>)}
+   </div>}
    <label style={{display:'block',marginTop:14}}>{tr('Payment method for a package','Mode de paiement du forfait')} <select value={method} onChange={e=>setMethod(e.target.value)}><option value="interac">Interac</option><option value="zelle">Zelle</option><option value="btc">BTC</option><option value="shib">SHIB</option></select></label>
    {pending.map(p=><div key={p.id} style={{border:'1px solid #777',borderRadius:12,padding:12,marginTop:12}}>
     <strong>{fmt(p.fee_cad)} · {p.status}</strong>
