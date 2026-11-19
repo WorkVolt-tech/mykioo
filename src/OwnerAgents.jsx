@@ -23,6 +23,7 @@ export default function OwnerAgents({language='en'}){
  const [customerId,setCustomerId]=useState(''),[customerAgentId,setCustomerAgentId]=useState('');
  const [completionRequests,setCompletionRequests]=useState({});
  const [completedOptions,setCompletedOptions]=useState({});
+ const [telegramStatus,setTelegramStatus]=useState(''),[telegramChecking,setTelegramChecking]=useState(false);
  const [lookingUp,setLookingUp]=useState(null);
  async function findCompletedAgentServices(orderId){
    setLookingUp(orderId);setError('');
@@ -138,7 +139,21 @@ export default function OwnerAgents({language='en'}){
     {error&&<p role="alert" className="admin-error">{error}</p>}
     {memberLoadError&&<p role="alert" className="admin-error">{memberLoadError}</p>}
     {!backendReady&&<p className="mykioo-agent-offline" role="status">{tr('Preview mode — member directory is available, but Agent changes are disabled until the backend is deployed.','Mode aperçu — la liste des membres est disponible, mais les modifications des agents sont désactivées jusqu’au déploiement du serveur.')}</p>}
-    <button type="button" disabled={busy} className="outline-button" onClick={refresh}>{tr('Refresh','Actualiser')}</button>
+    <div className="mykioo-owner-telegram-check">
+       <div><strong>{tr('Telegram owner alerts','Alertes Telegram du propriétaire')}</strong>
+         <p>{tr('New agent applications, package requests, reported payments, orders and renewals are sent to your Telegram chat after secure bot setup.','Après configuration du bot, vous recevrez les demandes d’agents, les achats de forfaits, les paiements signalés, les commandes et les renouvellements sur Telegram.')}</p>
+       </div>
+       <button type="button" disabled={telegramChecking} onClick={async()=>{
+          setTelegramChecking(true);setTelegramStatus('');
+          try{const result=await call('owner_test_telegram');
+           setTelegramStatus(!result.configured?tr('Not connected: configure TELEGRAM_BOT_TOKEN and TELEGRAM_OWNER_CHAT_ID in Supabase Function Secrets.','Non connecté : configurez TELEGRAM_BOT_TOKEN et TELEGRAM_OWNER_CHAT_ID dans les secrets de fonctions Supabase.'):
+            result.delivered?tr('Test notification delivered to Telegram.','Notification de test envoyée sur Telegram.'):
+            tr('Configured, but delivery failed. Confirm your chat ID and start the bot in Telegram.','Configuré, mais envoi impossible. Vérifiez le chat ID et démarrez le bot.'));
+          }catch(e){setTelegramStatus(e.message)}finally{setTelegramChecking(false)}
+       }}>{telegramChecking?tr('Testing…','Vérification…'):tr('Test Telegram alerts','Tester les alertes Telegram')}</button>
+       {telegramStatus&&<p role="status">{telegramStatus}</p>}
+     </div>
+     <button type="button" disabled={busy} className="outline-button" onClick={refresh}>{tr('Refresh','Actualiser')}</button>
     <div className="admin-panel" style={{padding:16,marginTop:16}}>
       <h3>{tr('Create / update agent','Créer ou modifier un agent')}</h3><p>{eligible.length} {tr('approved members available','membres approuvés disponibles')}</p>
       <form onSubmit={saveAgent} className="mykioo-agent-form">
