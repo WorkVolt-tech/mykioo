@@ -84,6 +84,22 @@ export default function OwnerAgents({language='en'}){
      await refresh();setNotice(tr('Agent access removed. Member account preserved.','Accès agent retiré. Compte membre conservé.'));}
    catch(e){setError(e.message);}finally{setBusy(false);}
  }
+ async function approveAgentInterest(id){
+   const name=memberName(id);
+   const confirmed=await mykiooConfirm(tr(
+    'Approve '+name+' as a MYKIOO Agent? This unlocks the Agent workspace and package purchasing. Package discounts still require separately verified payment.',
+    'Approuver '+name+' comme agent MYKIOO ? Cela déverrouille l’espace agent et l’achat de forfaits. Les remises nécessitent toujours une vérification distincte du paiement.'
+   ),{title:tr('Approve Agent application','Approuver la demande d’agent'),
+      confirmText:tr('Approve Agent','Approuver l’agent')});
+   if(!confirmed)return;
+   setBusy(true);setError('');setNotice('');
+   try{
+    await call('owner_set_agent',{agent_user_id:id,status:'active',access_type:'free',
+      access_fee_cad:0,access_fee_period:'none',discount_cad:0});
+    setNotice(tr('Agent approved. They can now see and purchase paid packages.','Agent approuvé. Il peut maintenant voir et acheter des forfaits payants.'));
+    await refresh();
+   }catch(e){setError(e.message)}finally{setBusy(false)}
+  }
  function selectAgent(id){
    setAgentId(id);
    const a=agentsById.get(id);
@@ -153,6 +169,7 @@ export default function OwnerAgents({language='en'}){
     <ul>{(data.agents||[]).filter(a=>a.status!=='removed').map(a=><li key={a.agent_user_id} className="mykioo-agent-directory-item">
       <div><strong>{memberName(a.agent_user_id)}</strong> · {a.status} · {a.access_type} · ${a.discount_cad} CAD {tr('discount','de remise')} · {tr('Access fee','Frais d’accès')}: ${a.access_fee_cad} CAD · {tr('Customers','Clients')}: {(data.customers||[]).filter(c=>c.agent_user_id===a.agent_user_id).length}</div>
       <div className="mykioo-agent-actions">
+        {a.status==='pending'&&<button type="button" className="outline-button" disabled={busy||!backendReady} onClick={()=>approveAgentInterest(a.agent_user_id)}>{tr('Approve Agent request','Approuver la demande d’agent')}</button>}
         <button type="button" className="outline-button" disabled={busy} onClick={()=>selectAgent(a.agent_user_id)}>{tr('Edit','Modifier')}</button>
         {a.access_type==='paid'&&<button type="button" className="outline-button" disabled={busy} onClick={()=>downgradeAgent(a.agent_user_id)}>{tr('Downgrade to Free','Rétrograder en Gratuit')}</button>}
         <button type="button" className="outline-button" disabled={busy} onClick={()=>removeAgent(a.agent_user_id)}>{tr('Remove Agent','Retirer l’agent')}</button>
