@@ -173,8 +173,12 @@ export function AgentDashboard({user,language='en',logout,agent}){
        {agent?.access_type==='paid'&&<label>{t('Apply discount from package tier','Appliquer la remise du forfait')}
          <select required value={selectedTier} onChange={e=>setSelectedTier(e.target.value)}>
           <option value="">{t('Choose the paid discount package','Choisir le forfait de remise payé')}</option>
-          {eligibleTiers.map(tier=><option value={String(tier.fee)} key={tier.fee}>
-           {'
+          {eligibleTiers.map(tier=><option key={tier.fee} value={String(tier.fee)}>
+            {tier.fee} CAD · {tier.discount} CAD {t('off per device','de remise par appareil')} · {tier.credits} {t('credits available','crédits disponibles')} · {tier.packages} {t('packages','forfaits')}
+          </option>)}
+         </select>
+       </label>}
+       {agent?.access_type==='paid'&&eligibleTiers.length===0&&<p role="status">{t('Purchase and activate a paid package to unlock wholesale discounts.','Achetez et activez un forfait payé pour obtenir les remises de gros.')}</p>}
        <label>{t('Assigned customer','Client attribué')}<select required value={selectedCustomer} onChange={e=>setSelectedCustomer(e.target.value)}><option value="">{t('Choose a customer','Choisir un client')}</option>{rows.map(r=><option value={r.customer_user_id} key={r.customer_user_id}>{r.customer_user_id.slice(0,8)}…</option>)}</select></label>
        <label>{t('Order type','Type de commande')}<select value={kind} onChange={e=>setKind(e.target.value)}><option value="new">{t('New subscription','Nouvel abonnement')}</option><option value="renewal">{t('Renewal','Renouvellement')}</option></select></label>
        <label>{t('Duration','Durée')}<select value={days} onChange={e=>setDays(Number(e.target.value))}><option value={365}>{t('12 months','12 mois')}</option><option value={730}>{t('24 months','24 mois')}</option></select></label>
