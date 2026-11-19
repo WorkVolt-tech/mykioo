@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {mykiooConfirm} from './MykiooDialog.jsx';
 import {Plus,Save,RefreshCw,Eye,EyeOff,Pencil,Trash2,Megaphone} from 'lucide-react';
 import {supabase} from './supabase';
 import {WebsiteAnnouncementBanner} from './WebsiteAnnouncements';
@@ -93,7 +94,7 @@ export default function OwnerWebsiteAnnouncements({language='en'}){
  }
  async function remove(item){
   if(saving)return;
-  if(!window.confirm(tr('Permanently delete this announcement?','Supprimer définitivement cette annonce ?')))return;
+  if(!await mykiooConfirm(tr('Permanently delete this announcement?','Supprimer définitivement cette annonce ?')))return;
   setSaving(true);setNotice('');setError('');
   try{
    await adminRequest({action:'delete',id:item.id});
