@@ -1,4 +1,5 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
+import {mykiooConfirm} from './MykiooDialog.jsx';
 import {supabase} from './supabase';
 import {useRememberedState} from './useRememberedState';
 import SubscriptionHistory from './SubscriptionHistory';
@@ -134,7 +135,7 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
  async function requestCancellation(request){
   if(owner||saving||cancellingId||!['pending','in_review'].includes(request.status)||request.subscription_id||request.completed_at||request.service_activated_at)return;
   if(cancellationRows.some(c=>c.request_id===request.id))return;
-  if(!window.confirm(tr('Ask MYKIOO to cancel this request? Owner approval is required. If service is activated before approval, this voluntary cancellation request cannot be approved. Any rights required by law still apply.','Demander à MYKIOO d’annuler cette demande ? L’approbation du propriétaire est obligatoire. Si le service est activé avant l’approbation, cette demande d’annulation volontaire ne pourra pas être approuvée. Les droits prévus par la loi demeurent applicables.')))return;
+  if(!await mykiooConfirm(tr('Ask MYKIOO to cancel this request? Owner approval is required. If service is activated before approval, this voluntary cancellation request cannot be approved. Any rights required by law still apply.','Demander à MYKIOO d’annuler cette demande ? L’approbation du propriétaire est obligatoire. Si le service est activé avant l’approbation, cette demande d’annulation volontaire ne pourra pas être approuvée. Les droits prévus par la loi demeurent applicables.')))return;
   setCancellingId(request.id);setError('');setNotice('');
   try{
    const {data:{session},error:authError}=await supabase.auth.getSession();
