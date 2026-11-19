@@ -71,6 +71,11 @@ Deno.serve(async request=>{
     const {data:a,error:agentError}=await db.from("mykioo_agent_accounts")
       .select("status,access_type").eq("agent_user_id",user.id).maybeSingle();
     if(agentError||a?.status!=="active")return reply({error:"Agent approval required before purchasing packages"},403);
+    // A new ten-credit package can be requested only after the previous deal is exhausted.
+    const {data:activePackage,error:activeError}=await db.from("mykioo_agent_package_purchases")
+      .select("id").eq("agent_user_id",user.id).eq("status","active").limit(1);
+    if(activeError)return reply({error:"Unable to check active agent package"},503);
+    if(activePackage?.length)return reply({error:"Use all 10 credits before buying another package"},409);
     const {data:existing}=await db.from("mykioo_agent_package_purchases")
       .select("id").eq("agent_user_id",user.id).in("status",["awaiting_payment","payment_submitted"]).limit(1);
     if(existing?.length)return reply({error:"You already have a package awaiting payment approval"},409);
