@@ -72,13 +72,6 @@ Deno.serve(async request=>{
       .select("status,access_type").eq("agent_user_id",user.id).maybeSingle();
     if(agentError||a?.status!=="active")return reply({error:"Agent approval required before purchasing packages"},403);
     // A new ten-credit package can be requested only after the previous deal is exhausted.
-    const {data:activePackage,error:activeError}=await db.from("mykioo_agent_package_purchases")
-      .select("id").eq("agent_user_id",user.id).eq("status","active").limit(1);
-    if(activeError)return reply({error:"Unable to check active agent package"},503);
-    if(activePackage?.length)return reply({error:"Use all 10 credits before buying another package"},409);
-    const {data:existing}=await db.from("mykioo_agent_package_purchases")
-      .select("id").eq("agent_user_id",user.id).in("status",["awaiting_payment","payment_submitted"]).limit(1);
-    if(existing?.length)return reply({error:"You already have a package awaiting payment approval"},409);
     const {data:purchase,error}=await db.from("mykioo_agent_package_purchases").insert({
       agent_user_id:user.id,fee_cad:tier.fee_cad,discount_per_device_cad:tier.discount_per_device_cad,
       device_allowance:10,payment_method:method,status:"awaiting_payment"
@@ -379,9 +372,11 @@ Deno.serve(async request=>{
      .select("access_type,status,discount_cad").eq("agent_user_id",user.id).maybeSingle();
    if(tierError||agentTier?.status!=="active")return reply({error:"Agent pricing unavailable"},403);
    if(agentTier.access_type==="paid"){
+     const chosenFee=Number(input.package_fee_cad);
+     if(![100,150,200,250,300,350,400].includes(chosenFee))return reply({error:"Select a purchased agent discount tier"},400);
      const {data:order,error}=await db.rpc("mykioo_agent_reserve_prepaid_order",{
        p_agent:user.id,p_customer:customerId,p_kind:kind,p_days:days,p_devices:devices,
-       p_retail:retail,p_method:method
+       p_retail:retail,p_method:method,p_fee_cad:Number(input.package_fee_cad)
      });
      if(error)return reply({error:error.message},409);
      return reply({ok:true,order,discount_cad:null,credits_reserved:order.credits_reserved,payment_verified:false});
