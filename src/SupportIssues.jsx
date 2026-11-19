@@ -1,4 +1,5 @@
 import React,{useEffect,useState,useCallback} from 'react';
+import {mykiooConfirm} from './MykiooDialog.jsx';
 import {supabase} from './supabase';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-support-issues';
@@ -105,13 +106,13 @@ export function OwnerIssuePanel({tickets=[],language='en',selected=[],setSelecte
   if(!issue||issue.status!=='resolved'){setError(tr('Mark this main issue resolved before completing linked tickets.','Marquez le problème principal comme résolu avant de terminer les demandes liées.'));return}
   const affected=tickets.filter(t=>t.main_issue_id===issueId&&!['resolved','closed'].includes(t.status)).length;
   if(!affected){setNotice(tr('No unresolved linked tickets remain.','Aucune demande liée non résolue.'));return}
-  if(!window.confirm(tr('Resolve '+affected+' linked ticket(s) for '+issue.title+'? Each member will receive a completion notice.','Résoudre '+affected+' demande(s) associée(s) à '+issue.title+' ? Chaque membre recevra un avis de résolution.')))return;
+  if(!await mykiooConfirm(tr('Resolve '+affected+' linked ticket(s) for '+issue.title+'? Each member will receive a completion notice.','Résoudre '+affected+' demande(s) associée(s) à '+issue.title+' ? Chaque membre recevra un avis de résolution.')))return;
   await act({action:'resolve_issue_tickets',issue_id:issueId,status:'resolved'},
    tr('Linked tickets resolved. Completion notifications have been queued.','Demandes associées résolues. Les notifications de résolution ont été programmées.'));
  }
  async function bulk(status){
   if(!selected.length)return;
-  if(!window.confirm(tr('Update '+selected.length+' selected ticket(s) to '+status+'?','Mettre à jour '+selected.length+' demande(s) sélectionnée(s) comme '+status+' ?')))return;
+  if(!await mykiooConfirm(tr('Update '+selected.length+' selected ticket(s) to '+status+'?','Mettre à jour '+selected.length+' demande(s) sélectionnée(s) comme '+status+' ?')))return;
   const result=await act({action:'bulk_status',ticket_ids:selected,status},tr('Selected tickets updated.','Demandes sélectionnées mises à jour.'));
   if(result)setSelected([]);
  }
