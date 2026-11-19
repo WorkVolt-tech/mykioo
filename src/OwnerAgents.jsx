@@ -2,6 +2,7 @@ import React,{useEffect,useMemo,useState} from 'react';
 import {supabase} from './supabase';
 import './OwnerAgents.css';
 import {OwnerAgentPackages} from './AgentPackages.jsx';
+import {mykiooConfirm} from './MykiooDialog.jsx';
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-agents';
 async function call(action,details={}){
  const {data:{session}}=await supabase.auth.getSession();
@@ -64,7 +65,7 @@ export default function OwnerAgents({language='en'}){
  async function removeAgent(id){
    const count=(data.customers||[]).filter(c=>c.agent_user_id===id).length;
    if(count>0){setError(tr('Transfer this agent’s '+count+' customer(s) to another active agent before removal.','Transférez les '+count+' client(s) de cet agent à un autre agent actif avant de le retirer.'));return;}
-   if(!window.confirm(tr('Remove Agent access from '+memberName(id)+'? Their member account, previous orders and payment history will be preserved.','Retirer les droits d’agent à '+memberName(id)+' ? Son compte membre, ses commandes et son historique seront conservés.')))return;
+   if(!await mykiooConfirm(tr('Remove Agent access from '+memberName(id)+'? Their member account, previous orders and payment history will be preserved.','Retirer les droits d’agent à '+memberName(id)+' ? Son compte membre, ses commandes et son historique seront conservés.')))return;
    setBusy(true);setError('');setNotice('');
    try{await call('owner_remove_agent',{agent_user_id:id});
      if(agentId===id){setAgentId('');setType('free');setFee('0');setPeriod('none');setDiscount('5');}
@@ -82,7 +83,7 @@ export default function OwnerAgents({language='en'}){
  async function downgradeAgent(id){
    const a=agentsById.get(id);
    if(!a||a.access_type!=='paid')return;
-   if(!window.confirm(tr('Downgrade '+memberName(id)+' to Free Agent? Their customer assignments and existing orders will be preserved. New order discounts will use $5 CAD.','Rétrograder '+memberName(id)+' en agent gratuit ? Ses clients et commandes seront conservés. Les nouvelles commandes bénéficieront de 5 $ CA de remise.')))return;
+   if(!await mykiooConfirm(tr('Downgrade '+memberName(id)+' to Free Agent? Their customer assignments and existing orders will be preserved. New order discounts will use $5 CAD.','Rétrograder '+memberName(id)+' en agent gratuit ? Ses clients et commandes seront conservés. Les nouvelles commandes bénéficieront de 5 $ CA de remise.')))return;
    setBusy(true);setError('');setNotice('');
    try{await call('owner_set_agent',{agent_user_id:id,status:a.status,access_type:'free',access_fee_cad:0,access_fee_period:'none',discount_cad:5});
       if(agentId===id){setType('free');setFee('0');setPeriod('none');setDiscount('5');}
@@ -96,7 +97,7 @@ export default function OwnerAgents({language='en'}){
    catch(e){setError(e.message);}finally{setBusy(false);}
  }
  async function verify(orderId){
-   if(!window.confirm(tr('Confirm that you personally verified receipt of payment for this order? This does not activate the service.','Confirmez-vous avoir personnellement vérifié le paiement ? Cela n’active pas le service.')))return;
+   if(!await mykiooConfirm(tr('Confirm that you personally verified receipt of payment for this order? This does not activate the service.','Confirmez-vous avoir personnellement vérifié le paiement ? Cela n’active pas le service.')))return;
    setBusy(true);setNotice('');setError('');
    try{await call('owner_verify_agent_order',{order_id:orderId});
      setNotice(tr('Payment marked verified. Complete the service separately using the existing owner subscription workflow.','Paiement vérifié. Complétez le service séparément à partir du processus propriétaire existant.'));await refresh();}
@@ -157,12 +158,12 @@ export default function OwnerAgents({language='en'}){
        <label>{tr('Completed subscription request ID (required to consume credits)','ID de la demande d’abonnement terminée (requis pour utiliser les crédits)')}</label>
        <input type="text" placeholder="UUID" value={completionRequests[o.id]||''} onChange={e=>setCompletionRequests(v=>({...v,[o.id]:e.target.value}))}/>
        <button type="button" className="outline-button" disabled={busy||!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(completionRequests[o.id]||'')}
-        onClick={()=>{if(window.confirm(tr('I confirm the subscription request is completed and activated. Consume prepaid credits?','Je confirme que l’abonnement est activé. Consommer les crédits ?')))call('owner_settle_agent_order',{order_id:o.id,subscription_request_id:completionRequests[o.id]}).then(()=>refresh()).catch(e=>setError(e.message))}}>
+        onClick={async()=>{if(await mykiooConfirm(tr('I confirm the subscription request is completed and activated. Consume prepaid credits?','Je confirme que l’abonnement est activé. Consommer les crédits ?')))call('owner_settle_agent_order',{order_id:o.id,subscription_request_id:completionRequests[o.id]}).then(()=>refresh()).catch(e=>setError(e.message))}}>
         {tr('Confirm activated service & consume credits','Confirmer le service activé et utiliser les crédits')}
        </button>
       </div>}
       {['pending_payment','owner_review'].includes(o.status)&&<button type="button" className="outline-button" disabled={busy} onClick={()=>{
-        if(!window.confirm(tr('Cancel this agent order and release its reserved prepaid credits? Check that no service was activated.','Annuler la commande et libérer les crédits réservés ? Vérifiez qu’aucun service n’a été activé.')))return;
+        if(!await mykiooConfirm(tr('Cancel this agent order and release its reserved prepaid credits? Check that no service was activated.','Annuler la commande et libérer les crédits réservés ? Vérifiez qu’aucun service n’a été activé.')))return;
         call('owner_cancel_prepaid_agent_order',{order_id:o.id}).then(()=>refresh()).catch(e=>setError(e.message));
       }}>{tr('Cancel prepaid order / release credits','Annuler la commande prépayée / libérer les crédits')}</button>}
 
