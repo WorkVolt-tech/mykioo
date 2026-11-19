@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 import {mykiooConfirm} from './MykiooDialog.jsx';
+import {priceCAD} from './PackagePricing';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-agents';
 export async function prepaidAction(action,details={}){
@@ -18,6 +19,7 @@ const fmt=n=>'$'+Number(n||0).toFixed(2)+' CAD';
 export function AgentPackages({language='en',onChange}){
  const tr=(en,fr)=>language==='fr'?fr:en;
  const [tiers,setTiers]=useState([]),[purchases,setPurchases]=useState([]),[account,setAccount]=useState(null);
+ const [previewFee,setPreviewFee]=useState('100');
  const [method,setMethod]=useState('interac'),[reference,setReference]=useState({}),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  async function reload(){
   try{const result=await prepaidAction('agent_package_list');
@@ -31,6 +33,7 @@ export function AgentPackages({language='en',onChange}){
   catch(e){setError(e.message)}finally{setBusy(false)}
  }
  const approved=account?.status==='active';
+ const previewTier=tiers.find(t=>Number(t.fee_cad)===Number(previewFee))||tiers[0];
  const active=purchases.filter(p=>['active','exhausted'].includes(p.status));
  const pending=purchases.filter(p=>['awaiting_payment','payment_submitted'].includes(p.status));
  const totals=active.reduce((all,p)=>{
@@ -67,6 +70,13 @@ export function AgentPackages({language='en',onChange}){
       {t.purchase_enabled?tr('Purchase another package','Acheter un autre forfait'):tr('Coming soon','Bientôt disponible')}
      </button>
     </article>)}
+   </div>
+   <div className="mykioo-agent-price-preview" style={{padding:14,border:'1px solid #8c805b',borderRadius:12,marginTop:16,marginBottom:12}}>
+    <h3>{tr('Wholesale price preview','Aperçu des tarifs de gros')}</h3>
+    <p>{tr('These are the extra amounts paid to MYKIOO per customer order after purchasing a package. Your customer resale prices are your choice.','Voici les montants supplémentaires versés à MYKIOO par commande client après l’achat du forfait. Vous fixez librement vos prix de revente.')}</p>
+    <label>{tr('Compare agent package','Comparer un forfait agent')} <select value={String(Number(previewTier?.fee_cad??100))} onChange={e=>setPreviewFee(e.target.value)}>{tiers.map(t=><option key={t.fee_cad} value={String(Number(t.fee_cad))}>{fmt(t.fee_cad)}{t.is_reseller?' · '+tr('Reseller','Revendeur'):''}</option>)}</select></label>
+    {previewTier&&<div style={{overflowX:'auto'}}><table style={{width:'100%',marginTop:12}}><thead><tr><th>{tr('Devices','Appareils')}</th><th>{tr('1 year','1 an')}</th><th>{tr('2 years','2 ans')}</th><th>{tr('Credits: 1 / 2 years','Crédits : 1 / 2 ans')}</th></tr></thead><tbody>{[1,2,3,4,5].map(n=><tr key={n}><th>{n}</th>{[365,730].map(days=><td key={days}>{fmt(previewTier.is_reseller?0:Math.max(0,priceCAD(days,n)-Number(previewTier.discount_per_device_cad)*n*(days/365)))}</td>)}<td>{n} / {n*2}</td></tr>)}</tbody></table></div>}
+    <p>{tr('Each package contains 10 device-year credits. A 5-device, 2-year order uses all 10. The owner verifies applicable payments and activates services.','Chaque forfait contient 10 crédits appareil-année. Une commande de 5 appareils sur 2 ans utilise les 10 crédits. Le propriétaire vérifie les paiements applicables et active les services.')}</p>
    </div>
    <p role="status">{tr('You may purchase multiple packages at any time. Packages at the same price share credits; choose the discount tier when submitting each agent order.','Vous pouvez acheter plusieurs forfaits à tout moment. Les forfaits au même prix partagent leurs crédits ; choisissez la remise au moment de chaque commande agent.')}</p>
    {Object.values(totals).length>0&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(215px,1fr))',gap:10,marginTop:12}}>
