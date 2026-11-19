@@ -379,7 +379,7 @@ Deno.serve(async request=>{
        p_retail:retail,p_method:method,p_fee_cad:Number(input.package_fee_cad)
      });
      if(error)return reply({error:error.message},409);
-     return reply({ok:true,order,discount_cad:null,credits_reserved:order.credits_reserved,payment_verified:false});
+     return reply({ok:true,order,discount_cad:null,credits_reserved:order.credits_reserved,payment_verified:order.status==="owner_review",additional_wholesale_payment_due:Number(order.wholesale_price_cad)>0});
    }
    const {data:price,error:priceError}=await db.from("mykioo_package_prices")
      .select("price_cad").eq("contract_days",days).eq("device_count",devices).maybeSingle();
