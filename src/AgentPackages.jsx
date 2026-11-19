@@ -44,8 +44,8 @@ export function AgentPackages({language='en',onChange}){
  },{});
  return <section className="mykioo-agent-panel" style={{marginBottom:24}}>
   <h2>{approved?tr('Agent packages · 10 device-year credits','Forfaits agent · 10 crédits appareil-année'):tr('Become a MYKIOO Agent','Devenir agent MYKIOO')}</h2>
-  {approved?<><p>{tr('One credit = one device for one year. Two years cost two credits per device. Discounts apply once per device, not per year. You choose your resale price.','Un crédit = un appareil pendant un an. Deux ans coûtent deux crédits par appareil. La remise s’applique une fois par appareil et non par année. Vous fixez votre prix de revente.')}</p>
-  <p>{tr('The $400 Reseller package is prepaid. Customer orders for 12 or 24 months cost no additional wholesale payment while credits remain. Owner activation is still required.','Le forfait Revendeur de 400 $ est prépayé. Les commandes clients de 12 ou 24 mois ne nécessitent aucun paiement de gros supplémentaire tant que des crédits sont disponibles. L’activation par le propriétaire reste nécessaire.')}</p>
+  {approved&&<><p>{tr('One credit = one device for one year. Two years cost two credits per device. Discounts apply once per device, not per year. You choose your resale price.','Un crédit = un appareil pendant un an. Deux ans coûtent deux crédits par appareil. La remise s’applique une fois par appareil et non par année. Vous fixez votre prix de revente.')}</p>
+  <p>{tr('The $400 Reseller package is prepaid. Customer orders for 12 or 24 months cost no additional wholesale payment while credits remain. Owner activation is still required.','Le forfait Revendeur de 400 $ est prépayé. Les commandes clients de 12 ou 24 mois ne nécessitent aucun paiement de gros supplémentaire tant que des crédits sont disponibles. L’activation par le propriétaire reste nécessaire.')}</p></>}
   {error&&<p role="alert" className="admin-error">{error}</p>}
   {notice&&<p role="status" className="admin-success">{notice}</p>}
   {loading?<p>{tr('Loading packages…','Chargement des forfaits…')}</p>:<>
