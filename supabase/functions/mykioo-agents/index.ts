@@ -34,15 +34,22 @@ Deno.serve(async request=>{
 
   // Prepaid 10 device-year packages. Client cannot authorize payments or credits.
   if(action==="agent_package_list"){
+    // An ordinary member may check their application status, not view agent pricing.
+    if(member.role!=="member")return reply({error:"Member account required"},403);
+    const {data:account,error:accountError}=await db.from("mykioo_agent_accounts")
+      .select("status,access_type").eq("agent_user_id",user.id).maybeSingle();
+    if(accountError)return reply({error:"Unable to check agent status"},503);
+    if(account?.status!=="active")
+      return reply({ok:true,tiers:[],purchases:[],account});
     const [tiers,purchases]=await Promise.all([
       db.from("mykioo_agent_package_tiers").select("fee_cad,discount_per_device_cad,device_allowance,is_reseller,purchase_enabled").order("fee_cad"),
       db.from("mykioo_agent_package_purchases").select("id,fee_cad,discount_per_device_cad,device_allowance,reserved_devices,used_devices,status,created_at,activated_at,payment_method,payment_destination,payment_amount,payment_currency,payment_network,instructions_issued_at,quote_expires_at").eq("agent_user_id",user.id).order("created_at",{ascending:false})
     ]);
     if(tiers.error||purchases.error)return reply({error:"Unable to load agent packages"},503);
-    const {data:account}=await db.from("mykioo_agent_accounts").select("status,access_type").eq("agent_user_id",user.id).maybeSingle();
     return reply({ok:true,tiers:tiers.data,purchases:purchases.data,account});
   }
   if(action==="agent_apply"){
+    if(member.role!=="member")return reply({error:"Member account required"},403);
     const {data:prior,error:priorError}=await db.from("mykioo_agent_accounts").select("status").eq("agent_user_id",user.id).maybeSingle();
     if(priorError)return reply({error:"Unable to check agent application"},503);
     if(prior?.status==="removed"||prior?.status==="suspended")return reply({error:"Contact MYKIOO support about your agent status"},403);
@@ -55,13 +62,15 @@ Deno.serve(async request=>{
     return reply({ok:true,status:"pending"});
   }
   if(action==="agent_purchase_package"){
+    if(member.role!=="member")return reply({error:"Only approved agents can purchase packages"},403);
     const fee=Number(input.fee_cad);
     const method=["interac","zelle","btc","shib"].includes(input.payment_method)?input.payment_method:null;
     if(!method||![100,150,200,250,300,350,400].includes(fee))return reply({error:"Invalid package or payment method"},400);
     const {data:tier}=await db.from("mykioo_agent_package_tiers").select("*").eq("fee_cad",fee).maybeSingle();
     if(!tier?.purchase_enabled)return reply({error:"Paid agent packages are not yet available"},409);
-    const {data:a}=await db.from("mykioo_agent_accounts").select("status").eq("agent_user_id",user.id).maybeSingle();
-    if(!a||!["pending","active"].includes(a.status))return reply({error:"Apply to become an agent first"},403);
+    const {data:a,error:agentError}=await db.from("mykioo_agent_accounts")
+      .select("status,access_type").eq("agent_user_id",user.id).maybeSingle();
+    if(agentError||a?.status!=="active")return reply({error:"Agent approval required before purchasing packages"},403);
     const {data:existing}=await db.from("mykioo_agent_package_purchases")
       .select("id").eq("agent_user_id",user.id).in("status",["awaiting_payment","payment_submitted"]).limit(1);
     if(existing?.length)return reply({error:"You already have a package awaiting payment approval"},409);
