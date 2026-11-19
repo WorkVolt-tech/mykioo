@@ -112,8 +112,7 @@ export function AgentDashboard({user,language='en',logout,agent}){
   const packageBase=priceCAD(days,devices);
   const neededCredits=devices*(days===730?2:1);
   const discountTotal=discountCad*devices;
-  const resellerBlocked=agent?.access_type==='paid'&&Number(selectedPool?.fee)===400&&days===365;
-  const prepaidBlocked=agent?.access_type==='paid'&&(!selectedPool||creditsLeft<neededCredits||resellerBlocked);
+  const prepaidBlocked=agent?.access_type==='paid'&&(!selectedPool||creditsLeft<neededCredits);
   const agentDue=packageBase===null?null:Math.round((packageBase-discountTotal)*100)/100;
   return <div className="mykioo-agent-dashboard">
     <div className="mykioo-agent-header"><div><span className="mykioo-agent-kicker">MYKIOO · {t('AGENT BENEFITS','AVANTAGES AGENT')}</span><h2>{t('An upgrade to your membership','Un avantage pour votre adhésion')}</h2><p>{t('Keep your member dashboard and manage agent orders here. You collect payment from your customers; MYKIOO collects only your wholesale amount.','Conservez votre espace membre et gérez vos commandes agent ici. Vous encaissez vos clients; MYKIOO reçoit uniquement votre tarif agent.')}</p></div><button className="mykioo-agent-guide-button" type="button" onClick={()=>setWelcomeOpen(true)}>{t('Agent guide','Guide de l’agent')}</button></div>
