@@ -45,7 +45,7 @@ export function AgentPackages({language='en',onChange}){
   all[fee].remaining+=Number(p.device_allowance)-Number(p.used_devices)-Number(p.reserved_devices);
   return all;
  },{});
- return <section className="mykioo-agent-panel" style={{marginBottom:24}}>
+ return <section className="mykioo-agent-panel mykioo-agent-packages">
   <h2>{approved?tr('Agent packages · 10 device-year credits','Forfaits agent · 10 crédits appareil-année'):tr('Become a MYKIOO Agent','Devenir agent MYKIOO')}</h2>
   {approved&&<><p>{tr('One credit = one device for one year. Two years cost two credits per device. Discounts apply per device-year: a two-year order receives twice the per-device discount and uses twice the credits. You choose your resale price.','Un crédit = un appareil pendant un an. Deux ans coûtent deux crédits par appareil. La remise s’applique par appareil-année : un abonnement de deux ans reçoit deux fois la remise par appareil et utilise deux fois les crédits. Vous fixez votre prix de revente.')}</p>
   <p>{tr('The $400 Reseller package is prepaid. Customer orders for 12 or 24 months cost no additional wholesale payment while credits remain. Owner activation is still required.','Le forfait Revendeur de 400 $ est prépayé. Les commandes clients de 12 ou 24 mois ne nécessitent aucun paiement de gros supplémentaire tant que des crédits sont disponibles. L’activation par le propriétaire reste nécessaire.')}</p></>}
@@ -59,23 +59,24 @@ export function AgentPackages({language='en',onChange}){
    {account?.status==='pending'&&<p role="status">{tr('Your Agent request is pending owner approval. Packages and prices will appear after approval.','Votre demande d’agent attend l’approbation du propriétaire. Les forfaits et prix apparaîtront après approbation.')}</p>}
    {account&&account.status!=='active'&&account.status!=='pending'&&<p role="status">{tr('Agent access is currently unavailable. Contact MYKIOO support.','L’accès agent est actuellement indisponible. Contactez l’assistance MYKIOO.')}</p>}
    {approved&&<>
-   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:10}}>
-    {tiers.map(t=><article key={t.fee_cad} style={{padding:14,border:'1px solid #8c805b',borderRadius:12}}>
-     <strong>{fmt(t.fee_cad)}</strong>{t.is_reseller&&<span> · Reseller</span>}
-     <p>{t.is_reseller?tr('No additional wholesale payment per customer order','Aucun paiement de gros supplémentaire par commande client'):<>{fmt(t.discount_per_device_cad)} {tr('off per device-year','de remise par appareil-année')}</>}</p>
-     <small>{tr('10 device-year credits','10 crédits appareil-année')}</small>
-     <button style={{display:'block',marginTop:12}} type="button"
+   <div className="mykioo-agent-purchase-controls"><div><strong>{tr('Choose payment method','Choisir le mode de paiement')}</strong><p>{tr('Choose your payment method before requesting a package.','Choisissez votre mode de paiement avant de demander un forfait.')}</p></div><label className="mykioo-agent-payment-method">{tr('Payment method for a package','Mode de paiement du forfait')} <select value={method} onChange={e=>setMethod(e.target.value)}><option value="interac">Interac</option><option value="zelle">Zelle</option><option value="btc">BTC</option><option value="shib">SHIB</option></select></label></div>
+   <div className="mykioo-agent-tier-grid">
+    {tiers.map(t=><article key={t.fee_cad} className={'mykioo-agent-tier'+(t.is_reseller?' mykioo-agent-tier-reseller':'')}>
+     <div className="mykioo-agent-tier-heading"><strong>{fmt(t.fee_cad)}</strong>{t.is_reseller&&<span className="mykioo-agent-tier-chip">{tr('Reseller','Revendeur')}</span>}</div>
+     <p className="mykioo-agent-tier-discount">{t.is_reseller?tr('No extra wholesale fees','Aucun frais de gros supplémentaire'):<><strong>{fmt(t.discount_per_device_cad)}</strong> {tr('off per device-year','de remise par appareil-année')}</>}</p>
+     <small className="mykioo-agent-tier-credits">{tr('10 device-year credits','10 crédits appareil-année')}</small>
+     <button className="mykioo-agent-tier-action" type="button"
       disabled={busy||!approved||!t.purchase_enabled}
       onClick={()=>send('agent_purchase_package',{fee_cad:Number(t.fee_cad),payment_method:method})}>
-      {t.purchase_enabled?tr('Purchase another package','Acheter un autre forfait'):tr('Coming soon','Bientôt disponible')}
+      {t.purchase_enabled?tr('Request package','Demander ce forfait'):tr('Coming soon','Bientôt disponible')}
      </button>
     </article>)}
    </div>
-   <div className="mykioo-agent-price-preview" style={{padding:14,border:'1px solid #8c805b',borderRadius:12,marginTop:16,marginBottom:12}}>
+   <div className="mykioo-agent-price-preview">
     <h3>{tr('Wholesale price preview','Aperçu des tarifs de gros')}</h3>
     <p>{tr('These are the extra amounts paid to MYKIOO per customer order after purchasing a package. Your customer resale prices are your choice.','Voici les montants supplémentaires versés à MYKIOO par commande client après l’achat du forfait. Vous fixez librement vos prix de revente.')}</p>
-    <label>{tr('Compare agent package','Comparer un forfait agent')} <select value={String(Number(previewTier?.fee_cad??100))} onChange={e=>setPreviewFee(e.target.value)}>{tiers.map(t=><option key={t.fee_cad} value={String(Number(t.fee_cad))}>{fmt(t.fee_cad)}{t.is_reseller?' · '+tr('Reseller','Revendeur'):''}</option>)}</select></label>
-    {previewTier&&<div style={{overflowX:'auto'}}><table style={{width:'100%',marginTop:12}}><thead><tr><th>{tr('Devices','Appareils')}</th><th>{tr('1 year','1 an')}</th><th>{tr('2 years','2 ans')}</th><th>{tr('Credits: 1 / 2 years','Crédits : 1 / 2 ans')}</th></tr></thead><tbody>{[1,2,3,4,5].map(n=><tr key={n}><th>{n}</th>{[365,730].map(days=><td key={days}>{fmt(previewTier.is_reseller?0:Math.max(0,priceCAD(days,n)-Number(previewTier.discount_per_device_cad)*n*(days/365)))}</td>)}<td>{n} / {n*2}</td></tr>)}</tbody></table></div>}
+    <label className="mykioo-agent-preview-selector">{tr('Compare agent package','Comparer un forfait agent')} <select value={String(Number(previewTier?.fee_cad??100))} onChange={e=>setPreviewFee(e.target.value)}>{tiers.map(t=><option key={t.fee_cad} value={String(Number(t.fee_cad))}>{fmt(t.fee_cad)}{t.is_reseller?' · '+tr('Reseller','Revendeur'):''}</option>)}</select></label>
+    {previewTier&&<div className="mykioo-agent-table-scroll"><table className="mykioo-agent-price-table"><thead><tr><th>{tr('Devices','Appareils')}</th><th>{tr('1 year','1 an')}</th><th>{tr('2 years','2 ans')}</th><th>{tr('Credits: 1 / 2 years','Crédits : 1 / 2 ans')}</th></tr></thead><tbody>{[1,2,3,4,5].map(n=><tr key={n}><th>{n}</th>{[365,730].map(days=><td key={days}>{fmt(previewTier.is_reseller?0:Math.max(0,priceCAD(days,n)-Number(previewTier.discount_per_device_cad)*n*(days/365)))}</td>)}<td>{n} / {n*2}</td></tr>)}</tbody></table></div>}
     <p>{tr('Each package contains 10 device-year credits. A 5-device, 2-year order uses all 10. The owner verifies applicable payments and activates services.','Chaque forfait contient 10 crédits appareil-année. Une commande de 5 appareils sur 2 ans utilise les 10 crédits. Le propriétaire vérifie les paiements applicables et active les services.')}</p>
    </div>
    <p role="status">{tr('You may purchase multiple packages at any time. Packages at the same price share credits; choose the discount tier when submitting each agent order.','Vous pouvez acheter plusieurs forfaits à tout moment. Les forfaits au même prix partagent leurs crédits ; choisissez la remise au moment de chaque commande agent.')}</p>
@@ -86,7 +87,6 @@ export function AgentPackages({language='en',onChange}){
        <p>{tr('Available','Disponibles')}: <strong>{tier.remaining}</strong> · {tr('Reserved','Réservés')}: {tier.reserved} · {tr('Used','Utilisés')}: {tier.used}</p>
      </div>)}
    </div>}
-   <label style={{display:'block',marginTop:14}}>{tr('Payment method for a package','Mode de paiement du forfait')} <select value={method} onChange={e=>setMethod(e.target.value)}><option value="interac">Interac</option><option value="zelle">Zelle</option><option value="btc">BTC</option><option value="shib">SHIB</option></select></label>
    {pending.map(p=><div key={p.id} style={{border:'1px solid #777',borderRadius:12,padding:12,marginTop:12}}>
     <strong>{fmt(p.fee_cad)} · {p.status}</strong>
     {p.status==='awaiting_payment'&&p.instructions_issued_at&&p.payment_destination&&p.payment_amount&&<>
