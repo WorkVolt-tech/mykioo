@@ -115,7 +115,7 @@ export function AgentDashboard({user,language='en',logout,agent}){
               <li>{t('See only the customers assigned to you and their service requests.','Voir uniquement vos clients attribués et leurs demandes de service.')}</li>
               <li>{t('Choose your own customer selling price and submit new subscriptions or renewals.','Fixer librement vos prix clients et soumettre des abonnements ou renouvellements.')}</li>
               <li>{t('Receive customer renewal requests in your dashboard. Email delivery may vary.','Recevoir les demandes de renouvellement dans votre espace. Les courriels peuvent être retardés.')}</li>
-              <li>{t('Pay MYKIOO the package price minus your assigned discount.','Payer MYKIOO au prix du forfait moins votre remise attribuée.')}</li>
+              <li>{t('Pay MYKIOO the subscription price less the discount per device, provided your prepaid device-year credits cover the order.','Payer MYKIOO le prix de l’abonnement moins la remise par appareil, si vos crédits prépayés couvrent la commande.')}</li>
             </ul>
           </div>
           <div className="mykioo-welcome-panel">
@@ -153,7 +153,7 @@ export function AgentDashboard({user,language='en',logout,agent}){
       <button disabled={saving} type="submit">{t('Request invitation','Demander une invitation')}</button></form>
     </section>
     <section className="mykioo-agent-panel"><h2>{t('Order for an assigned customer','Commande pour un client attribué')}</h2>
-      <p>{t('Your selling price is your choice. MYKIOO automatically deducts '+discountCad+' CAD on eligible wholesale orders; coupons do not apply.','Vous choisissez votre prix de vente. MYKIOO déduit automatiquement '+discountCad+' $ CA des commandes admissibles; aucun code promotionnel ne s’applique.')}</p>
+      <p>{t('Your selling price is your choice. MYKIOO deducts '+discountCad+' CAD per device on eligible wholesale orders; coupons do not apply.','Vous choisissez votre prix de vente. MYKIOO déduit '+discountCad+' $ CA par appareil sur les commandes admissibles; les codes promo ne s’appliquent pas.')}</p>
       <form className="mykioo-agent-order-form" onSubmit={submitOrder}>
        <label>{t('Assigned customer','Client attribué')}<select required value={selectedCustomer} onChange={e=>setSelectedCustomer(e.target.value)}><option value="">{t('Choose a customer','Choisir un client')}</option>{rows.map(r=><option value={r.customer_user_id} key={r.customer_user_id}>{r.customer_user_id.slice(0,8)}…</option>)}</select></label>
        <label>{t('Order type','Type de commande')}<select value={kind} onChange={e=>setKind(e.target.value)}><option value="new">{t('New subscription','Nouvel abonnement')}</option><option value="renewal">{t('Renewal','Renouvellement')}</option></select></label>
