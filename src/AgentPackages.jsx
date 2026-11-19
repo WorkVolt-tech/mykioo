@@ -45,7 +45,7 @@ export function AgentPackages({language='en',onChange}){
  return <section className="mykioo-agent-panel" style={{marginBottom:24}}>
   <h2>{approved?tr('Agent packages · 10 device-year credits','Forfaits agent · 10 crédits appareil-année'):tr('Become a MYKIOO Agent','Devenir agent MYKIOO')}</h2>
   {approved?<><p>{tr('One credit = one device for one year. Two years cost two credits per device. Discounts apply once per device, not per year. You choose your resale price.','Un crédit = un appareil pendant un an. Deux ans coûtent deux crédits par appareil. La remise s’applique une fois par appareil et non par année. Vous fixez votre prix de revente.')}</p>
-  <p>{tr('Packages require owner payment verification. With a verified $400 reseller package, eligible 12-month orders may have $0 additional wholesale due because the prepaid credits cover them; no order can produce a negative charge.','Les forfaits nécessitent une vérification du paiement par le propriétaire. Avec un forfait revendeur de 400 $ vérifié, une commande de 12 mois peut ne nécessiter aucun paiement de gros supplémentaire : les crédits prépayés la couvrent. Aucun montant négatif n’est possible.')}</p></>:<p>{tr('Interested in becoming an Agent? Send your request to MYKIOO. Once the owner approves your account, agent packages and wholesale pricing will appear here.','Vous souhaitez devenir agent ? Envoyez une demande à MYKIOO. Après approbation par le propriétaire, les forfaits et tarifs agents apparaîtront ici.')}</p>}
+  <p>{tr('The $400 Reseller package is prepaid. Customer orders for 12 or 24 months cost no additional wholesale payment while credits remain. Owner activation is still required.','Le forfait Revendeur de 400 $ est prépayé. Les commandes clients de 12 ou 24 mois ne nécessitent aucun paiement de gros supplémentaire tant que des crédits sont disponibles. L’activation par le propriétaire reste nécessaire.')}</p>
   {error&&<p role="alert" className="admin-error">{error}</p>}
   {notice&&<p role="status" className="admin-success">{notice}</p>}
   {loading?<p>{tr('Loading packages…','Chargement des forfaits…')}</p>:<>
@@ -59,7 +59,7 @@ export function AgentPackages({language='en',onChange}){
    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:10}}>
     {tiers.map(t=><article key={t.fee_cad} style={{padding:14,border:'1px solid #8c805b',borderRadius:12}}>
      <strong>{fmt(t.fee_cad)}</strong>{t.is_reseller&&<span> · Reseller</span>}
-     <p>{fmt(t.discount_per_device_cad)} {tr('off per device','de remise par appareil')}</p>
+     <p>{t.is_reseller?tr('No additional wholesale payment per customer order','Aucun paiement de gros supplémentaire par commande client'):<>{fmt(t.discount_per_device_cad)} {tr('off per device','de remise par appareil')}</>}</p>
      <small>{tr('10 device-year credits','10 crédits appareil-année')}</small>
      <button style={{display:'block',marginTop:12}} type="button"
       disabled={busy||!approved||!t.purchase_enabled}
@@ -71,7 +71,7 @@ export function AgentPackages({language='en',onChange}){
    <p role="status">{tr('You may purchase multiple packages at any time. Packages at the same price share credits; choose the discount tier when submitting each agent order.','Vous pouvez acheter plusieurs forfaits à tout moment. Les forfaits au même prix partagent leurs crédits ; choisissez la remise au moment de chaque commande agent.')}</p>
    {Object.values(totals).length>0&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(215px,1fr))',gap:10,marginTop:12}}>
      {Object.values(totals).sort((a,b)=>a.fee-b.fee).map(tier=><div key={tier.fee} style={{padding:12,border:'1px solid #8c805b',borderRadius:12}}>
-       <strong>{fmt(tier.fee)} · -{fmt(tier.discount)} {tr('per device','par appareil')}</strong>
+       <strong>{fmt(tier.fee)} · {tier.fee===400?tr('Reseller · no extra wholesale charge','Revendeur · aucun frais de gros supplémentaire'):<>{'-'+fmt(tier.discount)} {tr('per device','par appareil')}</>}</strong>
        <p>{tier.packages} {tr('purchased packages','forfaits achetés')} · {tier.packages*10} {tr('total credits','crédits au total')}</p>
        <p>{tr('Available','Disponibles')}: <strong>{tier.remaining}</strong> · {tr('Reserved','Réservés')}: {tier.reserved} · {tr('Used','Utilisés')}: {tier.used}</p>
      </div>)}
