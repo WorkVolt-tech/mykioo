@@ -78,7 +78,7 @@ export function AgentPackages({language='en',onChange}){
      <p>{tr('Used','Utilisés')}: {p.used_devices}/10 · {tr('Reserved','Réservés')}: {p.reserved_devices}/10 · {tr('Available','Disponibles')}: {p.device_allowance-p.used_devices-p.reserved_devices}/10</p>
     </div>)}
    </>}
-  </>
+  </>}
  </section>
 }
 export function OwnerAgentPackages({language='en'}){
