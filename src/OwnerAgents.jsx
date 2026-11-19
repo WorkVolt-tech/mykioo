@@ -20,6 +20,7 @@ export default function OwnerAgents({language='en'}){
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[error,setError]=useState(''),[backendReady,setBackendReady]=useState(false),[memberLoadError,setMemberLoadError]=useState('');
  const [agentId,setAgentId]=useState(''),[status,setStatus]=useState('active'),[type,setType]=useState('free'),[fee,setFee]=useState('0'),[period,setPeriod]=useState('none'),[discount,setDiscount]=useState('5');
  const [customerId,setCustomerId]=useState(''),[customerAgentId,setCustomerAgentId]=useState('');
+ const [completionRequests,setCompletionRequests]=useState({});
  async function refresh(){
    setBusy(true);setError('');setMemberLoadError('');
    // Approved members are already readable by the existing owner dashboard.
@@ -152,6 +153,19 @@ export default function OwnerAgents({language='en'}){
       <strong>{memberName(o.agent_user_id)}</strong> · {memberName(o.customer_user_id)} · {o.kind} · {o.status}
       <div>{tr('MYKIOO due','Dû à MYKIOO')}: <strong>${o.wholesale_price_cad} CAD</strong> / {tr('Agent retail','Prix client')}: ${o.customer_price_cad} CAD</div>
       {o.status==='pending_payment'&&<button type="button" className="outline-button" onClick={()=>verify(o.id)} disabled={busy||!backendReady}>{tr('Confirm received payment','Confirmer le paiement reçu')}</button>}
+      {o.status==='owner_review'&&<div style={{padding:10,border:'1px solid #777',marginTop:8,borderRadius:8}}>
+       <label>{tr('Completed subscription request ID (required to consume credits)','ID de la demande d’abonnement terminée (requis pour utiliser les crédits)')}</label>
+       <input type="text" placeholder="UUID" value={completionRequests[o.id]||''} onChange={e=>setCompletionRequests(v=>({...v,[o.id]:e.target.value}))}/>
+       <button type="button" className="outline-button" disabled={busy||!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(completionRequests[o.id]||'')}
+        onClick={()=>{if(window.confirm(tr('I confirm the subscription request is completed and activated. Consume prepaid credits?','Je confirme que l’abonnement est activé. Consommer les crédits ?')))call('owner_settle_agent_order',{order_id:o.id,subscription_request_id:completionRequests[o.id]}).then(()=>refresh()).catch(e=>setError(e.message))}}>
+        {tr('Confirm activated service & consume credits','Confirmer le service activé et utiliser les crédits')}
+       </button>
+      </div>}
+      {['pending_payment','owner_review'].includes(o.status)&&<button type="button" className="outline-button" disabled={busy} onClick={()=>{
+        if(!window.confirm(tr('Cancel this agent order and release its reserved prepaid credits? Check that no service was activated.','Annuler la commande et libérer les crédits réservés ? Vérifiez qu’aucun service n’a été activé.')))return;
+        call('owner_cancel_prepaid_agent_order',{order_id:o.id}).then(()=>refresh()).catch(e=>setError(e.message));
+      }}>{tr('Cancel prepaid order / release credits','Annuler la commande prépayée / libérer les crédits')}</button>}
+
     </li>)}</ul>
    </div>
  </section>;
