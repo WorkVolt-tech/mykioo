@@ -169,7 +169,7 @@ Deno.serve(async request=>{
     if(!owner)return reply({error:"Owner only"},403);
     if(!uuid(input.order_id))return reply({error:"Invalid agent order"},400);
     const {data:order,error:orderError}=await db.from("mykioo_agent_order_intents")
-      .select("id,agent_user_id,customer_user_id,contract_days,device_count,status,payment_verified_at,owner_request_id")
+      .select("id,agent_user_id,customer_user_id,contract_days,device_count,kind,status,payment_verified_at,owner_request_id,created_at")
       .eq("id",input.order_id).maybeSingle();
     if(orderError||!order)return reply({error:"Agent order not found"},404);
     if(order.status!=="owner_review"||!order.payment_verified_at)return reply({error:"Verify agent order payment first"},409);
@@ -177,6 +177,7 @@ Deno.serve(async request=>{
       .select("id,member_id,status,service_name,contract_days,device_count,completed_at,subscription_id,created_at,request_type")
       .eq("member_id",order.customer_user_id).eq("status","fulfilled")
       .eq("contract_days",order.contract_days).eq("device_count",order.device_count)
+      .eq("request_type",order.kind).gte("completed_at",order.created_at)
       .not("completed_at","is",null).not("subscription_id","is",null)
       .order("completed_at",{ascending:false}).limit(30);
     if(completedError)return reply({error:"Cannot load fulfilled subscriptions"},503);
