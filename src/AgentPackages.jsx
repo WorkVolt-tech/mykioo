@@ -109,6 +109,10 @@ export function OwnerAgentPackages({language='en'}){
       </button>
       {p.instructions_issued_at&&<small>{tr('Instructions issued','Instructions émises')}: {p.payment_amount} {p.payment_currency}</small>}
      </div>}
+    {['awaiting_payment','payment_submitted'].includes(p.status)&&<button type="button" disabled={busy} onClick={()=>{
+      if(window.confirm(tr('Cancel this unapproved package request? This does not send a refund. Confirm that any reported payment has been investigated.','Annuler cette demande de forfait non approuvée ? Aucun remboursement automatique. Vérifiez tout paiement signalé.')))
+        run('owner_cancel_agent_package',{purchase_id:p.id})
+    }}>{tr('Cancel pending package','Annuler le forfait en attente')}</button>}
     {p.status==='payment_submitted'&&<button type="button" disabled={busy} onClick={()=>{
       if(window.confirm(tr('I verified receipt of this package payment in my bank/wallet. Activate this package?','J’ai vérifié la réception de ce paiement. Activer ce forfait ?')))
        run('owner_activate_agent_package',{purchase_id:p.id,verified:true})
