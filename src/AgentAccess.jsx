@@ -113,8 +113,8 @@ export function AgentDashboard({user,language='en',logout,agent}){
   const neededCredits=devices*(days===730?2:1);
   const discountTotal=discountCad*devices;
   const prepaidBlocked=agent?.access_type==='paid'&&(!selectedPool||creditsLeft<neededCredits);
-  const agentDue=packageBase===null?null:Math.max(0,Math.round((packageBase-discountTotal)*100)/100);
-  const appliedDiscount=packageBase===null?null:Math.min(discountTotal,Number(packageBase));
+  const agentDue=packageBase===null?null:(Number(selectedPool?.fee)===400?0:Math.max(0,Math.round((packageBase-discountTotal)*100)/100));
+  const appliedDiscount=packageBase===null?null:(Number(selectedPool?.fee)===400?Number(packageBase):Math.min(discountTotal,Number(packageBase)));
   return <div className="mykioo-agent-dashboard">
     <div className="mykioo-agent-header"><div><span className="mykioo-agent-kicker">MYKIOO · {t('AGENT BENEFITS','AVANTAGES AGENT')}</span><h2>{t('An upgrade to your membership','Un avantage pour votre adhésion')}</h2><p>{t('Keep your member dashboard and manage agent orders here. You collect payment from your customers; MYKIOO collects only your wholesale amount.','Conservez votre espace membre et gérez vos commandes agent ici. Vous encaissez vos clients; MYKIOO reçoit uniquement votre tarif agent.')}</p></div><button className="mykioo-agent-guide-button" type="button" onClick={()=>setWelcomeOpen(true)}>{t('Agent guide','Guide de l’agent')}</button></div>
     {welcomeOpen&&<div className="mykioo-welcome-overlay">
@@ -168,13 +168,13 @@ export function AgentDashboard({user,language='en',logout,agent}){
       <button disabled={saving} type="submit">{t('Request invitation','Demander une invitation')}</button></form>
     </section>
     <section className="mykioo-agent-panel"><h2>{t('Order for an assigned customer','Commande pour un client attribué')}</h2>
-      <p>{t('Your selling price is your choice. MYKIOO deducts '+discountCad+' CAD per device on eligible wholesale orders; coupons do not apply.','Vous choisissez votre prix de vente. MYKIOO déduit '+discountCad+' $ CA par appareil sur les commandes admissibles; les codes promo ne s’appliquent pas.')}</p>
+      <p>{Number(selectedPool?.fee)===400?t('Reseller package: no additional wholesale payment for eligible 12- or 24-month customer orders while prepaid credits remain.','Forfait revendeur : aucun paiement de gros supplémentaire pour les commandes de 12 ou 24 mois tant que des crédits prépayés sont disponibles.'):t('Your selling price is your choice. MYKIOO deducts '+discountCad+' CAD per device on eligible wholesale orders; coupons do not apply.','Vous choisissez votre prix de vente. MYKIOO déduit '+discountCad+' $ CA par appareil sur les commandes admissibles; les codes promo ne s’appliquent pas.')}</p>
       <form className="mykioo-agent-order-form" onSubmit={submitOrder}>
        {agent?.access_type==='paid'&&<label>{t('Apply discount from package tier','Appliquer la remise du forfait')}
          <select required value={selectedTier} onChange={e=>setSelectedTier(e.target.value)}>
           <option value="">{t('Choose the paid discount package','Choisir le forfait de remise payé')}</option>
           {eligibleTiers.map(tier=><option key={tier.fee} value={String(tier.fee)}>
-            {tier.fee} CAD · {tier.discount} CAD {t('off per device','de remise par appareil')} · {tier.credits} {t('credits available','crédits disponibles')} · {tier.packages} {t('packages','forfaits')}
+            {tier.fee} CAD · {tier.fee===400?t('Reseller · no extra wholesale payment','Revendeur · aucun paiement de gros supplémentaire'):(tier.discount+' CAD '+t('off per device','de remise par appareil'))} · {tier.credits} {t('credits available','crédits disponibles')} · {tier.packages} {t('packages','forfaits')}
           </option>)}
          </select>
        </label>}
