@@ -1,6 +1,7 @@
 import React,{useEffect,useState,useCallback} from 'react';
 import {Bell,CheckCheck,LifeBuoy,CalendarDays,AlertTriangle,ClipboardList,MessageSquarePlus,Receipt,Wallet,MailPlus,Trash2} from 'lucide-react';
 import {supabase} from './supabase';
+import {mykiooConfirm} from './MykiooDialog.jsx';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-notifications';
 export function useNotifications(userId){
@@ -75,7 +76,7 @@ export function NotificationCenter({items=[],language='en',owner=false,onSelect,
    <div className="mykioo-notification-header-actions">
     {unread>0&&<button type="button" className="mykioo-mark-all" disabled={clearing} onClick={async()=>{const ok=await markRead('all');if(!ok)setError(tr('Could not mark notifications as read.','Impossible de marquer les notifications comme lues.'))}}><CheckCheck size={16}/>{tr('Mark all read','Tout marquer comme lu')}</button>}
     {!compact&&items.length>0&&<button type="button" className="mykioo-clear-all" disabled={clearing} onClick={async()=>{
-     if(!window.confirm(tr('Permanently clear all your notifications? This will not delete your subscriptions, payments, or support requests.','Supprimer définitivement toutes vos notifications ? Vos abonnements, paiements et demandes d’assistance seront conservés.')))return;
+     if(!await mykiooConfirm(tr('Permanently clear all your notifications? This will not delete your subscriptions, payments, or support requests.','Supprimer définitivement toutes vos notifications ? Vos abonnements, paiements et demandes d’assistance seront conservés.'),{title:tr('Clear all notifications?','Effacer toutes les notifications ?'),confirmText:tr('Clear all','Tout effacer'),cancelText:tr('Cancel','Annuler'),danger:true}))return;
      setClearing(true);setError('');
      const ok=await clearNotifications?.('all');
      if(!ok)setError(tr('Could not clear notifications. Please try again.','Impossible de supprimer les notifications. Veuillez réessayer.'));
