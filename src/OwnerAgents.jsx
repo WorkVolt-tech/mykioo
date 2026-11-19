@@ -162,7 +162,7 @@ export default function OwnerAgents({language='en'}){
         {tr('Confirm activated service & consume credits','Confirmer le service activé et utiliser les crédits')}
        </button>
       </div>}
-      {['pending_payment','owner_review'].includes(o.status)&&<button type="button" className="outline-button" disabled={busy} onClick={()=>{
+      {['pending_payment','owner_review'].includes(o.status)&&<button type="button" className="outline-button" disabled={busy} onClick={async()=>{
         if(!await mykiooConfirm(tr('Cancel this agent order and release its reserved prepaid credits? Check that no service was activated.','Annuler la commande et libérer les crédits réservés ? Vérifiez qu’aucun service n’a été activé.')))return;
         call('owner_cancel_prepaid_agent_order',{order_id:o.id}).then(()=>refresh()).catch(e=>setError(e.message));
       }}>{tr('Cancel prepaid order / release credits','Annuler la commande prépayée / libérer les crédits')}</button>}
