@@ -105,10 +105,24 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    }));
    const assignedAgents=await supabase.from('mykioo_agent_customers').select('customer_user_id,agent_user_id');
    if(assignedAgents.error)throw Error('Agent customer labels: '+assignedAgents.error.message);
+   // Ticket owners and their agent identities must resolve even if those members aren't among the 100 newest accounts.
+   const allCollections=Object.fromEntries(all);
+   const supportMemberIds=[...new Set([
+      ...(allCollections.support||[]).map(t=>t.member_id),
+      ...(assignedAgents.data||[]).map(a=>a.agent_user_id)
+   ].filter(Boolean))];
+   let supportPeople=[];
+   if(supportMemberIds.length){
+     const peopleResult=await supabase.from('mykioo_members')
+       .select('user_id,display_name,email,preferred_language').in('user_id',supportMemberIds);
+     if(peopleResult.error)throw Error('Ticket member identities: '+peopleResult.error.message);
+     supportPeople=peopleResult.data||[];
+   }
    const paymentCount=await supabase.from('mykioo_billing_invoices').select('id',{count:'exact',head:true}).eq('state','payment_submitted');
    if(!paymentCount.error)setPendingPaymentCount(paymentCount.count||0);
    setRows(previous=>{
-    const fresh={...Object.fromEntries(all),agent_customers:assignedAgents.data||[]};
+    const byId=new Map([...(allCollections.members||[]),...supportPeople].map(person=>[person.user_id,person]));
+    const fresh={...allCollections,members:[...byId.values()],agent_customers:assignedAgents.data||[]};
     return JSON.stringify(previous)===JSON.stringify(fresh)?previous:fresh;
    });
   }catch(err){
