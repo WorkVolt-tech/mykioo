@@ -351,12 +351,24 @@ Deno.serve(async request=>{
    if(!await activeAgent())return reply({error:"Active agent required"},403);
    if(!validEmail(input.email))return reply({error:"Valid email required"},400);
    const email=input.email.trim().toLowerCase();
+   const invitationType=String(input.invitation_type||"");
+   if(!["member","customer"].includes(invitationType))
+     return reply({error:"Select whether to invite a regular member or an agent customer"},400);
+   if(email===String(member.email||"").toLowerCase())return reply({error:"You cannot invite yourself"},400);
+   const {data:existingMember,error:memberLookupError}=await db.from("mykioo_members")
+     .select("user_id").ilike("email",email).limit(1);
+   if(memberLookupError)return reply({error:"Unable to check existing MYKIOO memberships"},503);
+   if(existingMember?.length)return reply({error:"This person already has a MYKIOO membership. Ask the owner to change their assignment instead."},409);
+   const {data:existingInvites,error:inviteLookupError}=await db.from("mykioo_agent_invitation_requests")
+     .select("id").ilike("invitee_email",email).eq("status","pending").limit(1);
+   if(inviteLookupError)return reply({error:"Unable to check existing invitations"},503);
+   if(existingInvites?.length)return reply({error:"An invitation for this address is already pending owner approval"},409);
    const {data:recent}=await db.from("mykioo_agent_invitation_requests").select("created_at")
     .eq("agent_user_id",user.id).gte("created_at",new Date(Date.now()-86400000).toISOString()).limit(20);
    if((recent||[]).length>=20)return reply({error:"Daily invitation request limit reached"},429);
    const {data,error}=await db.from("mykioo_agent_invitation_requests").insert({
-    agent_user_id:user.id,invitee_email:email,status:"pending"
-   }).select("id,status,created_at").single();
+    agent_user_id:user.id,invitee_email:email,invitation_type:invitationType,status:"pending"
+   }).select("id,status,invitation_type,created_at").single();
    if(error)return reply({error:"Unable to request invitation"},503);
    // Existing owner invitation flow remains the only sender; do not imply delivery.
     return reply({ok:true,request:data,delivered:false});
@@ -370,7 +382,7 @@ Deno.serve(async request=>{
       .eq("agent_user_id",user.id).order("created_at",{ascending:false}),
     db.from("mykioo_agent_order_intents").select("id,customer_user_id,kind,contract_days,device_count,customer_price_cad,wholesale_price_cad,status,created_at")
       .eq("agent_user_id",user.id).order("created_at",{ascending:false}),
-    db.from("mykioo_agent_invitation_requests").select("id,invitee_email,status,created_at")
+    db.from("mykioo_agent_invitation_requests").select("id,invitee_email,invitation_type,status,created_at")
       .eq("agent_user_id",user.id).order("created_at",{ascending:false}),
     db.from("mykioo_agent_service_requests").select("id,customer_user_id,contract_days,device_count,service_name,notes,status,created_at")
       .eq("agent_user_id",user.id).order("created_at",{ascending:false})
