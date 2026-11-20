@@ -7,29 +7,19 @@ const allowedOrigins=new Set([origin,"https://www.mykioo.icu","https://mykioo.pa
 const uuid=(v:unknown)=>typeof v==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 const validEmail=(v:unknown)=>typeof v==="string"&&v.length<=254&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const amount=(v:unknown)=>typeof v==="number"&&Number.isFinite(v)&&v>=0&&v<=100000?Math.round(v*100)/100:null;
-// Secure owner Telegram notices: set TELEGRAM_BOT_TOKEN and TELEGRAM_OWNER_CHAT_ID as Supabase Edge Function secrets.
-declare const EdgeRuntime:{waitUntil(promise:Promise<unknown>):void};
-async function telegramOwnerNotice(message:string):Promise<boolean>{
- const token=Deno.env.get("TELEGRAM_BOT_TOKEN"),chatId=Deno.env.get("TELEGRAM_OWNER_CHAT_ID");
- if(!token||!chatId)return false;
+// Owner Telegram test uses the existing RLS-protected database chat ID and Supabase bot token.
+async function testExistingOwnerTelegram(chatId:string):Promise<boolean>{
+ const token=Deno.env.get("TELEGRAM_BOT_TOKEN");
+ if(!token||!chatId||!/^(-?[0-9]{5,20})$/.test(chatId))return false;
  try{
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),5000);
-  try{
-   const res=await fetch("https://api.telegram.org/bot"+token+"/sendMessage",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({chat_id:chatId,text:message.slice(0,3500),disable_web_page_preview:true}),signal:controller.signal
-   });
-   if(!res.ok){console.error("MYKIOO Telegram HTTP error",res.status);return false;}
-   return Boolean((await res.json().catch(()=>null))?.ok);
-  }finally{clearTimeout(timer)}
- }catch(error){console.error("MYKIOO Telegram unavailable",error instanceof Error?error.name:"unknown");return false}
+  const response=await fetch("https://api.telegram.org/bot"+token+"/sendMessage",{
+   method:"POST",headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({chat_id:chatId,text:"MYKIOO | Existing Telegram owner alerts are connected. Agent requests and orders are included in owner notifications.",disable_web_page_preview:true}),
+   signal:AbortSignal.timeout(10000)
+  });
+  return response.ok&&Boolean((await response.json().catch(()=>null))?.ok);
+ }catch{return false}
 }
-function queueTelegramOwnerNotice(message:string){
- if(!Deno.env.get("TELEGRAM_BOT_TOKEN")||!Deno.env.get("TELEGRAM_OWNER_CHAT_ID"))return;
- try{EdgeRuntime.waitUntil(telegramOwnerNotice(message))}
- catch{/* Notifications must never block orders. */}
-}
-const ownerAgentLabel=(email:string,id:string)=>email?email+" ("+id.slice(0,8)+")":id.slice(0,8);
 Deno.serve(async request=>{
  const requestOrigin=request.headers.get("Origin")||"";
  const headers={"Access-Control-Allow-Origin":allowedOrigins.has(requestOrigin)?requestOrigin:origin,
@@ -57,9 +47,12 @@ Deno.serve(async request=>{
 
   if(action==="owner_test_telegram"){
    if(!owner)return reply({error:"Owner only"},403);
-   const configured=Boolean(Deno.env.get("TELEGRAM_BOT_TOKEN")&&Deno.env.get("TELEGRAM_OWNER_CHAT_ID"));
-   if(!configured)return reply({ok:true,configured:false,delivered:false});
-   return reply({ok:true,configured:true,delivered:await telegramOwnerNotice("MYKIOO | Telegram owner alerts connected. Test from Agent admin panel.")});
+   const {data:settings,error}=await db.from("mykioo_telegram_owner_settings")
+    .select("enabled,chat_id").eq("id",1).maybeSingle();
+   if(error)return reply({error:"Unable to check existing Telegram settings"},503);
+   const configured=Boolean(settings?.enabled&&settings.chat_id&&Deno.env.get("TELEGRAM_BOT_TOKEN"));
+   if(!configured)return reply({ok:true,configured:false,delivered:false,chat_id_saved:Boolean(settings?.chat_id),enabled:Boolean(settings?.enabled)});
+   return reply({ok:true,configured:true,delivered:await testExistingOwnerTelegram(String(settings.chat_id))});
   }
   // Prepaid 10 device-year packages. Client cannot authorize payments or credits.
   if(action==="agent_package_list"){
@@ -88,7 +81,6 @@ Deno.serve(async request=>{
       access_fee_period:"none",discount_cad:0
     });
     if(error)return reply({error:"Unable to submit agent application"},503);
-    queueTelegramOwnerNotice("MYKIOO | New agent application\nMember: "+ownerAgentLabel(member.email,user.id)+"\nPending owner approval");
     return reply({ok:true,status:"pending"});
   }
   if(action==="agent_purchase_package"){
@@ -107,7 +99,6 @@ Deno.serve(async request=>{
       device_allowance:10,payment_method:method,status:"awaiting_payment"
     }).select("id,status,fee_cad").single();
     if(error)return reply({error:"Unable to create package payment request"},503);
-    queueTelegramOwnerNotice("MYKIOO | Agent package requested\nAgent: "+ownerAgentLabel(member.email,user.id)+"\nFee: $"+fee+" CAD\nMethod: "+method+"\nAwaiting payment instructions");
     return reply({ok:true,purchase,payment_verified:false});
   }
   if(action==="agent_submit_package_payment"){
@@ -128,7 +119,6 @@ Deno.serve(async request=>{
       .eq("id",input.purchase_id).eq("agent_user_id",user.id).eq("status","awaiting_payment")
       .select("id,status").maybeSingle();
     if(error||!data)return reply({error:"Package request not awaiting payment"},409);
-    queueTelegramOwnerNotice("MYKIOO | Agent reports package payment sent\nAgent: "+ownerAgentLabel(member.email,user.id)+"\nPurchase ID: "+input.purchase_id+"\nReference: "+reference+"\nVerify before activation");
     return reply({ok:true,purchase:data});
   }
   if(action==="owner_package_list"){
@@ -369,7 +359,6 @@ Deno.serve(async request=>{
    }).select("id,status,created_at").single();
    if(error)return reply({error:"Unable to request invitation"},503);
    // Existing owner invitation flow remains the only sender; do not imply delivery.
-   queueTelegramOwnerNotice("MYKIOO | Agent requests invitation\nAgent: "+ownerAgentLabel(member.email,user.id)+"\nInvitee: "+email+"\nOwner approval needed");
     return reply({ok:true,request:data,delivered:false});
   }
   if(action==="agent_list"){
@@ -412,7 +401,6 @@ Deno.serve(async request=>{
        p_retail:retail,p_method:method,p_fee_cad:Number(input.package_fee_cad)
      });
      if(error)return reply({error:error.message},409);
-     queueTelegramOwnerNotice("MYKIOO | Agent customer order\nAgent: "+ownerAgentLabel(member.email,user.id)+"\nOrder: "+order.id+"\nTier: $"+chosenFee+"\n"+kind+" | "+devices+" devices | "+(days===730?"2 years":"1 year")+"\nWholesale: $"+Number(order.wholesale_price_cad).toFixed(2)+" CAD\n"+(Number(order.wholesale_price_cad)===0?"Prepaid: activation needed":"Verify payment before activation"));
       return reply({ok:true,order,discount_cad:null,credits_reserved:order.credits_reserved,payment_verified:order.status==="owner_review",additional_wholesale_payment_due:Number(order.wholesale_price_cad)>0});
    }
    const {data:price,error:priceError}=await db.from("mykioo_package_prices")
@@ -429,7 +417,6 @@ Deno.serve(async request=>{
      wholesale_price_cad:wholesale,payment_method:method,status:"pending_payment"
    }).select("id,status,wholesale_price_cad,customer_price_cad").single();
    if(orderError)return reply({error:"Unable to create order"},503);
-   queueTelegramOwnerNotice("MYKIOO | Free-agent customer order\nAgent: "+ownerAgentLabel(member.email,user.id)+"\nOrder: "+order.id+"\n"+kind+" | "+devices+" devices | "+(days===730?"2 years":"1 year")+"\nWholesale: $"+wholesale.toFixed(2)+" CAD\nPayment verification needed");
     return reply({ok:true,order,discount_cad:discountCad,payment_verified:false});
   }
   if(action==="owner_verify_agent_order"){
@@ -480,7 +467,6 @@ Deno.serve(async request=>{
      emailed=response.ok&&Boolean((await response.json().catch(()=>null))?.messageId);
     }catch{}
    }
-   queueTelegramOwnerNotice("MYKIOO | Customer service request\nCustomer: "+ownerAgentLabel(member.email,user.id)+"\n"+devices+" devices | "+(days===730?"2 years":"1 year")+"\nAssigned agent: "+assignment.agent_user_id.slice(0,8));
     return reply({ok:true,request:record,agent_email_accepted:emailed});
   }
   if(action==="customer_renewal_request"){
@@ -518,7 +504,6 @@ Deno.serve(async request=>{
        if(emailed)await db.from("mykioo_agent_renewal_requests").update({agent_notified_at:new Date().toISOString()}).eq("id",created.id);
      }catch{ /* request persists in agent dashboard even if email fails */ }
    }
-   queueTelegramOwnerNotice("MYKIOO | Customer renewal request\nCustomer: "+ownerAgentLabel(member.email,user.id)+"\nAssigned agent: "+assignment.agent_user_id.slice(0,8));
     return reply({ok:true,request_id:created.id,agent_email_accepted:emailed});
   }
   return reply({error:"Unknown action"},400);
