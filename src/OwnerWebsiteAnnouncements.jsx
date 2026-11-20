@@ -7,7 +7,7 @@ import {WebsiteAnnouncementBanner} from './WebsiteAnnouncements';
 const API='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-website-announcements';
 const blank=()=>({
  id:'',title_en:'',title_fr:'',message_en:'',message_fr:'',
- tone:'warning',audience:'all',is_published:false,starts_at:'',ends_at:''
+ tone:'warning',audience:'all',agent_customer_safe:false,is_published:false,starts_at:'',ends_at:''
 });
 const localDate=value=>{
  if(!value)return '';
@@ -24,7 +24,8 @@ const audiences=[
  {id:'all',en:'Everyone — login, members and owner',fr:'Tout le monde — connexion, membres et propriétaire'},
  {id:'guest',en:'Login / invitation page only',fr:'Page de connexion / invitation uniquement'},
  {id:'member',en:'Approved members only',fr:'Membres approuvés uniquement'},
- {id:'owner',en:'Owner dashboard only',fr:'Tableau de bord propriétaire uniquement'}
+ {id:'owner',en:'Owner dashboard only',fr:'Tableau de bord propriétaire uniquement'},
+ {id:'agent_customer',en:'Agent customers only — no pricing',fr:'Clients des agents uniquement — sans tarifs'}
 ];
 async function adminRequest(payload){
  if(!supabase)throw Error('Service is not configured.');
@@ -60,7 +61,7 @@ export default function OwnerWebsiteAnnouncements({language='en'}){
   setForm({
    id:item.id,title_en:item.title_en,title_fr:item.title_fr,
    message_en:item.message_en,message_fr:item.message_fr,
-   tone:item.tone,audience:item.audience,is_published:item.is_published,
+   tone:item.tone,audience:item.audience,agent_customer_safe:Boolean(item.agent_customer_safe),is_published:item.is_published,
    starts_at:localDate(item.starts_at),ends_at:localDate(item.ends_at)
   });
   setNotice('');setError('');
@@ -75,6 +76,7 @@ export default function OwnerWebsiteAnnouncements({language='en'}){
     starts_at:form.starts_at?new Date(form.starts_at).toISOString():null,
     ends_at:form.ends_at?new Date(form.ends_at).toISOString():null
    };
+   if(form.audience==='agent_customer'&&/(?:\$|\bCAD\b|\bUSD\b|\bprice\b|\bpricing\b|\bwholesale\b|\breseller\b|\bdiscount\b|\bprix\b|\btarif\b|\bremise\b|\brevendeur\b|\bfacturation\b)/i.test([form.title_en,form.title_fr,form.message_en,form.message_fr].join(' ')))throw Error(tr('Agent customer notices cannot contain prices or reseller information.','Les annonces destinées aux clients des agents ne doivent pas contenir de prix ni de renseignements sur les revendeurs.'));
    await adminRequest(payload);
    setNotice(form.is_published?
     tr('Announcement saved and published.','Annonce enregistrée et publiée.'):
@@ -122,6 +124,7 @@ export default function OwnerWebsiteAnnouncements({language='en'}){
     <label>{tr('English message','Message anglais')}<textarea required minLength={10} maxLength={2000} rows={4} value={form.message_en} onChange={e=>change('message_en',e.target.value)}/></label>
     <label>{tr('French message','Message français')}<textarea required minLength={10} maxLength={2000} rows={4} value={form.message_fr} onChange={e=>change('message_fr',e.target.value)}/></label>
    </div>
+   <p className="mykioo-owner-announcement-safety">{tr('Agent customers see only announcements targeted to Agent customers, plus Everyone notices you explicitly mark safe. Their dashboard does not display standard member-only announcements.','Les clients des agents voient uniquement les annonces destinées aux Clients des agents, ainsi que celles destinées à Tout le monde que vous autorisez explicitement. Leur espace ne montre pas les annonces réservées aux membres normaux.')}</p>
    <strong>{tr('Announcement colour and priority','Couleur et priorité de l’annonce')}</strong>
    <div className="announcement-tone-options">
     {levels.map(level=><button type="button" key={level.id}
@@ -138,6 +141,7 @@ export default function OwnerWebsiteAnnouncements({language='en'}){
       {audiences.map(a=><option key={a.id} value={a.id}>{fr?a.fr:a.en}</option>)}
      </select>
     </label>
+    {form.audience==='all'&&<label className="announcement-toggle mykioo-agent-notice-safe"><input type="checkbox" checked={form.agent_customer_safe} onChange={e=>change('agent_customer_safe',e.target.checked)}/>{tr('Also show to agent customers — I confirm this contains NO prices, fees, discounts, reseller terms or billing details.','Afficher aussi aux clients des agents — je confirme que l’annonce ne contient AUCUN prix, frais, remise, condition revendeur ni détail de facturation.')}</label>}
     <label>{tr('Start date/time (blank: now)','Début (vide : maintenant)')}
      <input type="datetime-local" value={form.starts_at} onChange={e=>change('starts_at',e.target.value)}/>
     </label>
