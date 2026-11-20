@@ -338,6 +338,25 @@ Deno.serve(async (request) => {
           "Account creation failed and cleanup needs owner attention. No email was sent.":
           "Account creation failed. Nothing was emailed; please retry."},500);
       }
+      // Agent-generated invitations must produce an agent-to-customer assignment.
+      // The invited member must see the Agent Customer portal, not ordinary MYKIOO retail plans.
+      if(agentReviewRequestId){
+        const {data:activeAgent,error:agentError}=await server.from("mykioo_agent_accounts")
+          .select("agent_user_id,status").eq("agent_user_id",inviterId).maybeSingle();
+        if(agentError||activeAgent?.status!=="active"){
+          await server.from("mykioo_members").delete().eq("user_id",uid).eq("status","pending");
+          await server.auth.admin.deleteUser(uid);
+          return reply({error:"The requesting agent is not active. No invitation was sent."},409);
+        }
+        const {error:assignmentError}=await server.from("mykioo_agent_customers")
+          .insert({customer_user_id:uid,agent_user_id:inviterId,assigned_by:actor.id});
+        if(assignmentError){
+          await server.from("mykioo_members").delete().eq("user_id",uid).eq("status","pending");
+          const {error:cleanupError}=await server.auth.admin.deleteUser(uid);
+          if(cleanupError)console.error("Agent invite assignment cleanup needs attention",uid);
+          return reply({error:"Unable to link the invited member to the agent. No invitation was sent."},503);
+        }
+      }
       const {data:inviteLog,error:logError}=await server.from("mykioo_invitations").insert({
         email,...linkRecord,status:"pending",invited_by:inviterId,accepted_by:uid
       }).select("id").single();
