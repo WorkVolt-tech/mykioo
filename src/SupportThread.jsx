@@ -9,6 +9,11 @@ const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-sup
 export default function SupportThread({ticket,userId,language='en',owner=false,recipientLanguage='en',agentCustomerName=null,unread=0,onRead,onStatusChanged}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
  const {templates}=useReplyTemplates(owner);
+ // Don't offer saved templates that might contain billing, retail or reseller terms to agent-managed customer tickets.
+ const eligibleTemplates=owner&&agentCustomerName?templates.filter(t=>
+   t.category!=='billing'&&
+   !/(?:\$|\bCAD\b|\bUSD\b|\bprice\b|\bpricing\b|\bwholesale\b|\breseller\b|\bdiscount\b|\btarif\b|\bprix\b|\bremise\b|\brevendeur\b|\bfacturation\b)/i.test([t.title_en,t.title_fr,t.body_en,t.body_fr].join(' '))
+ ):templates;
  const [draftLanguage,setDraftLanguage]=useState(recipientLanguage==='fr'?'fr':'en');
  const [selectedTemplate,setSelectedTemplate]=useState('');
  const latestReadRef=useRef('');const [expanded,setExpanded]=useState(false);const [messages,setMessages]=useState([]),[body,setBody]=useState(''),[loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
@@ -128,11 +133,11 @@ export default function SupportThread({ticket,userId,language='en',owner=false,r
      <label htmlFor={'mykioo-template-select-'+ticket.id}>{tr('Saved reply','Réponse enregistrée')}</label>
      <select id={'mykioo-template-select-'+ticket.id} value={selectedTemplate} onChange={e=>{
        const id=e.target.value;setSelectedTemplate(id);
-       const chosen=templates.find(t=>t.id===id);
+       const chosen=eligibleTemplates.find(t=>t.id===id);
        if(chosen){setBody(chosen[draftLanguage==='fr'?'body_fr':'body_en']);setNotice('')}
      }}>
       <option value="">{tr('Select a reply to insert (optional)','Choisir une réponse à insérer (facultatif)')}</option>
-      {templates.filter(t=>t.is_active).sort((a,b)=>Number(b.category===ticket.category)-Number(a.category===ticket.category))
+      {eligibleTemplates.filter(t=>t.is_active).sort((a,b)=>Number(b.category===ticket.category)-Number(a.category===ticket.category))
        .map(t=><option key={t.id} value={t.id}>{t.category===ticket.category?'★ ':''}{draftLanguage==='fr'?t.title_fr:t.title_en}</option>)}
      </select>
      <small>{tr('Selecting a reply fills the editor; nothing is sent until you press Send reply.','La sélection remplit le brouillon; rien n’est envoyé avant de cliquer sur Envoyer la réponse.')}</small>
