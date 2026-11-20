@@ -1319,3 +1319,18 @@
 .mykioo-owner-telegram-check>button:disabled{opacity:.5}
 .mykioo-owner-telegram-check>p[role=status]{flex:1 0 100%;padding-top:8px;border-top:1px solid rgba(210,174,118,.2);color:#f2d8ac;line-height:1.55}
 @media(max-width:600px){.mykioo-owner-telegram-check{padding:13px}.mykioo-owner-telegram-check>button{width:100%!important}}
+
+
+/* Agent customer self-service navigation and support — no retail or wholesale pricing. */
+.mykioo-agent-customer-tabs{display:flex;flex-wrap:wrap;gap:9px;margin:18px 0 22px;padding:8px;border-radius:13px;background:rgba(28,23,35,.72);border:1px solid rgba(211,177,117,.32)}
+.mykioo-agent-customer-tabs button{flex:1 1 160px;min-height:44px;min-width:0!important;padding:10px 15px!important;border:1px solid transparent!important;border-radius:8px!important;background:rgba(255,255,255,.045)!important;color:#eadac8!important;font-family:inherit;font-size:13px;font-weight:750;cursor:pointer;line-height:1.45}
+.mykioo-agent-customer-tabs button.selected{background:linear-gradient(135deg,#e3c494,#c7a46b)!important;color:#241c25!important;border-color:#f0d4a6!important;box-shadow:0 4px 14px rgba(0,0,0,.14)}
+.mykioo-agent-customer-tabs button:focus-visible{outline:2px solid #ead0a2;outline-offset:3px}
+.mykioo-agent-customer-tickets{display:grid;gap:15px;margin:16px 0}
+.mykioo-agent-customer-ticket{border-radius:12px;padding:16px;border:1px solid rgba(214,178,116,.34);background:linear-gradient(140deg,#28232f,#1c1a28);min-width:0}
+.mykioo-agent-customer-ticket>strong{display:block;font-size:15px;color:#f3dcb7;margin-bottom:7px;overflow-wrap:anywhere}
+.mykioo-agent-customer-ticket>p{font-size:12px;line-height:1.55;margin:5px 0 11px;color:#d8cbda;overflow-wrap:anywhere}
+.mykioo-reseller-support-warning{display:grid;gap:5px;padding:12px 16px;margin:12px 0;border-radius:10px;border:1px solid rgba(221,166,91,.6);background:rgba(146,92,30,.13);color:#f3ddba;font-size:12px;line-height:1.55}
+.mykioo-reseller-support-warning>strong{color:#ffdc9d;font-size:12px;letter-spacing:.025em}
+.mykioo-reseller-support-warning span,.mykioo-reseller-support-warning b{overflow-wrap:anywhere}
+@media(max-width:550px){.mykioo-agent-customer-tabs{padding:7px;gap:7px}.mykioo-agent-customer-tabs button{flex-basis:100%}.mykioo-agent-customer-ticket{padding:12px}}
