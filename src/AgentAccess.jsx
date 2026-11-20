@@ -328,7 +328,7 @@ export function AgentCustomerDashboard({user,language='en',logout}){
      {serviceNotice&&<p role="status">{serviceNotice}</p>}
     </section>
     </>}
-    {section==='guides'&&<MemberSetupGuides language={language} userId={user.id} agentCustomer onOpenSupport={()=>setSection('support')}/>}
+    {section==='guides'&&<><p className="mykioo-agent-customer-app-link"><a href="/apps/">{t('Browse compatible third-party app downloads','Voir les téléchargements d’applications tierces compatibles')}</a></p><MemberSetupGuides language={language} userId={user.id} agentCustomer onOpenSupport={()=>setSection('support')}/></>}
     {section==='support'&&<>
     <section className="mykioo-support-card"><h2>{t('Open a support ticket','Ouvrir une demande d’assistance')}</h2>
       <p>{t('For setup and playback issues, MYKIOO can help. For subscription prices or payment, contact your agent.','MYKIOO peut vous aider pour l’installation et la lecture. Pour les tarifs ou paiements, contactez votre agent.')}</p>
