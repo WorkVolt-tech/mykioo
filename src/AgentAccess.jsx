@@ -2,6 +2,9 @@ import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 import './AgentWelcome.css';
 import {priceCAD} from './PackagePricing';
+import {MemberSetupGuides} from './SetupGuides';
+import {MemberSupportFAQ} from './SupportFAQ';
+import SupportThread from './SupportThread';
 
 // Agent quotes are shown in this dashboard; assigned customers see no pricing.
 // Every order and invitation must use the authenticated server workflow.
@@ -229,6 +232,17 @@ export function AgentCustomerDashboard({user,language='en',logout}){
   const t=(en,fr)=>tr(language,en,fr);
   const [subscriptions,setSubscriptions]=useState([]),[renewals,setRenewals]=useState([]),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[ticketSubject,setTicketSubject]=useState(''),[ticketBody,setTicketBody]=useState(''),[ticketBusy,setTicketBusy]=useState(false),[ticketNotice,setTicketNotice]=useState('');
   const [agentId,setAgentId]=useState(null);
+  const [section,setSection]=useState('service'),[tickets,setTickets]=useState([]),[ticketsBusy,setTicketsBusy]=useState(true),[ticketLoadError,setTicketLoadError]=useState(''),[ticketCategory,setTicketCategory]=useState('other');
+  async function refreshTickets(){
+    setTicketsBusy(true);
+    const {data,error}=await supabase.from('mykioo_support_tickets')
+      .select('id,member_id,subject,message,status,category,created_at,updated_at').eq('member_id',user.id)
+      .order('created_at',{ascending:false}).limit(60);
+    if(error)setTicketLoadError(error.message);
+    else{setTickets(data||[]);setTicketLoadError('');}
+    setTicketsBusy(false);
+  }
+  useEffect(()=>{refreshTickets();},[user.id]);
   const [serviceDays,setServiceDays]=useState(365),[serviceDevices,setServiceDevices]=useState(1),[serviceNotes,setServiceNotes]=useState(''),[serviceBusy,setServiceBusy]=useState(false),[serviceNotice,setServiceNotice]=useState('');
   useEffect(()=>{
     let live=true;
@@ -277,19 +291,24 @@ export function AgentCustomerDashboard({user,language='en',logout}){
       const response=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-support',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},
-        body:JSON.stringify({action:'create_ticket',category:'other',subject:ticketSubject.trim(),message:ticketBody.trim()})
+        body:JSON.stringify({action:'create_ticket',category:ticketCategory,subject:ticketSubject.trim(),message:ticketBody.trim()})
       });
       const result=await response.json();
       if(!response.ok||!result.ok)throw Error(result.error||'Unable to submit');
       setTicketSubject('');setTicketBody('');
-      setTicketNotice(t('Support request submitted.','Demande d’assistance envoyée.'));
+      setTicketNotice(t('Support request submitted. You can read replies in the conversations below.','Demande envoyée. Vous pourrez lire les réponses dans les conversations ci-dessous.'));
+      await refreshTickets();
     }catch{setTicketNotice(t('Support request failed. Please try again.','Échec de la demande. Réessayez.'));}
     finally{setTicketBusy(false);}
   }
   return <div className="dashboard"><main className="dash-content" style={{maxWidth:760,margin:'0 auto'}}>
     <header className="dash-header"><strong>MYKIOO</strong><button className="outline-button" onClick={logout}>{t('Sign out','Déconnexion')}</button></header>
-    <h1>{t('My service','Mon service')}</h1>
-    <p className="page-sub">{t('Your access and expiration dates, without pricing or billing information.','Votre accès et vos dates d’expiration, sans prix ni facturation.')}</p>
+    <h1>{section==='guides'?t('Setup & help','Installation et aide'):section==='support'?t('Support center','Centre d’assistance'):t('My service','Mon service')}</h1>
+    <p className="page-sub">{t('Access your service, setup guides and support here, without MYKIOO retail or wholesale prices.','Consultez votre service, vos guides et votre assistance sans afficher les tarifs publics ou de gros MYKIOO.')}</p>
+    <nav className="mykioo-agent-customer-tabs" aria-label={t('Customer navigation','Navigation client')}>
+      {[{id:'service',en:'My service',fr:'Mon service'},{id:'guides',en:'Setup & help guides',fr:'Guides et aide'},{id:'support',en:'Support tickets',fr:'Demandes d’assistance'}].map(item=><button key={item.id} type="button" className={section===item.id?'selected':''} aria-current={section===item.id?'page':undefined} onClick={()=>setSection(item.id)}>{t(item.en,item.fr)}{item.id==='support'&&tickets.length>0?' ('+tickets.length+')':''}</button>)}
+    </nav>
+    {section==='service'&&<>
     {subscriptions.length===0?<section className="mykioo-support-card">{t('No active subscription details available yet.','Aucun abonnement disponible pour le moment.')}</section>:
     subscriptions.map(s=><section key={s.id} className="mykioo-support-card"><h2>{s.service_name||'MYKIOO TV'}</h2>
       <p>{t('Status','Statut')}: <strong>{s.status}</strong></p>
@@ -308,13 +327,31 @@ export function AgentCustomerDashboard({user,language='en',logout}){
      </form>
      {serviceNotice&&<p role="status">{serviceNotice}</p>}
     </section>
+    </>}
+    {section==='guides'&&<MemberSetupGuides language={language} userId={user.id} agentCustomer onOpenSupport={()=>setSection('support')}/>}
+    {section==='support'&&<>
     <section className="mykioo-support-card"><h2>{t('Open a support ticket','Ouvrir une demande d’assistance')}</h2>
+      <p>{t('For setup and playback issues, MYKIOO can help. For subscription prices or payment, contact your agent.','MYKIOO peut vous aider pour l’installation et la lecture. Pour les tarifs ou paiements, contactez votre agent.')}</p>
+      <MemberSupportFAQ language={language} category={ticketCategory} subject={ticketSubject} onOpenGuides={()=>setSection('guides')}/>
       <form onSubmit={submitTicket}>
+        <label>{t('Issue category','Catégorie de problème')}<select value={ticketCategory} onChange={e=>setTicketCategory(e.target.value)}><option value="setup">{t('Setup / installation','Installation')}</option><option value="streaming">{t('Playback / buffering','Lecture / chargement')}</option><option value="channels">{t('Channels','Chaînes')}</option><option value="login">{t('Login / account','Connexion / compte')}</option><option value="other">{t('Other technical issue','Autre problème technique')}</option></select></label>
         <label>{t('Subject','Sujet')}<input value={ticketSubject} onChange={e=>setTicketSubject(e.target.value)} minLength={3} maxLength={120} required/></label>
         <label>{t('Describe the issue','Décrivez le problème')}<textarea value={ticketBody} onChange={e=>setTicketBody(e.target.value)} minLength={5} maxLength={3000} required/></label>
         <button type="submit" className="outline-button" disabled={ticketBusy}>{ticketBusy?t('Submitting…','Envoi…'):t('Send support ticket','Envoyer la demande')}</button>
       </form>
       {ticketNotice&&<p role="status">{ticketNotice}</p>}
     </section>
+    <section className="mykioo-support-card"><h2>{t('My support conversations','Mes conversations avec l’assistance')}</h2>
+      <p>{t('Open a conversation to read and reply to MYKIOO support.','Ouvrez une conversation pour lire les réponses et répondre à MYKIOO.')}</p>
+      {ticketLoadError&&<p role="alert">{t('Could not load your tickets.','Impossible de charger vos demandes.')} {ticketLoadError}</p>}
+      {ticketsBusy?<p>{t('Loading tickets…','Chargement des demandes…')}</p>:tickets.length===0?<p>{t('No tickets yet.','Aucune demande pour le moment.')}</p>:
+        <div className="mykioo-agent-customer-tickets">{tickets.map(ticket=><article key={ticket.id} className="mykioo-agent-customer-ticket">
+         <strong>{ticket.subject}</strong><p><span>{ticket.status==='open'?t('Open','Ouverte'):ticket.status==='in_progress'?t('In progress','En cours'):ticket.status==='resolved'?t('Resolved','Résolue'):ticket.status==='closed'?t('Closed','Fermée'):ticket.status}</span> · {statusDate(ticket.created_at,language)}</p>
+         <p>{ticket.message}</p>
+         <SupportThread ticket={ticket} userId={user.id} language={language} onStatusChanged={refreshTickets}/>
+        </article>)}</div>}
+      <button type="button" className="outline-button" onClick={refreshTickets} disabled={ticketsBusy}>{t('Refresh conversations','Actualiser les conversations')}</button>
+    </section>
+    </>}
   </main></div>;
 }
