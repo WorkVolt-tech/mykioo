@@ -15,3 +15,21 @@
 .mykioo-owner-agents .mykioo-agent-directory-item{margin:12px 0;padding:12px;border:1px solid rgba(218,183,124,.22);border-radius:10px;list-style:none}
 .mykioo-owner-agents .mykioo-agent-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .mykioo-owner-agents .mykioo-agent-actions button{min-height:38px;padding:8px 12px}
+
+/* Owner review of agent-generated customer invitations */
+.mykioo-agent-invite-list{display:grid;gap:12px;margin:14px 0 20px;padding:0;list-style:none}
+.mykioo-agent-invite-item{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:13px;min-width:0;padding:16px 18px;border:1px solid rgba(214,179,119,.35);border-radius:12px;background:linear-gradient(140deg,#211d2b,#15141e)}
+.mykioo-agent-invite-item>div:first-child{display:grid;gap:5px;min-width:160px;flex:1 1 180px;overflow-wrap:anywhere}
+.mykioo-agent-invite-item>div:first-child strong{color:#f8e5c1;font-weight:800;font-size:14px}
+.mykioo-agent-invite-item>div:first-child span{color:#bcb2c1;font-size:12px}
+.mykioo-agent-invite-status{padding:6px 9px;border-radius:8px;border:1px solid #8f754c;background:rgba(216,175,109,.1);color:#ead2a4;font-size:11px;font-weight:750}
+.mykioo-agent-invite-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.mykioo-agent-invite-actions button,.mykioo-agent-manual-invite button{min-width:0!important;min-height:40px;padding:10px 13px!important;background:#d9ba82!important;border:1px solid #dfc592!important;border-radius:9px!important;color:#251d26!important;font-size:12px!important;font-weight:800!important;cursor:pointer;white-space:normal}
+.mykioo-agent-invite-actions button.outline-button{background:transparent!important;color:#e9d6bb!important;border-color:#94795a!important}
+.mykioo-agent-invite-actions button:disabled{opacity:.55;cursor:not-allowed}
+.mykioo-agent-manual-invite{display:grid;gap:10px;padding:16px;border:1px solid #bd9566;border-radius:12px;background:#26202d}
+.mykioo-agent-manual-invite strong{color:#f2d6a7}
+.mykioo-agent-manual-invite p{margin:0;color:#e1d6df;line-height:1.6;overflow-wrap:anywhere}
+.mykioo-agent-manual-invite input{width:100%;min-width:0;padding:10px;color:#f4e3cb;border:1px solid #8d765b;border-radius:8px;background:#181620}
+.mykioo-agent-manual-invite button{justify-self:start}
+@media(max-width:640px){.mykioo-agent-invite-item{align-items:stretch;padding:13px}.mykioo-agent-invite-actions{width:100%}.mykioo-agent-invite-actions button{flex:1 1 145px}}
