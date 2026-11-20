@@ -5,6 +5,7 @@ import {priceCAD} from './PackagePricing';
 import {MemberSetupGuides} from './SetupGuides';
 import {MemberSupportFAQ} from './SupportFAQ';
 import SupportThread from './SupportThread';
+import WebsiteAnnouncements,{useWebsiteAnnouncements} from './WebsiteAnnouncements';
 
 // Agent quotes are shown in this dashboard; assigned customers see no pricing.
 // Every order and invitation must use the authenticated server workflow.
@@ -232,6 +233,8 @@ export function AgentCustomerDashboard({user,language='en',logout}){
   const t=(en,fr)=>tr(language,en,fr);
   const [subscriptions,setSubscriptions]=useState([]),[renewals,setRenewals]=useState([]),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[ticketSubject,setTicketSubject]=useState(''),[ticketBody,setTicketBody]=useState(''),[ticketBusy,setTicketBusy]=useState(false),[ticketNotice,setTicketNotice]=useState('');
   const [agentId,setAgentId]=useState(null);
+  const availableAnnouncements=useWebsiteAnnouncements();
+  const safeAnnouncementCount=availableAnnouncements.filter(a=>a.is_published&&(a.audience==='agent_customer'||a.audience==='all'&&a.agent_customer_safe)).length;
   const [section,setSection]=useState('service'),[tickets,setTickets]=useState([]),[ticketsBusy,setTicketsBusy]=useState(true),[ticketLoadError,setTicketLoadError]=useState(''),[ticketCategory,setTicketCategory]=useState('other');
   async function refreshTickets(){
     setTicketsBusy(true);
@@ -303,11 +306,14 @@ export function AgentCustomerDashboard({user,language='en',logout}){
   }
   return <div className="dashboard"><main className="dash-content" style={{maxWidth:760,margin:'0 auto'}}>
     <header className="dash-header"><strong>MYKIOO</strong><button className="outline-button" onClick={logout}>{t('Sign out','Déconnexion')}</button></header>
-    <h1>{section==='guides'?t('Setup & help','Installation et aide'):section==='support'?t('Support center','Centre d’assistance'):t('My service','Mon service')}</h1>
+    <h1>{section==='guides'?t('Setup & help','Installation et aide'):section==='support'?t('Support center','Centre d’assistance'):section==='announcements'?t('Announcements','Annonces'):section==='apps'?t('App downloads','Téléchargement des applications'):t('My service','Mon service')}</h1>
     <p className="page-sub">{t('Access your service, setup guides and support here, without MYKIOO retail or wholesale prices.','Consultez votre service, vos guides et votre assistance sans afficher les tarifs publics ou de gros MYKIOO.')}</p>
     <nav className="mykioo-agent-customer-tabs" aria-label={t('Customer navigation','Navigation client')}>
-      {[{id:'service',en:'My service',fr:'Mon service'},{id:'guides',en:'Setup & help guides',fr:'Guides et aide'},{id:'support',en:'Support tickets',fr:'Demandes d’assistance'}].map(item=><button key={item.id} type="button" className={section===item.id?'selected':''} aria-current={section===item.id?'page':undefined} onClick={()=>setSection(item.id)}>{t(item.en,item.fr)}{item.id==='support'&&tickets.length>0?' ('+tickets.length+')':''}</button>)}
+      {[{id:'service',en:'My service',fr:'Mon service'},{id:'guides',en:'Setup & help guides',fr:'Guides et aide'},{id:'support',en:'Support tickets',fr:'Demandes d’assistance'},{id:'announcements',en:'Announcements',fr:'Annonces'},{id:'apps',en:'App downloads',fr:'Téléchargements d’applications'}].map(item=><button key={item.id} type="button" className={section===item.id?'selected':''} aria-current={section===item.id?'page':undefined} onClick={()=>setSection(item.id)}>{t(item.en,item.fr)}{item.id==='support'&&tickets.length>0?' ('+tickets.length+')':item.id==='announcements'&&safeAnnouncementCount>0?' ('+safeAnnouncementCount+')':''}</button>)}
     </nav>
+    <WebsiteAnnouncements language={language} audience="agent_customer"/>
+    {section==='announcements'&&<section className="mykioo-support-card"><h2>{t('Latest MYKIOO announcements','Dernières annonces MYKIOO')}</h2><p>{t('Service maintenance, app updates, channel issues and important notices. No subscription or reseller prices are shown here.','Maintenance du service, mises à jour des applications, problèmes de chaînes et avis importants. Aucun tarif d’abonnement ni prix revendeur n’est affiché ici.')}</p>{safeAnnouncementCount===0&&<p>{t('There are no announcements for your account right now.','Aucune annonce n’est disponible pour votre compte actuellement.')}</p>}</section>}
+    {section==='apps'&&<section className="mykioo-support-card mykioo-agent-customer-app-directory"><h2>{t('App downloads and device compatibility','Téléchargements et compatibilité des appareils')}</h2><p>{t('Browse MYKIOO’s third-party app download directory, choose your device, and follow the installation guide. App downloads are separate from your subscription pricing.','Consultez le répertoire des applications tierces MYKIOO, choisissez votre appareil et suivez le guide d’installation. Les téléchargements d’applications sont distincts des tarifs d’abonnement.')}</p><a className="mykioo-agent-customer-app-button" href="/apps/">{t('Open app download library','Ouvrir la bibliothèque des applications')}</a><button type="button" className="outline-button" onClick={()=>setSection('guides')}>{t('View installation guides','Voir les guides d’installation')}</button></section>}
     {section==='service'&&<>
     {subscriptions.length===0?<section className="mykioo-support-card">{t('No active subscription details available yet.','Aucun abonnement disponible pour le moment.')}</section>:
     subscriptions.map(s=><section key={s.id} className="mykioo-support-card"><h2>{s.service_name||'MYKIOO TV'}</h2>
