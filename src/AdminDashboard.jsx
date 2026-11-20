@@ -121,7 +121,8 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    const paymentCount=await supabase.from('mykioo_billing_invoices').select('id',{count:'exact',head:true}).eq('state','payment_submitted');
    if(!paymentCount.error)setPendingPaymentCount(paymentCount.count||0);
    setRows(previous=>{
-    const byId=new Map([...(allCollections.members||[]),...supportPeople].map(person=>[person.user_id,person]));
+    const byId=new Map((allCollections.members||[]).map(person=>[person.user_id,person]));
+    for(const person of supportPeople)byId.set(person.user_id,{...(byId.get(person.user_id)||{}),...person});
     const fresh={...allCollections,members:[...byId.values()],agent_customers:assignedAgents.data||[]};
     return JSON.stringify(previous)===JSON.stringify(fresh)?previous:fresh;
    });
