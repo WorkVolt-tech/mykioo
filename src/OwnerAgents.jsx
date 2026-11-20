@@ -141,12 +141,12 @@ export default function OwnerAgents({language='en'}){
     {!backendReady&&<p className="mykioo-agent-offline" role="status">{tr('Preview mode — member directory is available, but Agent changes are disabled until the backend is deployed.','Mode aperçu — la liste des membres est disponible, mais les modifications des agents sont désactivées jusqu’au déploiement du serveur.')}</p>}
     <div className="mykioo-owner-telegram-check">
        <div><strong>{tr('Telegram owner alerts','Alertes Telegram du propriétaire')}</strong>
-         <p>{tr('New agent applications, package requests, reported payments, orders and renewals are sent to your Telegram chat after secure bot setup.','Après configuration du bot, vous recevrez les demandes d’agents, les achats de forfaits, les paiements signalés, les commandes et les renouvellements sur Telegram.')}</p>
+         <p>{tr('MYKIOO uses your existing Telegram owner alerts for agent applications, package requests, reported payments, orders and renewals.','MYKIOO utilise vos alertes Telegram existantes pour les demandes d’agents, les achats de forfaits, les paiements signalés, les commandes et les renouvellements.')}</p>
        </div>
        <button type="button" disabled={telegramChecking} onClick={async()=>{
           setTelegramChecking(true);setTelegramStatus('');
           try{const result=await call('owner_test_telegram');
-           setTelegramStatus(!result.configured?tr('Not connected: configure TELEGRAM_BOT_TOKEN and TELEGRAM_OWNER_CHAT_ID in Supabase Function Secrets.','Non connecté : configurez TELEGRAM_BOT_TOKEN et TELEGRAM_OWNER_CHAT_ID dans les secrets de fonctions Supabase.'):
+           setTelegramStatus(!result.configured?tr('Existing Telegram configuration unavailable. Check your MYKIOO Telegram owner settings and Supabase bot token.','Configuration Telegram existante indisponible. Vérifiez les paramètres Telegram du propriétaire MYKIOO et le jeton du bot Supabase.'):
             result.delivered?tr('Test notification delivered to Telegram.','Notification de test envoyée sur Telegram.'):
             tr('Configured, but delivery failed. Confirm your chat ID and start the bot in Telegram.','Configuré, mais envoi impossible. Vérifiez le chat ID et démarrez le bot.'));
           }catch(e){setTelegramStatus(e.message)}finally{setTelegramChecking(false)}
