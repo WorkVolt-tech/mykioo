@@ -85,7 +85,7 @@ function Question({faq,language,guide}){
  </article>;
 }
 
-export function MemberSupportFAQ({language='en',category='other',subject='',onOpenGuides}){
+export function MemberSupportFAQ({language='en',category='other',subject='',onOpenGuides,agentCustomer=false}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const {faqs,loading,error}=useFAQs();
  const {guides}=useSetupGuides();
@@ -94,7 +94,7 @@ export function MemberSupportFAQ({language='en',category='other',subject='',onOp
  const query=(search.trim()||subject.trim()).toLocaleLowerCase();
  const words=query.length>=3?query.split(/\s+/).filter(w=>w.length>=3):[];
  const visible=useMemo(()=>{
-  const ranked=faqs.filter(f=>f.published).map(f=>{
+  const ranked=faqs.filter(f=>f.published&&(!agentCustomer||(f.category!=='billing'&&!/(?:\$|\bCAD\b|\bUSD\b|\bprices?\b|\bpricing\b|\bwholesale\b|\breseller\b|\bdiscount\b|\bpaiement\b|\bprix\b|\btarifs?\b|\bremise\b|\brevendeur\b|\bfacturation\b)/i.test([f.question_en,f.question_fr,f.answer_en,f.answer_fr].join(' '))))).map(f=>{
    const categoryBoost=f.category===category?6:f.category==='other'?1:0;
    const match=scoreText([f.question_en,f.question_fr].join(' '),words)*4+
      scoreText([f.answer_en,f.answer_fr].join(' '),words);
@@ -102,9 +102,9 @@ export function MemberSupportFAQ({language='en',category='other',subject='',onOp
   }).filter(({faq,match})=>words.length?match>0:showAll||faq.category===category||faq.category==='other')
     .sort((a,b)=>b.rank-a.rank||a.faq.sort_order-b.faq.sort_order);
   return ranked.slice(0,showAll?20:5).map(x=>x.faq);
- },[faqs,category,query,showAll]);
+ },[faqs,category,query,showAll,agentCustomer]);
  const suggested=useMemo(()=>{
-  const guidesPublished=guides.filter(g=>g.published);
+  const guidesPublished=guides.filter(g=>g.published&&(!agentCustomer||(['setup','troubleshooting'].includes(g.category)&&!/(?:\$|\bCAD\b|\bUSD\b|\bprices?\b|\bpricing\b|\bwholesale\b|\breseller\b|\bdiscount\b|\bpaiement\b|\bprix\b|\btarifs?\b|\bremise\b|\brevendeur\b|\bfacturation\b)/i.test([g.title_en,g.title_fr,g.summary_en,g.summary_fr,g.steps_en,g.steps_fr].join(' ')))));
   const guideCategory={login:'account',billing:'account',setup:'setup',streaming:'troubleshooting',channels:'troubleshooting',other:null}[category];
   const scored=guidesPublished.map(g=>{
    const c=guideCategory&&g.category===guideCategory?5:0;
@@ -113,8 +113,8 @@ export function MemberSupportFAQ({language='en',category='other',subject='',onOp
   }).filter(item=>words.length?item.score>0:!guideCategory||item.guide.category===guideCategory)
     .sort((a,b)=>b.score-a.score||a.guide.sort_order-b.guide.sort_order);
   return scored.slice(0,3).map(x=>x.guide);
- },[guides,category,query]);
- const published=faqs.filter(f=>f.published).length;
+ },[guides,category,query,agentCustomer]);
+ const published=faqs.filter(f=>f.published&&(!agentCustomer||(f.category!=='billing'&&!/(?:\$|\bCAD\b|\bUSD\b|\bprices?\b|\bpricing\b|\bwholesale\b|\breseller\b|\bdiscount\b|\bpaiement\b|\bprix\b|\btarifs?\b|\bremise\b|\brevendeur\b|\bfacturation\b)/i.test([f.question_en,f.question_fr,f.answer_en,f.answer_fr].join(' '))))).length;
  return <section className="mykioo-faq-member">
   <div className="mykioo-faq-heading"><Lightbulb size={22}/><div>
    <h2>{tr('Answers before you contact support','Des réponses avant de contacter l’assistance')}</h2>
@@ -128,7 +128,7 @@ export function MemberSupportFAQ({language='en',category='other',subject='',onOp
   {error&&<p role="alert" className="mykioo-profile-error">{tr('Unable to load FAQs. Please refresh.','Impossible de charger la FAQ. Veuillez actualiser.')}</p>}
   {loading?<p className="mykioo-faq-empty">{tr('Loading common questions…','Chargement des questions fréquentes…')}</p>:
    visible.length?<div className="mykioo-faq-items">{visible.map(f=><Question key={f.id} faq={f} language={language}
-    guide={guides.find(g=>g.id===f.guide_id&&g.published)}/>)}</div>:
+    guide={agentCustomer?null:guides.find(g=>g.id===f.guide_id&&g.published)}/>)}</div>:
    <p className="mykioo-faq-empty">{published===0?tr('FAQs are being prepared. You can still submit a ticket below.','Les questions fréquentes sont en préparation. Vous pouvez toujours envoyer une demande ci-dessous.'):
     tr('No published answers match yet. You can still contact support.','Aucune réponse publiée ne correspond. Vous pouvez toujours contacter l’assistance.')}</p>}
   {published>visible.length&&!showAll&&!words.length&&<button className="mykioo-faq-showmore" type="button" onClick={()=>setShowAll(true)}>
