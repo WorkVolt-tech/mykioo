@@ -1334,3 +1334,16 @@
 .mykioo-reseller-support-warning>strong{color:#ffdc9d;font-size:12px;letter-spacing:.025em}
 .mykioo-reseller-support-warning span,.mykioo-reseller-support-warning b{overflow-wrap:anywhere}
 @media(max-width:550px){.mykioo-agent-customer-tabs{padding:7px;gap:7px}.mykioo-agent-customer-tabs button{flex-basis:100%}.mykioo-agent-customer-ticket{padding:12px}}
+
+/* Price-safe reseller customer app library and owner announcement controls */
+.mykioo-agent-customer-app-directory{display:grid;gap:12px}
+.mykioo-agent-customer-app-directory h2{margin:0}
+.mykioo-agent-customer-app-directory p{line-height:1.65}
+.mykioo-agent-customer-app-button{display:inline-flex;justify-content:center;align-items:center;width:max-content;max-width:100%;padding:12px 18px;border-radius:10px;border:1px solid #e1c393;background:linear-gradient(135deg,#e5c992,#cba96d);color:#241b26!important;text-decoration:none!important;font-weight:800}
+.mykioo-agent-customer-app-button:hover{background:#f1d9a5}
+.mykioo-agent-customer-app-directory .outline-button{justify-self:start}
+.mykioo-agent-customer-app-link a{color:#e9c58f;text-underline-offset:3px}
+.mykioo-owner-announcement-safety{padding:13px 17px;border:1px solid rgba(226,189,125,.36);border-radius:10px;background:rgba(200,147,68,.08);line-height:1.65}
+.mykioo-agent-notice-safe{display:flex!important;flex-direction:row!important;align-items:flex-start;gap:10px;grid-column:1/-1;background:rgba(218,183,124,.08);padding:12px;border:1px solid rgba(214,173,116,.42);border-radius:10px;line-height:1.55}
+.mykioo-agent-notice-safe input{flex:0 0 auto;margin-top:4px}
+@media(max-width:600px){.mykioo-agent-customer-app-button{width:100%}}
