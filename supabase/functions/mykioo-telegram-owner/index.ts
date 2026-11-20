@@ -188,6 +188,56 @@ Deno.serve(async req=>{
    details:"An owner notification was received. Open MYKIOO to review it.",
    section,reference:n.source_id||n.id});
  }
+
+ // Agent program events use the existing owner dispatcher and its delivery log to avoid duplicate Telegram messages.
+ const agentApplications=await load("mykioo_agent_accounts","agent_user_id,status,created_at",
+  q=>q.eq("status","pending").gte("created_at",since).order("created_at",{ascending:true}));
+ for(const a of agentApplications)add({key:"agent-application:"+a.agent_user_id,kind:"agent",
+  title:"🤝 New Agent application",details:"A member applied to become a MYKIOO agent. Owner approval required.",
+  memberId:a.agent_user_id,section:"agents",reference:a.agent_user_id});
+ const agentInvites=await load("mykioo_agent_invitation_requests","id,agent_user_id,invitee_email,status,created_at",
+  q=>q.eq("status","pending").gte("created_at",since).order("created_at",{ascending:true}));
+ for(const a of agentInvites)add({key:"agent-invitation:"+a.id,kind:"agent",
+  title:"✉️ Agent requested a customer invitation",details:"Invitation for: "+short(a.invitee_email,180)+"\nRequires owner approval.",
+  memberId:a.agent_user_id,section:"agents",reference:a.id});
+ const agentPackages=await load("mykioo_agent_package_purchases",
+  "id,agent_user_id,fee_cad,payment_method,status,created_at,payment_reference,updated_at",
+  q=>q.gte("created_at",since).order("created_at",{ascending:true}));
+ for(const a of agentPackages){
+  add({key:"agent-package:"+a.id,kind:"agent",title:"💼 New agent package request",
+   details:"Package: $"+Number(a.fee_cad).toFixed(2)+" CAD\nPayment method: "+short(a.payment_method,25)+"\nReview payment instructions.",
+   memberId:a.agent_user_id,section:"agents",reference:a.id});
+  if(a.payment_reference && ["payment_submitted","active","exhausted"].includes(a.status)){
+   add({key:"agent-package-payment:"+a.id,kind:"agent_payment",
+    title:"💳 Agent reported package payment",
+    details:"Package: $"+Number(a.fee_cad).toFixed(2)+" CAD\nVerify payment receipt before activation.",
+    memberId:a.agent_user_id,section:"agents",reference:a.id});
+  }
+ }
+ const agentOrders=await load("mykioo_agent_order_intents",
+  "id,agent_user_id,customer_user_id,device_count,contract_days,wholesale_price_cad,status,kind,created_at",
+  q=>q.gte("created_at",since).order("created_at",{ascending:true}));
+ for(const a of agentOrders)add({key:"agent-order:"+a.id,kind:"agent_order",
+  title:Number(a.wholesale_price_cad)===0?"📺 Prepaid reseller order awaiting activation":"📺 Agent customer order",
+  details:short(a.kind,20)+" · "+a.device_count+" device(s) · "+(a.contract_days===730?"2 years":"1 year")+
+   "\nWholesale due: $"+Number(a.wholesale_price_cad).toFixed(2)+" CAD"+
+   (Number(a.wholesale_price_cad)===0?"\nNo additional payment. Owner must activate service.":"\nVerify wholesale payment before activation."),
+  memberId:a.agent_user_id,section:"agents",reference:a.id});
+ const agentServiceRequests=await load("mykioo_agent_service_requests",
+  "id,customer_user_id,agent_user_id,contract_days,device_count,status,created_at",
+  q=>q.eq("status","pending").gte("created_at",since).order("created_at",{ascending:true}));
+ for(const a of agentServiceRequests)add({key:"agent-service:"+a.id,kind:"agent_service",
+  title:"📺 Customer requested service through an agent",
+  details:a.device_count+" device(s) · "+(a.contract_days===730?"2 years":"1 year"),
+  memberId:a.customer_user_id,section:"agents",reference:a.id});
+ const agentRenewalRequests=await load("mykioo_agent_renewal_requests",
+  "id,customer_user_id,agent_user_id,status,created_at",
+  q=>q.eq("status","pending").gte("created_at",since).order("created_at",{ascending:true}));
+ for(const a of agentRenewalRequests)add({key:"agent-renewal:"+a.id,kind:"agent_renewal",
+  title:"🔄 Customer requested a renewal through an agent",
+  details:"Agent must review and submit the renewal request.",
+  memberId:a.customer_user_id,section:"agents",reference:a.id});
+
  // Resolve member identities in batches once per dispatch, not one database call per alert.
  // This uses only server-side membership data and does not expose it to the browser.
  const followupTicketIds=[...new Set(alerts.map(a=>a.ticketId).filter((id):id is string=>Boolean(id)))];
