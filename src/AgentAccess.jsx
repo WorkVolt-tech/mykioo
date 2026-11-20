@@ -234,7 +234,7 @@ export function AgentCustomerDashboard({user,language='en',logout}){
   const [subscriptions,setSubscriptions]=useState([]),[renewals,setRenewals]=useState([]),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[ticketSubject,setTicketSubject]=useState(''),[ticketBody,setTicketBody]=useState(''),[ticketBusy,setTicketBusy]=useState(false),[ticketNotice,setTicketNotice]=useState('');
   const [agentId,setAgentId]=useState(null);
   const availableAnnouncements=useWebsiteAnnouncements();
-  const safeAnnouncementCount=availableAnnouncements.filter(a=>a.is_published&&(a.audience==='agent_customer'||a.audience==='all'&&a.agent_customer_safe)).length;
+  const safeAnnouncementCount=availableAnnouncements.filter(a=>a.is_published&&(a.audience==='agent_customer'||a.audience==='all'&&a.agent_customer_safe)&&Date.parse(a.starts_at)<=Date.now()&&(!a.ends_at||Date.parse(a.ends_at)>Date.now())).length;
   const [section,setSection]=useState('service'),[tickets,setTickets]=useState([]),[ticketsBusy,setTicketsBusy]=useState(true),[ticketLoadError,setTicketLoadError]=useState(''),[ticketCategory,setTicketCategory]=useState('other');
   async function refreshTickets(){
     setTicketsBusy(true);
