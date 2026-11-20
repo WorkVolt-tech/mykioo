@@ -246,12 +246,13 @@ Deno.serve(async (request) => {
     }
     let reviewRequest:null|{id:string;email:string;requested_by:string;language:string;status:string}=null;
     let agentReviewRequestId:string|null=null;
+    let agentReviewType:"member"|"customer"|null=null;
     if(action==="review_agent_invite"){
       if(!owner)return reply({error:"Owner permission required"},403);
       if(!validUUID(input.request_id)||!["approve","reject"].includes(input.decision))
         return reply({error:"Choose a valid agent invitation and decision"},400);
       const {data:pending,error:pendingError}=await server.from("mykioo_agent_invitation_requests")
-        .select("id,agent_user_id,invitee_email,status").eq("id",input.request_id).maybeSingle();
+        .select("id,agent_user_id,invitee_email,invitation_type,status").eq("id",input.request_id).maybeSingle();
       if(pendingError||!pending)return reply({error:"Agent invitation request not found"},404);
       if(pending.status!=="pending")return reply({error:"This agent invitation has already been reviewed"},409);
       if(input.decision==="reject"){
@@ -270,6 +271,7 @@ Deno.serve(async (request) => {
         return reply({ok:true,message:"Agent invitation declined. No email was sent."});
       }
       agentReviewRequestId=pending.id;
+      agentReviewType=pending.invitation_type==="customer"?"customer":"member";
       reviewRequest={id:pending.id,email:pending.invitee_email,requested_by:pending.agent_user_id,language:input.language==="fr"?"fr":"en",status:"pending"};
     }
 
@@ -338,9 +340,9 @@ Deno.serve(async (request) => {
           "Account creation failed and cleanup needs owner attention. No email was sent.":
           "Account creation failed. Nothing was emailed; please retry."},500);
       }
-      // Agent-generated invitations must produce an agent-to-customer assignment.
-      // The invited member must see the Agent Customer portal, not ordinary MYKIOO retail plans.
-      if(agentReviewRequestId){
+      // Only explicitly marked customer invitations create an agent-customer assignment.
+      // An agent can also recommend regular MYKIOO members who keep the standard retail portal.
+      if(agentReviewRequestId && agentReviewType==="customer"){
         const {data:activeAgent,error:agentError}=await server.from("mykioo_agent_accounts")
           .select("agent_user_id,status").eq("agent_user_id",inviterId).maybeSingle();
         if(agentError||activeAgent?.status!=="active"){
@@ -387,7 +389,7 @@ Deno.serve(async (request) => {
         },{onConflict:"user_id,kind,source_id"});
       }
       await server.from("mykioo_audit_logs").insert({actor_id:actor.id,action:agentReviewRequestId?"agent_customer_invited":"member_invited",
-        entity_type:"member",entity_id:uid,details:{email,language,invited_by:inviterId,review_request_id:pendingReferral?.id||null,email_provider:accepted?"ionos":"manual"}});
+        entity_type:"member",entity_id:uid,details:{email,language,invited_by:inviterId,invitation_type:agentReviewType,review_request_id:pendingReferral?.id||null,email_provider:accepted?"ionos":"manual"}});
       return reply({ok:true,member_id:uid,invitation_id:inviteLog.id,notification:accepted?"accepted":"manual",
         ...(accepted?{}:{delivery:{to:email,link:actionLink,subject,body:textContent}}),
         message:accepted?"Invitation approved; IONOS accepted the email. Ask the recipient to check Inbox and Spam.":
