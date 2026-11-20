@@ -72,7 +72,7 @@ export function AgentDashboard({user,language='en',logout,agent}){
     }finally{setWelcomeSaving(false);}
   }
   const [rows,setRows]=useState([]),[renewals,setRenewals]=useState([]),[orders,setOrders]=useState([]),[invites,setInvites]=useState([]),[services,setServices]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
-  const [inviteEmail,setInviteEmail]=useState(''),[selectedCustomer,setSelectedCustomer]=useState(''),[kind,setKind]=useState('new'),[days,setDays]=useState(365),[devices,setDevices]=useState(1),[retail,setRetail]=useState(''),[method,setMethod]=useState('interac'),[notice,setNotice]=useState(''),[saving,setSaving]=useState(false);
+  const [inviteEmail,setInviteEmail]=useState(''),[inviteType,setInviteType]=useState('member'),[selectedCustomer,setSelectedCustomer]=useState(''),[kind,setKind]=useState('new'),[days,setDays]=useState(365),[devices,setDevices]=useState(1),[retail,setRetail]=useState(''),[method,setMethod]=useState('interac'),[notice,setNotice]=useState(''),[saving,setSaving]=useState(false);
   async function refresh(){
     setLoading(true);
     try{
@@ -89,8 +89,8 @@ export function AgentDashboard({user,language='en',logout,agent}){
   }
   async function invite(e){
     e.preventDefault();setSaving(true);setNotice('');setError('');
-    try{const result=await agentAction('agent_invite_request',{email:inviteEmail});
-      setNotice(t('Invitation requested. The owner must approve and send it.','Invitation demandée. Le propriétaire doit l’approuver et l’envoyer.'));
+    try{const result=await agentAction('agent_invite_request',{email:inviteEmail,invitation_type:inviteType});
+      setNotice(inviteType==='customer'?t('Customer invitation requested; owner approval required.','Invitation client demandée; approbation du propriétaire nécessaire.'):t('Regular member invitation requested; owner approval required.','Invitation de membre demandée; approbation du propriétaire nécessaire.'));
       setInviteEmail('');await refresh();
     }catch(e){setError(e.message);}finally{setSaving(false);}
   }
@@ -164,10 +164,21 @@ export function AgentDashboard({user,language='en',logout,agent}){
       {loading?<p>{t('Loading…','Chargement…')}</p>:rows.length===0?<p>{t('No customers assigned yet. Request an invitation below. The owner must approve and assign the customer before you can submit an order.','Aucun client attribué. Demandez une invitation ci-dessous. Le propriétaire doit approuver et attribuer le client avant toute commande.')}</p>:
       <ul>{rows.map(c=><li key={c.customer_user_id}><code>{c.customer_user_id.slice(0,8)}…</code> · {statusDate(c.assigned_at,language)}</li>)}</ul>}
     </section>
-    <section className="mykioo-agent-panel"><h2>{t('Invite a customer','Inviter un client')}</h2>
-      <p>{t('Your request goes to the MYKIOO owner for invitation approval and delivery.','Votre demande sera envoyée au propriétaire MYKIOO pour approbation et envoi.')}</p>
-      <form onSubmit={invite}><label>{t('Customer email','Courriel du client')}<input type="email" required value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}/></label>
-      <button disabled={saving} type="submit">{t('Request invitation','Demander une invitation')}</button></form>
+    <section className="mykioo-agent-panel mykioo-agent-invite-choice"><h2>{t('Invite someone','Inviter une personne')}</h2>
+      <p>{t('Choose their access before requesting an invitation. A regular member can buy MYKIOO retail packages; an agent customer has a dedicated portal without public pricing. The owner approves and sends every invitation.','Choisissez le type d’accès avant la demande. Un membre normal peut acheter les forfaits MYKIOO; un client agent dispose d’un espace dédié sans tarifs publics. Le propriétaire approuve et envoie chaque invitation.')}</p>
+      <form onSubmit={invite}>
+       <label>{t('Invitation type','Type d’invitation')}<select required value={inviteType} onChange={e=>setInviteType(e.target.value)}>
+        <option value="member">{t('Regular MYKIOO member','Membre MYKIOO normal')}</option>
+        <option value="customer">{t('My agent customer','Mon client agent')}</option>
+       </select></label>
+       <p className="mykioo-agent-invite-explainer">{inviteType==='member'
+        ?t('Member: sees regular MYKIOO prices. Your invitation is recorded, but this person is not assigned as your customer.','Membre : voit les prix MYKIOO habituels. Votre invitation reste enregistrée, mais cette personne n’est pas votre client.')
+        :t('Customer: linked to you, uses the agent customer portal, and requests services and renewals through you without seeing MYKIOO retail prices.','Client : lié à votre compte; utilise l’espace client agent et demande ses services et renouvellements auprès de vous sans voir les tarifs MYKIOO.')}
+       </p>
+       <label>{t('Email address','Adresse courriel')}<input type="email" required value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}/></label>
+       <button disabled={saving} type="submit">{t('Request invitation','Demander une invitation')}</button>
+      </form>
+      {invites.length>0&&<div className="mykioo-agent-invite-history"><h3>{t('My invitation requests','Mes demandes d’invitation')}</h3><ul>{invites.map(i=><li key={i.id}><strong>{i.invitee_email}</strong> · {i.invitation_type==='customer'?t('Customer','Client'):t('Regular member','Membre')} · {i.status}</li>)}</ul></div>}
     </section>
     <section className="mykioo-agent-panel"><h2>{t('Order for an assigned customer','Commande pour un client attribué')}</h2>
       <p>{Number(selectedPool?.fee)===400?t('Reseller package: no additional wholesale payment for eligible 12- or 24-month customer orders while prepaid credits remain.','Forfait revendeur : aucun paiement de gros supplémentaire pour les commandes de 12 ou 24 mois tant que des crédits prépayés sont disponibles.'):t('Your selling price is your choice. MYKIOO deducts '+discountCad+' CAD per device-year on eligible wholesale orders; coupons do not apply.','Vous choisissez votre prix de vente. MYKIOO déduit '+discountCad+' $ CA par appareil-année sur les commandes admissibles; les codes promo ne s’appliquent pas.')}</p>
