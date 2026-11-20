@@ -4,7 +4,7 @@ import {supabase} from './supabase';
 import './WebsiteAnnouncements.css';
 
 // Reading is restricted by Supabase RLS; the client also filters owner-visible drafts.
-const readable=['id','title_en','title_fr','message_en','message_fr','tone','audience','is_published','starts_at','ends_at','created_at'].join(',');
+const readable=['id','title_en','title_fr','message_en','message_fr','tone','audience','agent_customer_safe','is_published','starts_at','ends_at','created_at'].join(',');
 const rank={urgent:0,warning:1,success:2};
 
 export function useWebsiteAnnouncements(){
@@ -48,6 +48,7 @@ export default function WebsiteAnnouncements({language='en',audience='member'}){
   if(!x.is_published)return false;
   const starts=Date.parse(x.starts_at),ends=x.ends_at?Date.parse(x.ends_at):null;
   if(Number.isNaN(starts)||starts>now||(ends!==null&&ends<=now))return false;
+  if(audience==='agent_customer')return x.audience==='agent_customer'||(x.audience==='all'&&x.agent_customer_safe===true);
   return x.audience==='all'||x.audience===audience;
  }).sort((a,b)=>(rank[a.tone]??1)-(rank[b.tone]??1)||Date.parse(b.created_at)-Date.parse(a.created_at));
  if(!shown.length)return null;
