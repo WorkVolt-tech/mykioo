@@ -202,22 +202,26 @@ function GuideCard({guide,language='en',owner=false,userId='',linkedGuide=false}
  </article>;
 }
 
-export function MemberSetupGuides({language='en',onOpenSupport,userId=''}){
+export function MemberSetupGuides({language='en',onOpenSupport,userId='',agentCustomer=false}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const {guides,loading,error}=useSetupGuides();
  const scope='mykioo-ui:member:'+userId+':guides';
  const [search,setSearch]=useRememberedState(scope+':search','', 'session');
  const [category,setCategory]=useRememberedState(scope+':category','all');
  const [platform,setPlatform]=useRememberedState(scope+':platform','all');
+ const safeGuides=guides.filter(g=>g.published&&(!agentCustomer||(
+   ['setup','troubleshooting'].includes(g.category)&&
+   !/(?:\$|\bCAD\b|\bUSD\b|\bprices?\b|\bpricing\b|\bwholesale\b|\breseller\b|\bdiscount\b|\bpaiement\b|\bprix\b|\btarifs?\b|\bremise\b|\brevendeur\b|\bfacturation\b)/i.test([g.title_en,g.title_fr,g.summary_en,g.summary_fr,g.steps_en,g.steps_fr].join(' '))
+ )));
  const linkedId=new URLSearchParams(window.location.search).get('guide')||'';
- const hasLinkedGuide=linkedId===androidDownloaderGuide.id||guides.some(g=>g.published&&g.id===linkedId);
+ const hasLinkedGuide=linkedId===androidDownloaderGuide.id||safeGuides.some(g=>g.id===linkedId);
  const showDownloaderGuide=hasLinkedGuide?linkedId===androidDownloaderGuide.id:
   (category==='all'||category==='setup')&&['all','fire_tv','android_tv','android'].includes(platform);
- const visible=guides.filter(g=>g.published).filter(g=>{
+ const visible=safeGuides.filter(g=>{
   if(hasLinkedGuide)return g.id===linkedId;
   const term=search.trim().toLocaleLowerCase();
   return (!term||[g.title_en,g.title_fr,g.summary_en,g.summary_fr,g.steps_en,g.steps_fr].some(x=>(x||'').toLocaleLowerCase().includes(term)))
-    &&(category==='all'||g.category===category)
+    &&(category==='all'||g.category===category||agentCustomer&&category==='account'&&g.category==='setup')
     &&(platform==='all'||g.platform==='general'||g.platform===platform||(platform==='smart_tv'&&g.platform==='apple_tv')); }).sort(orderGuides);
  return <section className="mykioo-guide-page">
   <div className="mykioo-guide-intro">
@@ -233,7 +237,7 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId=''}){
   <div className="mykioo-guide-filters">
    <label><Search size={16}/><input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder={tr('Search help guides…','Rechercher dans les guides…')} aria-label={tr('Search help guides','Rechercher dans les guides')}/></label>
    <select aria-label={tr('Guide category','Catégorie de guide')} value={category} onChange={e=>setCategory(e.target.value)}>
-    <option value="all">{tr('All categories','Toutes les catégories')}</option>{categoryOptions.map(opt=><option value={opt.id} key={opt.id}>{fr?opt.fr:opt.en}</option>)}
+    <option value="all">{tr('All categories','Toutes les catégories')}</option>{categoryOptions.filter(opt=>!agentCustomer||opt.id!=='account').map(opt=><option value={opt.id} key={opt.id}>{fr?opt.fr:opt.en}</option>)}
    </select>
    <select aria-label={tr('Device / platform','Appareil / plateforme')} value={platform} onChange={e=>setPlatform(e.target.value)}>
     <option value="all">{tr('All devices','Tous les appareils')}</option>{platformOptions.filter(opt=>opt.id!=='general').map(opt=><option value={opt.id} key={opt.id}>{fr?opt.fr:opt.en}</option>)}
@@ -255,7 +259,7 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId=''}){
   {error&&<p role="alert" className="mykioo-profile-error">{tr('Could not load guides. Please refresh this page.','Impossible de charger les guides. Veuillez actualiser cette page.')}</p>}
   {loading?<p className="mykioo-guide-empty">{tr('Loading guides…','Chargement des guides…')}</p>:
    (visible.length===0&&!showDownloaderGuide)?<div className="mykioo-guide-empty">
-    <BookOpen size={24}/><strong>{guides.length===0?tr('Guides are being prepared.','Les guides sont en préparation.'):tr('No guides match your search.','Aucun guide ne correspond à votre recherche.')}</strong>
+    <BookOpen size={24}/><strong>{safeGuides.length===0?tr('Guides are being prepared.','Les guides sont en préparation.'):tr('No guides match your search.','Aucun guide ne correspond à votre recherche.')}</strong>
     <p>{tr('Need assistance? You can contact MYKIOO Support.','Besoin d’aide ? Vous pouvez contacter l’assistance MYKIOO.')}</p>
    </div>:<div className="mykioo-guide-list">{showDownloaderGuide&&<GuideCard key={androidDownloaderGuide.id} guide={androidDownloaderGuide} language={language} userId={userId} linkedGuide={linkedId===androidDownloaderGuide.id}/>} {visible.map(g=><GuideCard key={g.id} guide={g} language={language} userId={userId} linkedGuide={linkedId===g.id}/>)}</div>}
   <div className="mykioo-guide-help">
