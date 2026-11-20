@@ -141,8 +141,8 @@ export default function OwnerAgents({language='en'}){
  async function reviewAgentInvitation(request,decision){
    const approve=decision==='approve';
    const message=approve?
-     tr('Approve and send an invitation to '+request.invitee_email+' on behalf of '+memberName(request.agent_user_id)+'? MYKIOO will create a secure invitation and send it by email.',
-        'Approuver et envoyer une invitation à '+request.invitee_email+' au nom de '+memberName(request.agent_user_id)+' ? MYKIOO créera une invitation sécurisée et l’enverra par courriel.'):
+     tr('Approve and send a '+(request.invitation_type==='customer'?'CUSTOMER':'REGULAR MEMBER')+' invitation to '+request.invitee_email+' on behalf of '+memberName(request.agent_user_id)+'? '+(request.invitation_type==='customer'?'They will be assigned to this agent.':'They will have standard MYKIOO retail access.'),
+        'Approuver une invitation de '+(request.invitation_type==='customer'?'CLIENT':'MEMBRE NORMAL')+' pour '+request.invitee_email+' de la part de '+memberName(request.agent_user_id)+' ? '+(request.invitation_type==='customer'?'Cette personne sera attribuée à l’agent.':'Cette personne aura l’accès MYKIOO normal.')):
      tr('Decline the invitation request for '+request.invitee_email+'? No invitation will be sent.',
         'Refuser la demande d’invitation pour '+request.invitee_email+' ? Aucune invitation ne sera envoyée.');
    if(!await mykiooConfirm(message,{title:approve?tr('Approve agent invitation','Approuver l’invitation de l’agent'):tr('Decline agent invitation','Refuser l’invitation de l’agent'),
@@ -225,10 +225,10 @@ export default function OwnerAgents({language='en'}){
       </div>
      </li>)}</ul>
     <h3>{tr('Invitation requests','Demandes d’invitation')}</h3>
-    <p>{tr('Agents request invitations here. Pending means no invitation email has been sent. Approve to create and send a secure MYKIOO invitation, or decline the request.','Les agents demandent des invitations ici. En attente signifie qu’aucun courriel n’a été envoyé. Approuvez pour créer et envoyer une invitation MYKIOO sécurisée, ou refusez la demande.')}</p>
+    <p>{tr('Agents can request regular MYKIOO member invitations or agent-customer invitations. Check the type before approving: members see retail packages; customers use the agent customer portal.','Les agents peuvent inviter des membres MYKIOO normaux ou leurs propres clients. Vérifiez le type avant d’approuver : les membres voient les forfaits, les clients utilisent l’espace client agent.')}</p>
     {(data.invites||[]).length===0?<p>{tr('No agent invitation requests.','Aucune demande d’invitation d’agent.')}</p>:
       <ul className="mykioo-agent-invite-list">{(data.invites||[]).map(i=><li key={i.id} className="mykioo-agent-invite-item">
-        <div><strong>{i.invitee_email}</strong><span>{tr('Requested by','Demandée par')} {memberName(i.agent_user_id)}</span></div>
+        <div><strong>{i.invitee_email}</strong><span>{tr('Requested by','Demandée par')} {memberName(i.agent_user_id)}</span><span><strong>{i.invitation_type==='customer'?tr('Agent customer','Client agent'):tr('Regular member','Membre normal')}</strong> · {i.invitation_type==='customer'?tr('Assigned to agent','Attribué à l’agent'):tr('No agent customer assignment','Aucune attribution client agent')}</span></div>
         <span className="mykioo-agent-invite-status">{i.status==='pending'?tr('Awaiting your decision','En attente de votre décision'):i.status==='sent'?tr('Invitation issued','Invitation émise'):i.status==='declined'?tr('Declined','Refusée'):i.status}</span>
         {i.status==='pending'&&<div className="mykioo-agent-invite-actions">
           <button type="button" disabled={busy||!backendReady} onClick={()=>reviewAgentInvitation(i,'approve')}>{tr('Approve & send invitation','Approuver et envoyer l’invitation')}</button>
