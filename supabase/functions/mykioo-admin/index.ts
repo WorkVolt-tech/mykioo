@@ -245,6 +245,34 @@ Deno.serve(async (request) => {
          "IONOS could not send the invitation. Copy and email the prepared private link manually."});
     }
     let reviewRequest:null|{id:string;email:string;requested_by:string;language:string;status:string}=null;
+    let agentReviewRequestId:string|null=null;
+    if(action==="review_agent_invite"){
+      if(!owner)return reply({error:"Owner permission required"},403);
+      if(!validUUID(input.request_id)||!["approve","reject"].includes(input.decision))
+        return reply({error:"Choose a valid agent invitation and decision"},400);
+      const {data:pending,error:pendingError}=await server.from("mykioo_agent_invitation_requests")
+        .select("id,agent_user_id,invitee_email,status").eq("id",input.request_id).maybeSingle();
+      if(pendingError||!pending)return reply({error:"Agent invitation request not found"},404);
+      if(pending.status!=="pending")return reply({error:"This agent invitation has already been reviewed"},409);
+      if(input.decision==="reject"){
+        const {data:rejected,error:rejectError}=await server.from("mykioo_agent_invitation_requests")
+          .update({status:"declined",updated_at:new Date().toISOString()})
+          .eq("id",pending.id).eq("status","pending").select("id").maybeSingle();
+        if(rejectError||!rejected)return reply({error:"Agent invitation was already reviewed. Refresh and retry."},409);
+        await server.from("mykioo_notifications").upsert({
+          user_id:pending.agent_user_id,kind:"membership_invitation_rejected",source_id:pending.id,destination:"Invitations",
+          title_en:"Agent invitation declined",title_fr:"Invitation de l’agent refusée",
+          body_en:"Your invitation request for "+pending.invitee_email+" was declined.",
+          body_fr:"Votre demande d’invitation pour "+pending.invitee_email+" a été refusée."
+        },{onConflict:"user_id,kind,source_id"});
+        await server.from("mykioo_audit_logs").insert({actor_id:actor.id,action:"agent_invitation_declined",
+          entity_type:"agent_invitation_request",entity_id:pending.id,details:{email:pending.invitee_email,agent_user_id:pending.agent_user_id}});
+        return reply({ok:true,message:"Agent invitation declined. No email was sent."});
+      }
+      agentReviewRequestId=pending.id;
+      reviewRequest={id:pending.id,email:pending.invitee_email,requested_by:pending.agent_user_id,language:input.language==="fr"?"fr":"en",status:"pending"};
+    }
+
     if(action==="review_invite"){
       if(!validUUID(input.request_id)||!["approve","reject"].includes(input.decision))
         return reply({error:"Choose a valid invitation and decision"},400);
@@ -269,7 +297,7 @@ Deno.serve(async (request) => {
         return reply({ok:true,message:"Invitation request rejected. No email was sent."});
       }
     }
-    if (action === "invite" || action === "review_invite") {
+    if (action === "invite" || action === "review_invite" || action === "review_agent_invite") {
       if(action==="invite"&&!validEmail(input.email))return reply({error:"Enter a valid email address"},400);
       const email=reviewRequest?reviewRequest.email:String(input.email).trim().toLowerCase();
       const language=reviewRequest?.language||(input.language==="fr"?"fr":"en");
@@ -324,10 +352,14 @@ Deno.serve(async (request) => {
       const {subject,htmlContent,textContent}=makeInvitationEmail({language,actionLink,...inviter});
       const accepted=await sendInviteEmail(email,subject,htmlContent,textContent);
       if(pendingReferral){
-        const {error:finalizeError}=await server.from("mykioo_invitation_requests")
-          .update({status:"approved",reviewed_by:actor.id,reviewed_at:new Date().toISOString(),
-            updated_at:new Date().toISOString(),invited_user_id:uid,invitation_id:inviteLog?.id||null})
-          .eq("id",pendingReferral.id).eq("status","pending");
+        const {error:finalizeError}=agentReviewRequestId
+          ? await server.from("mykioo_agent_invitation_requests")
+            .update({status:"sent",updated_at:new Date().toISOString()})
+            .eq("id",agentReviewRequestId).eq("status","pending")
+          : await server.from("mykioo_invitation_requests")
+            .update({status:"approved",reviewed_by:actor.id,reviewed_at:new Date().toISOString(),
+              updated_at:new Date().toISOString(),invited_user_id:uid,invitation_id:inviteLog?.id||null})
+            .eq("id",pendingReferral.id).eq("status","pending");
         if(finalizeError)console.error("MYKIOO referral linking failed",finalizeError.code);
         await server.from("mykioo_notifications").upsert({
           user_id:inviterId,kind:"membership_invitation_approved",source_id:pendingReferral.id,destination:"Invitations",
@@ -335,7 +367,7 @@ Deno.serve(async (request) => {
           body_en:"MYKIOO has issued an invitation for "+email+".",body_fr:"MYKIOO a préparé une invitation pour "+email+"."
         },{onConflict:"user_id,kind,source_id"});
       }
-      await server.from("mykioo_audit_logs").insert({actor_id:actor.id,action:"member_invited",
+      await server.from("mykioo_audit_logs").insert({actor_id:actor.id,action:agentReviewRequestId?"agent_customer_invited":"member_invited",
         entity_type:"member",entity_id:uid,details:{email,language,invited_by:inviterId,review_request_id:pendingReferral?.id||null,email_provider:accepted?"ionos":"manual"}});
       return reply({ok:true,member_id:uid,invitation_id:inviteLog.id,notification:accepted?"accepted":"manual",
         ...(accepted?{}:{delivery:{to:email,link:actionLink,subject,body:textContent}}),
