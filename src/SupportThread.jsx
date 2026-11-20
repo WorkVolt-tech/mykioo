@@ -2,10 +2,11 @@ import {SupportScreenshots} from './SupportScreenshots';
 import {useReplyTemplates} from './ReplyTemplates';
 import React,{useEffect,useState,useRef} from 'react';
 import {supabase} from './supabase';
+import {mykiooConfirm} from './MykiooDialog.jsx';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-support';
 
-export default function SupportThread({ticket,userId,language='en',owner=false,recipientLanguage='en',unread=0,onRead,onStatusChanged}){
+export default function SupportThread({ticket,userId,language='en',owner=false,recipientLanguage='en',agentCustomerName=null,unread=0,onRead,onStatusChanged}){
  const fr=language==='fr',tr=(en,frText)=>fr?frText:en;
  const {templates}=useReplyTemplates(owner);
  const [draftLanguage,setDraftLanguage]=useState(recipientLanguage==='fr'?'fr':'en');
@@ -59,6 +60,10 @@ export default function SupportThread({ticket,userId,language='en',owner=false,r
  async function send(e){
   e.preventDefault();if(sending||ticket.status==='closed')return;
   const content=body.trim();if(!content||content.length>4000)return;
+  if(owner&&agentCustomerName){
+   const allowed=await mykiooConfirm(tr('This person is a customer of '+agentCustomerName+'. Before sending, confirm your reply does not reveal MYKIOO retail prices, wholesale costs, agent discounts or reseller terms. For billing questions, refer them to their agent.','Cette personne est un client de '+agentCustomerName+'. Avant d’envoyer, confirmez que votre réponse ne révèle aucun tarif public MYKIOO, coût de gros, remise agent ou condition revendeur. Pour la facturation, dirigez-la vers son agent.'),{title:tr('Agent customer — pricing confidential','Client d’agent — prix confidentiels'),confirmText:tr('Reply without pricing','Répondre sans les tarifs')});
+   if(!allowed)return;
+  }
   setError('');setNotice('');setSending(true);
   try{
    const {data:{session},error:authError}=await supabase.auth.getSession();
@@ -133,6 +138,7 @@ export default function SupportThread({ticket,userId,language='en',owner=false,r
      <small>{tr('Selecting a reply fills the editor; nothing is sent until you press Send reply.','La sélection remplit le brouillon; rien n’est envoyé avant de cliquer sur Envoyer la réponse.')}</small>
     </div>}
 
+    {owner&&agentCustomerName&&<p className="mykioo-reseller-support-warning" role="note"><strong>{tr('Agent-managed customer','Client géré par un agent')}:</strong> {agentCustomerName}. {tr('Keep the agent’s prices and MYKIOO wholesale information confidential.','Gardez confidentiels les prix de l’agent et les tarifs de gros MYKIOO.')}</p>}
     <label htmlFor={'mykioo-reply-'+ticket.id}>{tr('Your reply','Votre réponse')}</label>
     <textarea id={'mykioo-reply-'+ticket.id} rows={3} maxLength={4000} required value={body} onChange={e=>{setBody(e.target.value);setNotice('')}} placeholder={tr('Write a message…','Écrivez un message…')}/>
     <button type="submit" disabled={sending||!body.trim()}>{sending?tr('Sending…','Envoi…'):tr('Send reply','Envoyer la réponse')}</button>
