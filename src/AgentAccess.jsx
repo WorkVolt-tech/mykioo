@@ -332,7 +332,7 @@ export function AgentCustomerDashboard({user,language='en',logout}){
     {section==='support'&&<>
     <section className="mykioo-support-card"><h2>{t('Open a support ticket','Ouvrir une demande d’assistance')}</h2>
       <p>{t('For setup and playback issues, MYKIOO can help. For subscription prices or payment, contact your agent.','MYKIOO peut vous aider pour l’installation et la lecture. Pour les tarifs ou paiements, contactez votre agent.')}</p>
-      <MemberSupportFAQ language={language} category={ticketCategory} subject={ticketSubject} onOpenGuides={()=>setSection('guides')}/>
+      <MemberSupportFAQ language={language} category={ticketCategory} subject={ticketSubject} agentCustomer onOpenGuides={()=>setSection('guides')}/>
       <form onSubmit={submitTicket}>
         <label>{t('Issue category','Catégorie de problème')}<select value={ticketCategory} onChange={e=>setTicketCategory(e.target.value)}><option value="setup">{t('Setup / installation','Installation')}</option><option value="streaming">{t('Playback / buffering','Lecture / chargement')}</option><option value="channels">{t('Channels','Chaînes')}</option><option value="login">{t('Login / account','Connexion / compte')}</option><option value="other">{t('Other technical issue','Autre problème technique')}</option></select></label>
         <label>{t('Subject','Sujet')}<input value={ticketSubject} onChange={e=>setTicketSubject(e.target.value)} minLength={3} maxLength={120} required/></label>
