@@ -15,6 +15,18 @@ async function call(action,details={}){
  if(!response.ok||!result.ok)throw Error(result.error||'Unable to complete request');
  return result;
 }
+async function reviewAgentInvitationAdmin(details){
+ const {data:{session}}=await supabase.auth.getSession();
+ if(!session)throw Error('Session expired');
+ const response=await fetch('https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-admin',{
+  method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
+   'apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},
+  body:JSON.stringify({action:'review_agent_invite',...details})
+ });
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok||!result.ok)throw Error(result.error||'Unable to review invitation');
+ return result;
+}
 export default function OwnerAgents({language='en'}){
  const tr=(en,fr)=>language==='fr'?fr:en;
  const [data,setData]=useState({agents:[],customers:[],invites:[],orders:[],members:[]});
@@ -24,6 +36,7 @@ export default function OwnerAgents({language='en'}){
  const [completionRequests,setCompletionRequests]=useState({});
  const [completedOptions,setCompletedOptions]=useState({});
  const [telegramStatus,setTelegramStatus]=useState(''),[telegramChecking,setTelegramChecking]=useState(false);
+ const [manualInviteDelivery,setManualInviteDelivery]=useState(null);
  const [lookingUp,setLookingUp]=useState(null);
  async function findCompletedAgentServices(orderId){
    setLookingUp(orderId);setError('');
@@ -125,6 +138,27 @@ export default function OwnerAgents({language='en'}){
      setNotice(tr('Customer assigned.','Client attribué.'));await refresh();}
    catch(e){setError(e.message);}finally{setBusy(false);}
  }
+ async function reviewAgentInvitation(request,decision){
+   const approve=decision==='approve';
+   const message=approve?
+     tr('Approve and send an invitation to '+request.invitee_email+' on behalf of '+memberName(request.agent_user_id)+'? MYKIOO will create a secure invitation and send it by email.',
+        'Approuver et envoyer une invitation à '+request.invitee_email+' au nom de '+memberName(request.agent_user_id)+' ? MYKIOO créera une invitation sécurisée et l’enverra par courriel.'):
+     tr('Decline the invitation request for '+request.invitee_email+'? No invitation will be sent.',
+        'Refuser la demande d’invitation pour '+request.invitee_email+' ? Aucune invitation ne sera envoyée.');
+   if(!await mykiooConfirm(message,{title:approve?tr('Approve agent invitation','Approuver l’invitation de l’agent'):tr('Decline agent invitation','Refuser l’invitation de l’agent'),
+     confirmText:approve?tr('Approve & send','Approuver et envoyer'):tr('Decline request','Refuser la demande')}))return;
+   setBusy(true);setError('');setNotice('');setManualInviteDelivery(null);
+   try{
+     const r=await reviewAgentInvitationAdmin({request_id:request.id,decision,language});
+     if(!approve)setNotice(tr('Invitation request declined. No email was sent.','Demande d’invitation refusée. Aucun courriel envoyé.'));
+     else if(r.notification==='accepted')setNotice(tr('Invitation approved and accepted by IONOS for delivery. The recipient should check Inbox and Spam.','Invitation approuvée et acceptée par IONOS pour livraison. Le destinataire doit vérifier sa boîte de réception et les courriels indésirables.'));
+     else{
+       setManualInviteDelivery(r.delivery||null);
+       setNotice(tr('Invitation created, but email delivery failed. Copy the secure link below and send it to the recipient.','Invitation créée, mais l’envoi du courriel a échoué. Copiez le lien sécurisé ci-dessous pour l’envoyer au destinataire.'));
+     }
+     await refresh();
+   }catch(e){setError(e.message)}finally{setBusy(false)}
+ }
  async function verify(orderId){
    if(!await mykiooConfirm(tr('Confirm that you personally verified receipt of payment for this order? This does not activate the service.','Confirmez-vous avoir personnellement vérifié le paiement ? Cela n’active pas le service.')))return;
    setBusy(true);setNotice('');setError('');
@@ -191,8 +225,22 @@ export default function OwnerAgents({language='en'}){
       </div>
      </li>)}</ul>
     <h3>{tr('Invitation requests','Demandes d’invitation')}</h3>
-    <p>{tr('Pending invitations require the existing owner invitation workflow. These requests are not emails sent.','Les invitations en attente doivent passer par la procédure propriétaire existante. Ces demandes ne sont pas des courriels envoyés.')}</p>
-    <ul>{(data.invites||[]).map(i=><li key={i.id}>{i.invitee_email} · {memberName(i.agent_user_id)} · <strong>{i.status}</strong></li>)}</ul>
+    <p>{tr('Agents request invitations here. Pending means no invitation email has been sent. Approve to create and send a secure MYKIOO invitation, or decline the request.','Les agents demandent des invitations ici. En attente signifie qu’aucun courriel n’a été envoyé. Approuvez pour créer et envoyer une invitation MYKIOO sécurisée, ou refusez la demande.')}</p>
+    {(data.invites||[]).length===0?<p>{tr('No agent invitation requests.','Aucune demande d’invitation d’agent.')}</p>:
+      <ul className="mykioo-agent-invite-list">{(data.invites||[]).map(i=><li key={i.id} className="mykioo-agent-invite-item">
+        <div><strong>{i.invitee_email}</strong><span>{tr('Requested by','Demandée par')} {memberName(i.agent_user_id)}</span></div>
+        <span className="mykioo-agent-invite-status">{i.status==='pending'?tr('Awaiting your decision','En attente de votre décision'):i.status==='sent'?tr('Invitation issued','Invitation émise'):i.status==='declined'?tr('Declined','Refusée'):i.status}</span>
+        {i.status==='pending'&&<div className="mykioo-agent-invite-actions">
+          <button type="button" disabled={busy||!backendReady} onClick={()=>reviewAgentInvitation(i,'approve')}>{tr('Approve & send invitation','Approuver et envoyer l’invitation')}</button>
+          <button type="button" className="outline-button" disabled={busy||!backendReady} onClick={()=>reviewAgentInvitation(i,'reject')}>{tr('Decline','Refuser')}</button>
+        </div>}
+      </li>)}</ul>}
+    {manualInviteDelivery?.link&&<div className="mykioo-agent-manual-invite">
+      <strong>{tr('Manual invitation delivery required','Envoi manuel de l’invitation requis')}</strong>
+      <p>{tr('IONOS did not accept the invitation email. Send this private invitation link only to ','IONOS n’a pas accepté le courriel. Envoyez ce lien d’invitation privé uniquement à ')}{manualInviteDelivery.to}</p>
+      <input aria-label={tr('Private invitation link','Lien d’invitation privé')} readOnly value={manualInviteDelivery.link}/>
+      <button type="button" onClick={()=>navigator.clipboard.writeText(manualInviteDelivery.link).then(()=>setNotice(tr('Secure invitation link copied.','Lien sécurisé copié.'))).catch(()=>setError(tr('Copy failed. Select the link and copy it manually.','Copie échouée. Sélectionnez le lien et copiez-le manuellement.')))}>{tr('Copy secure invitation link','Copier le lien sécurisé')}</button>
+    </div>}
     <h3>{tr('Agent orders and payments','Commandes et paiements des agents')}</h3>
     <ul>{(data.orders||[]).map(o=><li key={o.id} style={{marginBottom:12}}>
       <strong>{memberName(o.agent_user_id)}</strong> · {memberName(o.customer_user_id)} · {o.kind} · {o.status}
