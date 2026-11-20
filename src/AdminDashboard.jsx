@@ -103,10 +103,12 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
     if(error)throw Error(table+': '+error.message);
     return [key,data||[]];
    }));
+   const assignedAgents=await supabase.from('mykioo_agent_customers').select('customer_user_id,agent_user_id');
+   if(assignedAgents.error)throw Error('Agent customer labels: '+assignedAgents.error.message);
    const paymentCount=await supabase.from('mykioo_billing_invoices').select('id',{count:'exact',head:true}).eq('state','payment_submitted');
    if(!paymentCount.error)setPendingPaymentCount(paymentCount.count||0);
    setRows(previous=>{
-    const fresh=Object.fromEntries(all);
+    const fresh={...Object.fromEntries(all),agent_customers:assignedAgents.data||[]};
     return JSON.stringify(previous)===JSON.stringify(fresh)?previous:fresh;
    });
   }catch(err){
@@ -533,12 +535,16 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  <div className="admin-support-list">{filteredTickets.map(ticket=>{
    const requester=(rows.members||[]).find(m=>m.user_id===ticket.member_id);
    const expanded=expandedTickets.includes(ticket.id);
+   const assignedAgent=(rows.agent_customers||[]).find(c=>c.customer_user_id===ticket.member_id);
+   const parentAgent=assignedAgent?(rows.members||[]).find(m=>m.user_id===assignedAgent.agent_user_id):null;
+   const parentAgentLabel=parentAgent?.display_name||parentAgent?.email||assignedAgent?.agent_user_id?.slice(0,8)||'';
    return <article key={ticket.id} className={"admin-support-ticket "+(expanded?"expanded":"")}>
     <div className="admin-support-ticket-top"><label className="mykioo-ticket-select"><input type="checkbox" checked={selectedTicketIds.includes(ticket.id)} onChange={e=>setSelectedTicketIds(old=>e.target.checked?[...old,ticket.id]:old.filter(id=>id!==ticket.id))} aria-label={tr('Select ticket','Sélectionner la demande')+' '+ticket.subject}/></label><div><strong>{ticket.subject}</strong><small>{requester?.display_name||requester?.email||tr('Member','Membre')} · {new Date(ticket.created_at).toLocaleDateString(fr?'fr-CA':'en-CA')}</small></div>{unreadCounts[ticket.id]>0&&<span className="mykioo-unread-dot">{unreadCounts[ticket.id]}</span>}<span className="mykioo-category-badge">{tr(({login:'Login',streaming:'Playback',channels:'Channels',billing:'Billing',setup:'Setup',other:'Other'})[ticket.category]||'Other',({login:'Connexion',streaming:'Lecture',channels:'Chaînes',billing:'Facturation',setup:'Installation',other:'Autre'})[ticket.category]||'Autre')}</span><span className={'mykioo-priority-badge priority-'+(ticket.priority||'normal')}>{tr(({low:'Low',normal:'Normal',high:'High',urgent:'Urgent'})[ticket.priority]||'Normal',({low:'Faible',normal:'Normale',high:'Élevée',urgent:'Urgente'})[ticket.priority]||'Normale')}</span><span className="mykioo-ticket-status">{tr(({open:'Open',in_progress:'In progress',resolved:'Resolved',closed:'Closed'})[ticket.status]||ticket.status,({open:'Ouvert',in_progress:'En cours',resolved:'Résolu',closed:'Fermé'})[ticket.status]||ticket.status)}</span>
      <button type="button" className="admin-ticket-expand" aria-expanded={expanded} aria-controls={'mykioo-ticket-details-'+ticket.id}
       onClick={()=>setExpandedTickets(old=>expanded?old.filter(id=>id!==ticket.id):[...old,ticket.id])}>
       {expanded?tr('Hide details','Masquer les détails'):tr('Open ticket','Ouvrir la demande')}
      </button></div>
+    {assignedAgent&&<div className="mykioo-reseller-support-warning" role="note"><strong>{tr('AGENT CUSTOMER — DO NOT DISCLOSE PRICING','CLIENT D’AGENT — NE PAS DIVULGUER LES PRIX')}</strong><span>{tr('Customer of','Client de')} <b>{parentAgentLabel}</b> · {tr('No MYKIOO retail prices, wholesale fees, agent discounts or reseller terms in replies. Direct billing and pricing questions to the agent.','Ne divulguez aucun tarif public MYKIOO, prix de gros, remise agent ou condition de revente. Orientez les questions de paiement et de prix vers l’agent.')}</span></div>}
     <p className={'admin-ticket-preview '+(!expanded?'is-collapsed':'')}>{ticket.message}</p>
     {expanded&&<div id={'mykioo-ticket-details-'+ticket.id} className="admin-ticket-details">
     {(ticket.device_type||ticket.app_name||ticket.error_details)&&<div className="mykioo-ticket-diagnostic-summary">
@@ -566,7 +572,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
       <option value="normal">{tr('Normal','Normale')}</option>
       <option value="high">{tr('High','Élevée')}</option>
       <option value="urgent">{tr('Urgent','Urgente')}</option>
-    </select></div>{ticket.main_issue_id&&<p className="mykioo-owner-linked-indicator">{tr('Linked to main issue','Associé au problème principal')} · {ticket.main_issue_id.slice(0,8)}</p>}<SupportThread ticket={ticket} userId={user.id} language={language} recipientLanguage={requester?.preferred_language||"en"} owner unread={unreadCounts[ticket.id]||0} onRead={syncUnread}/><OwnerPrivateTicketPanel key={ticket.id} ticket={ticket} language={language} followup={followups.find(item=>item.ticket_id===ticket.id)} onChanged={refreshFollowups}/>
+    </select></div>{ticket.main_issue_id&&<p className="mykioo-owner-linked-indicator">{tr('Linked to main issue','Associé au problème principal')} · {ticket.main_issue_id.slice(0,8)}</p>}<SupportThread ticket={ticket} userId={user.id} language={language} recipientLanguage={requester?.preferred_language||"en"} owner agentCustomerName={assignedAgent?parentAgentLabel:null} unread={unreadCounts[ticket.id]||0} onRead={syncUnread}/><OwnerPrivateTicketPanel key={ticket.id} ticket={ticket} language={language} followup={followups.find(item=>item.ticket_id===ticket.id)} onChanged={refreshFollowups}/>
     </div>}
    </article>
  })}</div>}
