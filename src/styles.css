@@ -1361,3 +1361,15 @@
 .mykioo-agent-notice-safe{display:flex!important;flex-direction:row!important;align-items:flex-start;gap:10px;grid-column:1/-1;background:rgba(218,183,124,.08);padding:12px;border:1px solid rgba(214,173,116,.42);border-radius:10px;line-height:1.55}
 .mykioo-agent-notice-safe input{flex:0 0 auto;margin-top:4px}
 @media(max-width:600px){.mykioo-agent-customer-app-button{width:100%}}
+
+
+/* Device compatibility guidance on MYKIOO subscription request forms. */
+.mykioo-request-device-note{display:grid;gap:10px;margin:15px 0 20px;padding:17px 18px;background:linear-gradient(120deg,#272030,#1b1928);border:1px solid #6d5670;border-left:3px solid #d6b47d;border-radius:11px;color:#f5ebf3}
+.mykioo-request-device-note>strong{color:#f2d5a0;font-size:15px;font-weight:800}
+.mykioo-request-device-note p{margin:0!important;color:#d8c9df!important;font-size:12px!important;line-height:1.65!important}
+.mykioo-request-device-list{display:flex;gap:7px;flex-wrap:wrap}
+.mykioo-request-device-list span{display:inline-flex;align-items:center;background:#3b2c43;border:1px solid #785e72;border-radius:7px;color:#f1dcb9;padding:7px 10px;font-size:11px;font-weight:700}
+.mykioo-request-device-note>a{justify-self:start;color:#f0d6a7;text-decoration:underline;text-underline-offset:3px;font-size:12px;font-weight:800}
+.mykioo-request-device-note>a:hover{color:#ffe7b9}
+.mykioo-request-device-note>a:focus-visible{outline:2px solid #f4d59e;outline-offset:3px}
+@media(max-width:600px){.mykioo-request-device-note{padding:13px}.mykioo-request-device-list span{font-size:10px;padding:7px 9px}}
