@@ -8,11 +8,12 @@ Custom site: https://mykioo.icu/ (Cloudflare Pages SSL validation must complete 
 
 - **Frontend:** Cloudflare Pages, Vite; build command `npm run build`, output directory `dist`, root `/`.
 - **Database and authentication:** Supabase project `porpqvphytecuidomcgy`.
-- **Transactional email:** Supabase Auth uses Gmail custom SMTP; MYKIOO Edge Functions call the private `mykioo-email-dispatch` Gmail SMTP service for invitations, membership notices, orders, credentials, declines and reminders. Outlook fallback is not yet configured.
+- **Official contact address:** `iptv@mykioo.icu` (IONOS mailbox, MYKIOO Mail Center and transactional sender). Supabase Auth SMTP must use the same sender in its separate configuration.
+- **Transactional email:** MYKIOO Edge Functions use the private `mykioo-email-dispatch` with IONOS SMTP for invitations, membership notices, orders, credentials, declines and reminders.
 - **Owner alerts:** `mykioo-telegram-owner` Edge Function; protected owner-only chat destination and scheduled checks.
 - **Provider integration:** MYKIOO's reseller-panel API is used for supported automated trial creation. Keep panel API tokens server-side.
 
-The only frontend build variables are `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Never put `service_role`, Gmail SMTP app passwords, Telegram bot tokens, panel API credentials or account passwords into a `VITE_` variable or commit them to GitHub.
+The only frontend build variables are `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Never put `service_role`, IONOS mailbox passwords, Telegram bot tokens, panel API credentials or account passwords into a `VITE_` variable or commit them to GitHub.
 
 ## Accounts and permissions
 
@@ -39,20 +40,20 @@ The only frontend build variables are `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUB
 - A member requests a trial, a new paid subscription, or a renewal.
 - The owner reviews the request and verifies payment before completing or activating a paid service.
 - Successful completed subscriptions and renewals are queued in `mykioo_completion_email_log`; `mykioo-completion-emails` processes that queue on the existing schedule.
-- Credential-delivery emails are handled in `mykioo-subscriptions`, using the member's preferred language and the internal Gmail dispatcher. Their credentials must not appear in logs or Telegram alerts.
+- Credential-delivery emails are handled in `mykioo-subscriptions`, using the member's preferred language and the internal IONOS dispatcher. Their credentials must not appear in logs or Telegram alerts.
 - Expiry reminders are handled by `mykioo-expiry-reminders`; payment reminders use `mykioo-payment-reminders`.
-- A successful Gmail SMTP response means Gmail accepted a send request; it **does not prove inbox delivery**. Check inbox and spam with a controlled test recipient. Do not trigger real member emails during QA.
+- A successful IONOS SMTP response means IONOS accepted a send request; it **does not prove inbox delivery**. Check inbox and spam with a controlled test recipient. Do not trigger real member emails during QA.
 
-## Gmail transactional email configuration
+## IONOS transactional email configuration
 
 - **Separate Auth SMTP setup required:** In **Supabase → Authentication → Emails → SMTP Settings**, set Sender `iptv@mykioo.icu`, sender name `MYKIOO`, host `smtp.ionos.com`, port `465`, username `iptv@mykioo.icu`, password = private IONOS Mail Basic mailbox password. Supabase Auth SMTP is separate from the Edge Function SMTP secret. Confirm delivery with a controlled password-reset test. Until completed, Auth mail may still use the prior Gmail configuration.
-- In **Supabase → Edge Functions → Secrets**, add `MYKIOO_IONOS_SMTP_PASSWORD` with the IONOS mailbox password for `iptv@mykioo.icu` to enable professional outgoing transactional email. The existing `MYKIOO_SMTP_APP_PASSWORD` for `mykiootv@gmail.com` remains as continuity-only fallback when the IONOS secret is absent. Never commit either password or paste it into chat.
-- The private `mykioo-email-dispatch` Edge Function authenticates **server-to-server** requests with the built-in `SUPABASE_SERVICE_ROLE_KEY`, uses IONOS or Gmail SMTP with TLS on port 465 depending on the configured secret, validates recipients and messages, and never exposes its SMTP secret in client code.
+- In **Supabase → Edge Functions → Secrets**, add `MYKIOO_IONOS_SMTP_PASSWORD` with the IONOS mailbox password for `iptv@mykioo.icu` to enable professional outgoing transactional email. The dispatcher does not use any other outbound sender. Never commit the mailbox password or paste it into chat.
+- The private `mykioo-email-dispatch` Edge Function authenticates **server-to-server** requests with the built-in `SUPABASE_SERVICE_ROLE_KEY`, uses IONOS SMTP with TLS on port 465, validates recipients and messages, and never exposes its SMTP secret in client code.
 - It supports MYKIOO's previous transactional payload format, including bilingual membership status templates, so backend functions no longer call Brevo.
-- If Gmail is unavailable or this secret is missing, normal notifications fail safely; **invitation approval and resends fall back to a private 48-hour link** that the owner may copy and deliver manually. Do not mistake generated links for emails actually delivered.
+- If the IONOS secret is missing or sending fails, normal notifications fail safely; **invitation approval and resends fall back to a private 48-hour link** that the owner may copy and deliver manually. Do not mistake generated links for emails actually delivered.
 - Keep the bilingual website email-outage banner visible until IONOS transactional delivery and Supabase Auth password-reset emails have both been tested end-to-end. A successful SMTP acceptance does not guarantee inbox placement.
 - Verify a controlled membership-invitation test, membership status email, subscription completion email, expiring subscription reminder and password reset. Do not test by sending credentials to unrelated recipients.
-- Gmail personal accounts have daily sending limits and may place messages in spam; this integration does not guarantee deliverability.
+- Delivery is subject to IONOS rate limits, recipient filtering and spam placement; this integration does not guarantee inbox delivery.
 
 ## Cancellation and refunds
 
