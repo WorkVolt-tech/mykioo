@@ -273,6 +273,15 @@ export default function SubscriptionRequests({userId,subscriptions=[],language='
    <p>{owner?
      tr('Create a new subscription, renewal or free trial request for a member. Complete requests using the subscription manager below.','Créez une demande de nouvel abonnement, de renouvellement ou d’essai gratuit pour un membre. Finalisez les demandes dans le gestionnaire ci-dessous.'):
      tr('Choose a subscription or renewal plan, or request a one-time free trial without payment.','Choisissez un abonnement, un renouvellement ou un essai gratuit unique sans paiement.')}</p>
+   <aside className="mykioo-request-device-note" aria-label={tr('Compatible devices','Appareils compatibles')}>
+    <strong>{tr('Where you can watch MYKIOO TV','Où regarder MYKIOO TV')}</strong>
+    <p>{tr('Service access is available through compatible apps or connection methods on:','Le service est accessible au moyen d’applications ou de méthodes de connexion compatibles sur :')}</p>
+    <div className="mykioo-request-device-list" role="list">
+     {['M3U','MAG','Android / Android TV','iPhone / iPad','Apple TV','LG Smart TV','Samsung Smart TV','Fire TV / Fire Stick'].map(device=><span role="listitem" key={device}>{device}</span>)}
+    </div>
+    <p>{tr('App installation and login methods vary by device and app. Check compatibility before ordering. Our current app downloads cover Android and Fire TV; other devices may need a separate player from their official store or a suitable connection method.','L’installation et les méthodes de connexion varient selon l’appareil et l’application. Vérifiez la compatibilité avant de commander. Nos téléchargements actuels couvrent Android et Fire TV; les autres appareils peuvent nécessiter un lecteur de leur boutique officielle ou une méthode de connexion adaptée.')}</p>
+    <a href="https://mykioo.icu/apps/" target="_blank" rel="noopener noreferrer">{tr('See available apps and device guidance','Voir les applications et les conseils par appareil')}</a>
+   </aside>
    {owner&&<p className="mykioo-request-policy-note">{tr('Cancellation requests need owner approval and must be approved before we complete or activate the service. After activation, voluntary cancellations and refunds are not offered, except where required by applicable law. Contact support to discuss any statutory rights.','Les demandes d’annulation doivent être approuvées par le propriétaire avant la finalisation ou l’activation du service. Après l’activation, les annulations volontaires et remboursements ne sont pas offerts, sauf lorsque la loi l’exige. Communiquez avec l’assistance pour toute question relative à vos droits légaux.')}</p>}
    <form onSubmit={submit}>
     {!owner&&<div className="mykioo-checkout-step"><span>1</span><strong>{tr('Choose your plan','Choisissez votre forfait')}</strong></div>}
