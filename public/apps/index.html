@@ -58,8 +58,7 @@ footer>div{max-width:1180px;margin:auto}
 <section class="code-panel" aria-label="Downloader instructions">
  <div><div class="eyebrow" id="downloader-label">OPEN THIS PAGE IN DOWNLOADER</div>
   <div class="code-text" id="site-code">mykioo.icu/apps/</div>
-  <div class="hint" id="downloader-instructions">Enter this address in Downloader on a compatible TV device. A numeric short code can also be used after the owner creates one through AFTVnews.</div></div>
- <div class="links"><a href="https://go.aftvnews.com/" target="_blank" rel="noopener noreferrer" id="codes-help">About Downloader codes</a></div>
+  <div class="hint" id="downloader-instructions">Enter the code shown above in the Downloader app on a compatible TV device to open MYKIOO's app download page.</div></div>
 </section>
 <div class="controls"><h2 id="library-title">Available apps</h2><label for="device-filter" id="filter-label">Your device:</label>
 <select id="device-filter"><option value="all">All devices</option><option value="fire_tv">Fire TV / Fire Stick</option><option value="android_tv">Android TV / Google TV</option><option value="android">Android phone / tablet</option><option value="ios">iPhone / iPad</option><option value="apple_tv">Apple TV</option><option value="smart_tv">Smart TV</option><option value="web">Web browser</option></select></div>
@@ -82,7 +81,7 @@ var translations={
  fr:{tagline:'CONFIGURATION DES APPAREILS',title:'Téléchargement des applications',intro:'Retrouvez les liens vers les boutiques officielles et les éditeurs sélectionnés par MYKIOO. Choisissez votre appareil. Les fichiers sont hébergés par les sites liés, pas par MYKIOO.',
  ownership:"Toutes les applications présentées ici, y compris V12, appartiennent à des développeurs tiers. MYKIOO n’en est ni le propriétaire ni le développeur. Elles sont proposées comme options de lecture. Choisissez une application compatible selon vos préférences personnelles.",
  installationNotice:"MYKIOO ne contrôle pas l’installation des applications tierces ni les problèmes d’installation sur les appareils Fire Stick. Nous avons installé et testé avec succès chacune des applications actuellement proposées sur nos propres appareils, et avons retiré celles qui nous ont posé problème pendant nos essais. Nous ne pouvons toutefois pas garantir qu’une application s’installera ou fonctionnera sur tous les Fire Stick et toutes les versions logicielles. Si l’installation échoue, il vous revient de résoudre les problèmes liés à votre appareil et à l’application tierce. Le choix de l’application est entièrement personnel. Nous vous conseillons de vous renseigner en ligne pour trouver celle qui répond le mieux à vos besoins.",
- label:'OUVRIR CETTE PAGE DANS DOWNLOADER',instructions:'Entrez cette adresse dans Downloader sur un appareil compatible. Un code numérique peut aussi être utilisé après sa création par le propriétaire avec AFTVnews.',
+ label:'OUVRIR CETTE PAGE DANS DOWNLOADER',instructions:'Entrez le code affiché ci-dessus dans l’application Downloader sur un appareil compatible pour ouvrir la page de téléchargement MYKIOO.',
  help:'Créer un code Downloader',account:'Connexion membre',library:'Applications disponibles',filter:'Votre appareil :',all:'Tous les appareils',loading:'Chargement des liens…',empty:'Aucun lien publié pour cet appareil.',error:'Impossible de charger les liens. Réessayez.',link:'Ouvrir la source',blocked:'Bloqué sur cet appareil',blockedAll:'Téléchargement impossible sur',blockedDefault:'Le téléchargement ne fonctionne pas sur cet appareil.',code:'Code Downloader de l’application',guide:'Voir le guide d’installation',note:'Avant l’installation',incompatible:'Vérifiez la compatibilité de votre appareil avant d’installer.',vega:'Les APK Android ne fonctionnent pas sur Vega OS, iOS ou Apple TV.',store:'Boutique d’applications',publisher:'Site officiel de l’éditeur',apk:'Lien APK externe — vérifier la source',foot:'Utilisez seulement des applications provenant de sources fiables et vérifiez leur compatibilité. Les liens externes peuvent changer. Les APK Android ne fonctionnent pas sur Apple TV, iOS ou Vega OS. Certaines versions de Downloader sur Fire TV limitent la navigation Web.'}
 };
 function $(id){return document.getElementById(id)}
@@ -92,7 +91,7 @@ function setLanguage(lang){language=lang;document.documentElement.lang=lang;
  $('en').classList.toggle('active',lang==='en');$('fr').classList.toggle('active',lang==='fr');
  $('en').setAttribute('aria-pressed',lang==='en');$('fr').setAttribute('aria-pressed',lang==='fr');
  [['tagline','tagline'],['page-title','title'],['intro','intro'],['app-ownership','ownership'],['app-install-notice','installationNotice'],['downloader-label','label'],
- ['downloader-instructions','instructions'],['codes-help','help'],['account','account'],
+ ['downloader-instructions','instructions'],['account','account'],
  ['library-title','library'],['filter-label','filter'],['footer-text','foot']].forEach(function(pair){text($(pair[0]),translated(pair[1]))});
  text($('device-filter').options[0],translated('all'));
  text($('site-code'),data.downloader_code||'mykioo.icu/apps/');
