@@ -6,7 +6,9 @@
 .mykioo-owner-agents .mykioo-agent-form>input,.mykioo-owner-agents .mykioo-agent-form>select{box-sizing:border-box;width:100%;min-height:43px;padding:9px 12px;color:#f6edf6;background:#191724;border:1px solid #75687a;border-radius:8px}
 .mykioo-owner-agents .mykioo-agent-form>input:focus,.mykioo-owner-agents .mykioo-agent-form>select:focus{outline:2px solid #dfbd89;outline-offset:2px}
 .mykioo-owner-agents .mykioo-agent-form>p{grid-column:1/-1;line-height:1.5}
-.mykioo-owner-agents .mykioo-agent-form>button{grid-column:1/-1;justify-self:start;min-height:42px;padding:9px 17px}
+.mykioo-owner-agents .mykioo-agent-form>button{grid-column:1/-1;justify-self:start;display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px 18px;border:1px solid #e0bd85;border-radius:9px;background:linear-gradient(115deg,#e9cc96,#c8a16a);color:#261c2d;font-size:13px;font-weight:800;box-shadow:0 2px 10px rgba(0,0,0,.12);transition:filter .15s,transform .15s}
+.mykioo-owner-agents .mykioo-agent-form>button:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.mykioo-owner-agents .mykioo-agent-form>button:focus-visible{outline:2px solid #f3dcae;outline-offset:3px}
 .mykioo-owner-agents .mykioo-agent-form>button:disabled{opacity:.55;cursor:not-allowed}
 .mykioo-owner-agents .mykioo-agent-offline{border:1px solid rgba(222,182,108,.48);background:rgba(222,182,108,.07);border-radius:10px;padding:12px 15px;line-height:1.55}
 .mykioo-owner-agents .admin-panel-content>ul{padding-left:24px;overflow-wrap:anywhere}
