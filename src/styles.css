@@ -1373,3 +1373,69 @@
 .mykioo-request-device-note>a:hover{color:#ffe7b9}
 .mykioo-request-device-note>a:focus-visible{outline:2px solid #f4d59e;outline-offset:3px}
 @media(max-width:600px){.mykioo-request-device-note{padding:13px}.mykioo-request-device-list span{font-size:10px;padding:7px 9px}}
+
+
+/* Navigation refresh: immediate tasks first, persistent mobile destinations.
+   No changes to subscription billing, agents, invitations, or permissions. */
+.mykioo-start-here{padding:clamp(17px,2.2vw,25px);margin:0 0 22px;border:1px solid rgba(214,182,121,.46);border-radius:16px;background:linear-gradient(140deg,#2a2331,#171823 72%);box-shadow:0 12px 30px rgba(0,0,0,.13)}
+.mykioo-start-here-heading{margin:0 0 17px}
+.mykioo-start-here-heading h2{font-family:Outfit,sans-serif;font-size:clamp(20px,2.1vw,25px);letter-spacing:-.02em;color:#f2dbb3;margin:0 0 6px}
+.mykioo-start-here-heading p{margin:0;color:#cabfd1;font-size:13px;line-height:1.55}
+.mykioo-start-here-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.mykioo-start-here-grid>a,.mykioo-start-here-grid>button{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;min-height:150px;padding:18px;border:1px solid #60506a;border-radius:12px;background:#241f2f;color:#e2bd85;text-decoration:none!important;text-align:left;font:inherit;cursor:pointer;transition:border-color .18s,background .18s}
+.mykioo-start-here-grid>a:hover,.mykioo-start-here-grid>button:hover{background:#33283c;border-color:#e3be83}
+.mykioo-start-here-grid>a:focus-visible,.mykioo-start-here-grid>button:focus-visible{outline:3px solid #e9c994;outline-offset:3px}
+.mykioo-start-here-grid strong{font-size:14px;color:#fff4de;font-weight:800;line-height:1.3}
+.mykioo-start-here-grid small{font-size:12px;color:#c8b9d0;line-height:1.55}
+.mykioo-start-here-grid>a>svg:last-child,.mykioo-start-here-grid>button>svg:last-child{margin-top:auto;align-self:flex-end;color:#d8bb8c}
+.mykioo-mobile-quicknav{display:none}
+.mykioo-customer-nav-short{display:none}
+.mykioo-agent-customer-header{gap:12px}
+.mykioo-agent-customer-header-actions{display:flex;align-items:center;gap:12px}
+.mykioo-agent-customer-header-actions .outline-button{padding:10px 14px;white-space:nowrap}
+.mykioo-agent-customer-tabs button{position:relative;display:flex;align-items:center;justify-content:center;gap:8px}
+.mykioo-customer-nav-count{position:absolute;top:2px;right:4px;border-radius:99px;background:#e7c68d;color:#211925;min-width:16px;padding:2px 4px;font-size:10px;font-weight:850;line-height:1}
+.mykioo-customer-start-here{padding:clamp(15px,2.5vw,23px);margin:0 0 20px;border:1px solid rgba(212,179,121,.42);border-radius:14px;background:linear-gradient(135deg,#282131,#191924)}
+.mykioo-customer-start-here h2{margin:0 0 8px;color:#f1d5a8;font-family:Outfit,sans-serif;font-size:clamp(19px,2vw,24px)}
+.mykioo-customer-start-here>p{color:#ded1e0;font-size:13px;line-height:1.6;margin:0 0 16px}
+.mykioo-customer-start-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.mykioo-customer-start-actions button{display:flex;align-items:center;gap:9px;min-width:0;min-height:58px;padding:10px 13px;border:1px solid #8a715c;border-radius:10px;background:#322a3c;color:#f5dfb9;text-align:left;font:inherit;font-weight:750;font-size:12px;cursor:pointer}
+.mykioo-customer-start-actions button span{flex:1}
+.mykioo-customer-start-actions button>svg{flex-shrink:0;color:#ecc889}
+.mykioo-customer-start-actions button:hover{border-color:#edcf9e;background:#42324a}
+@media(max-width:1000px){
+ .mykioo-start-here-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mykioo-customer-start-actions{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+ .mykioo-start-here{padding:15px;margin-bottom:16px;border-radius:12px}
+ .mykioo-start-here-grid{gap:9px}
+ .mykioo-start-here-grid>a,.mykioo-start-here-grid>button{min-height:135px;padding:13px;gap:6px}
+ .mykioo-start-here-grid strong{font-size:12px}
+ .mykioo-start-here-grid small{font-size:10px;line-height:1.45}
+ .mykioo-mobile-quicknav{position:fixed;bottom:0;left:0;right:0;z-index:3;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;padding:6px 5px calc(8px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(221,188,134,.37);border-radius:14px 14px 0 0;background:rgba(23,20,32,.97);box-shadow:0 -9px 24px rgba(0,0,0,.33);backdrop-filter:blur(18px)}
+ .mykioo-mobile-quicknav>a,.mykioo-mobile-quicknav>button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:55px;padding:6px 2px;border:1px solid transparent;border-radius:9px;background:transparent;color:#d4c5d9;text-decoration:none!important;font-family:inherit;font-size:10px;font-weight:750;line-height:1.2;text-align:center;white-space:nowrap;cursor:pointer}
+ .mykioo-mobile-quicknav>a svg,.mykioo-mobile-quicknav>button svg{color:#d2ad77;flex-shrink:0}
+ .mykioo-mobile-quicknav>button.active,.mykioo-mobile-quicknav>a:active{background:#3c3043;color:#fff0cd;border-color:#886d57}
+ .mykioo-mobile-quicknav>a:focus-visible,.mykioo-mobile-quicknav>button:focus-visible{outline:2px solid #f0d4a6;outline-offset:-2px}
+ .mykioo-mobile-quicknav+.workspace .dash-content{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
+ .mykioo-agent-customer-portal .dash-content{padding:18px 15px calc(125px + env(safe-area-inset-bottom,0px))!important}
+ .mykioo-agent-customer-header{min-height:65px;height:auto;padding:8px 14px;gap:7px}
+ .mykioo-agent-customer-header>strong{font-size:15px;letter-spacing:.04em}
+ .mykioo-agent-customer-header-actions{gap:6px}
+ .mykioo-agent-customer-header-actions .outline-button{padding:8px 9px;font-size:10px}
+ .mykioo-agent-customer-header-actions .mykioo-language-switch{margin:0}
+ .mykioo-agent-customer-portal .mykioo-agent-customer-tabs{position:fixed;bottom:0;left:0;right:0;z-index:20;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;padding:6px 4px calc(8px + env(safe-area-inset-bottom,0px));margin:0;border-radius:15px 15px 0 0;border:1px solid rgba(225,187,129,.35);border-bottom:0;background:rgba(21,19,29,.97);box-shadow:0 -9px 28px rgba(0,0,0,.33);backdrop-filter:blur(18px)}
+ .mykioo-agent-customer-portal .mykioo-agent-customer-tabs button{flex:none;min-height:56px;min-width:0!important;padding:5px 2px!important;display:flex;flex-direction:column;gap:3px;font-size:10px;line-height:1.3;white-space:nowrap;border-radius:9px}
+ .mykioo-agent-customer-portal .mykioo-agent-customer-tabs button svg{color:#edcb96}
+ .mykioo-agent-customer-portal .mykioo-agent-customer-tabs button.selected svg{color:#352934}
+ .mykioo-customer-nav-full{display:none}
+ .mykioo-customer-nav-short{display:inline}
+ .mykioo-customer-start-here{padding:15px;margin:0 0 16px}
+ .mykioo-customer-start-actions{grid-template-columns:1fr;gap:8px}
+ .mykioo-customer-start-actions button{min-height:48px}
+}
+@media(max-width:360px){
+ .mykioo-mobile-quicknav>a,.mykioo-mobile-quicknav>button,.mykioo-agent-customer-portal .mykioo-agent-customer-tabs button{font-size:9px}
+ .mykioo-agent-customer-header>strong{font-size:13px}
+}
