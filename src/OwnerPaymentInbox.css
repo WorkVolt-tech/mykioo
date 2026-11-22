@@ -69,3 +69,7 @@
  .mykioo-payment-inbox-verify,.mykioo-payment-inbox-refresh{width:100%}
  .mykioo-payment-inbox-card,.mykioo-payment-inbox-invoice{padding:12px}
 }
+
+.mykioo-payment-inbox-reference{display:grid;gap:7px;margin:12px 0 6px;font-size:12px;font-weight:700;color:#e6d5bd}
+.mykioo-payment-inbox-reference input{width:100%;max-width:480px;min-height:42px;border:1px solid #846c6c;border-radius:8px;padding:9px 12px;color:#f5e7ed;background:#1e1a26;font:inherit;font-size:13px}
+.mykioo-payment-inbox-reference input:focus-visible{outline:2px solid #e8c795;outline-offset:2px}
