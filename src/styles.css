@@ -1439,3 +1439,20 @@
  .mykioo-mobile-quicknav>a,.mykioo-mobile-quicknav>button,.mykioo-agent-customer-portal .mykioo-agent-customer-tabs button{font-size:9px}
  .mykioo-agent-customer-header>strong{font-size:13px}
 }
+
+
+/* Onboarding empty state: customers should never wonder what to do next. */
+.mykioo-first-subscription{display:flex;align-items:center;flex-wrap:wrap;gap:16px;padding:19px;margin:0 0 20px;background:linear-gradient(130deg,#302638,#1d1b2a);border:1px solid rgba(215,182,126,.5);border-radius:13px}
+.mykioo-first-subscription>svg{color:#e1bf88;flex-shrink:0}
+.mykioo-first-subscription>div{flex:1 1 180px;min-width:0}
+.mykioo-first-subscription h2{font-size:18px;color:#f1d7aa;margin:0 0 6px}
+.mykioo-first-subscription p{font-size:12px;line-height:1.6;color:#dbcedc;margin:0}
+.mykioo-first-subscription>button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:11px 15px;border:1px solid #edcf93;border-radius:10px;background:#e0bf88;color:#271d2a;font:inherit;font-weight:800;font-size:12px;cursor:pointer}
+.mykioo-first-subscription>button:hover{background:#f1d7a2}
+@media(max-width:650px){
+ .mykioo-first-subscription{gap:10px;padding:15px}
+ .mykioo-first-subscription>button{width:100%}
+ /* Decorative launch content belongs below key actions on desktop, not on small-screen task flows. */
+ .workspace .mykioo-overview-news,.workspace .hero-panel{display:none}
+ .workspace .dash-content{padding-top:21px}
+}
