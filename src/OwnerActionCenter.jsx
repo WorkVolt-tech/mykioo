@@ -1,12 +1,14 @@
 import React,{useEffect,useState} from 'react';
 import {Users,MailPlus,ClipboardList,Receipt,Headphones,Clock3,CalendarDays,ArrowRight,RefreshCw,CheckCircle2,AlertCircle} from 'lucide-react';
 import {supabase} from './supabase';
+import {prepaidAction} from './AgentPackages.jsx';
 import './OwnerActionCenter.css';
 
 export default function OwnerActionCenter({rows={},followups=[],language='en',loading=false,onNavigate,onOpenTicket,onRefresh}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [invoices,setInvoices]=useState([]),[billingError,setBillingError]=useState(false),[checking,setChecking]=useState(true);
  const [lastUpdated,setLastUpdated]=useState(null);
+ const [agentPaymentCounts,setAgentPaymentCounts]=useState({packages:0,orders:0,checking:true,error:false});
  useEffect(()=>{
   let live=true;
   async function load(){
@@ -23,6 +25,23 @@ export default function OwnerActionCenter({rows={},followups=[],language='en',lo
   window.addEventListener('focus',resume);window.addEventListener('online',resume);
   return()=>{live=false;clearInterval(timer);window.removeEventListener('focus',resume);window.removeEventListener('online',resume)};
  },[]);
+ useEffect(()=>{
+  let active=true;
+  async function loadAgentPayments(){
+   try{
+    const [packages,agents]=await Promise.all([prepaidAction('owner_package_list'),prepaidAction('owner_list')]);
+    if(!active)return;
+    setAgentPaymentCounts({packages:(packages.purchases||[]).filter(p=>p.status==='payment_submitted').length,
+     orders:(agents.orders||[]).filter(o=>o.status==='pending_payment'&&Number(o.wholesale_price_cad)>0).length,
+     checking:false,error:false});
+   }catch{if(active)setAgentPaymentCounts(prev=>({...prev,checking:false,error:true}));}
+  }
+  loadAgentPayments();
+  const timer=window.setInterval(()=>{if(document.visibilityState==='visible')loadAgentPayments()},90000);
+  const resume=()=>{if(document.visibilityState==='visible')loadAgentPayments()};
+  window.addEventListener('focus',resume);
+  return()=>{active=false;window.clearInterval(timer);window.removeEventListener('focus',resume)};
+ },[]);
  const members=rows.members||[], requests=rows.subscription_requests||[], cancellations=rows.cancellation_requests||[], tickets=rows.support||[], subscriptions=rows.subscriptions||[];
  const memberPending=members.filter(x=>x.status==='pending').length;
  const invitePending=(rows.invitation_requests||[]).filter(x=>x.status==='pending').length;
@@ -33,14 +52,14 @@ export default function OwnerActionCenter({rows={},followups=[],language='en',lo
  const now=Date.now();
  const overdueFollowups=pendingFollowups.filter(x=>Number.isFinite(Date.parse(x.due_at))&&Date.parse(x.due_at)<=now);
  const dueSoon= subscriptions.filter(x=>x.status==='active'&&x.expires_at&&Date.parse(x.expires_at)>now&&Date.parse(x.expires_at)<=now+30*86400000).length;
- const paymentReview=invoices.filter(x=>x.state==='payment_submitted').length;
+ const paymentReview=invoices.filter(x=>x.state==='payment_submitted').length+agentPaymentCounts.packages+agentPaymentCounts.orders;
  const cryptoRequests=requests.filter(x=>['pending','in_review'].includes(x.status)&&['btc','shib'].includes(x.preferred_payment_method)).length;
  const tasks=[
   {key:'members',title:tr('Membership approvals','Approbations des membres'),count:memberPending,detail:tr('Accounts awaiting your decision','Comptes en attente de votre décision'),Icon:Users,section:'members'},
   {key:'invites',title:tr('Invitation requests','Demandes d’invitation'),count:invitePending,detail:tr('Invitations to review','Invitations à examiner'),Icon:MailPlus,section:'invitations'},
   {key:'requests',title:tr('Service requests','Demandes de service'),count:servicePending,detail:tr('Trials, new services and renewals','Essais, nouveaux services et renouvellements'),Icon:ClipboardList,section:'subscriptions',sub:'queue'},
   {key:'cancels',title:tr('Cancellation approvals','Approbations d’annulation'),count:cancelPending,detail:tr('Decisions requiring owner approval','Décisions nécessitant une approbation'),Icon:AlertCircle,section:'subscriptions',sub:'cancellations'},
-  {key:'payments',title:tr('Payments to verify','Paiements à vérifier'),count:paymentReview,detail:tr('Payment reported; verify funds independently','Paiement signalé ; vérifiez les fonds'),Icon:Receipt,section:'billing',unknown:billingError||checking},
+  {key:'payments',title:tr('Payment Inbox — review receipts','Paiements — vérifier les reçus'),count:paymentReview,detail:tr('Subscription invoices, agent packages & orders','Factures, forfaits agents et commandes'),Icon:Receipt,section:'billing',unknown:billingError||checking||agentPaymentCounts.checking||agentPaymentCounts.error},
   {key:'crypto',title:tr('Crypto invoice requests','Demandes de facture crypto'),count:cryptoRequests,detail:tr('BTC / SHIB requests to review','Demandes BTC / SHIB à examiner'),Icon:Receipt,section:'billing'},
   {key:'tickets',title:tr('Open support tickets','Demandes d’assistance ouvertes'),count:ticketPending.length,detail:tr('Open or being handled','Ouvertes ou en cours de traitement'),Icon:Headphones,section:'support',sub:'tickets'},
   {key:'followups',title:tr('Overdue follow-ups','Suivis en retard'),count:overdueFollowups.length,detail:tr(pendingFollowups.length+' pending follow-up(s) total',pendingFollowups.length+' suivi(s) en attente au total'),Icon:Clock3,section:'support',sub:'followups'},
@@ -72,7 +91,7 @@ export default function OwnerActionCenter({rows={},followups=[],language='en',lo
      <span className="mykioo-action-number">{loading||item.unknown?'—':item.count}</span><ArrowRight size={16} className="mykioo-action-arrow"/>
     </button>)}
   </div>
-  {(billingError||checking)&&<small className="mykioo-action-note">{checking?tr('Checking invoice verification queue…','Vérification de la liste des paiements…'):tr('Payment verification count unavailable. Open Billing to review payments.','Nombre de paiements à vérifier indisponible. Consultez la facturation.')}</small>}
+  {(billingError||checking||agentPaymentCounts.checking||agentPaymentCounts.error)&&<small className="mykioo-action-note">{checking||agentPaymentCounts.checking?tr('Checking subscription and agent payment queues…','Vérification des paiements des abonnements et des agents…'):tr('Some payment counts are unavailable. Open Payment Inbox to review the available records.','Certains compteurs sont indisponibles. Ouvrez la boîte de réception des paiements pour voir les dossiers accessibles.')}</small>}
   {newest.length>0&&<div className="mykioo-action-ticket-preview"><h3>{tr('Recent support requests','Demandes d’assistance récentes')}</h3>
    {newest.map(t=><button type="button" key={t.id} onClick={()=>onOpenTicket(t)}><span><strong>{t.subject||tr('Support ticket','Demande d’assistance')}</strong><small>{memberName(t.member_id)}</small></span><ArrowRight size={16}/></button>)}
   </div>}
