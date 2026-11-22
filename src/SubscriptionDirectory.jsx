@@ -24,7 +24,7 @@ export default function SubscriptionDirectory({
 }){
  const fr=language==='fr';
  const tr=(en,french)=>fr?french:en;
- const [open,setOpen]=useState(Boolean(owner)),[search,setSearch]=useState(''),[expandedId,setExpandedId]=useState(null);
+ const [open,setOpen]=useState(true),[search,setSearch]=useState(''),[expandedId,setExpandedId]=useState(null);
  const membersById=useMemo(()=>new Map(members.map(m=>[m.user_id,m])),[members]);
  const visible=useMemo(()=>{
   const q=normalized(search);
