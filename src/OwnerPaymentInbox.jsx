@@ -16,7 +16,7 @@ export default function OwnerPaymentInbox({language='en',invoices=[],members=[],
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const [agentPackages,setAgentPackages]=useState([]),[agentOrders,setAgentOrders]=useState([]),[agentMembers,setAgentMembers]=useState([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState('');
- const [busyId,setBusyId]=useState(''),[checked,setChecked]=useState({}),[view,setView]=useState('review'),[search,setSearch]=useState('');
+ const [busyId,setBusyId]=useState(''),[checked,setChecked]=useState({}),[verifiedReferences,setVerifiedReferences]=useState({}),[view,setView]=useState('review'),[search,setSearch]=useState('');
  const loadAgentPayments=useCallback(async()=>{
   const [packages,agents]=await Promise.all([prepaidAction('owner_package_list'),prepaidAction('owner_list')]);
   setAgentPackages(packages.purchases||[]);
@@ -66,7 +66,7 @@ export default function OwnerPaymentInbox({language='en',invoices=[],members=[],
   setBusyId(id);setError('');setNotice('');
   try{
    if(isPackage)await prepaidAction('owner_activate_agent_package',{purchase_id:id,verified:true});
-   else await prepaidAction('owner_verify_agent_order',{order_id:id});
+   else await prepaidAction('owner_verify_agent_order',{order_id:id,payment_reference:String(verifiedReferences[id]??payment.payment_reference??'').trim().slice(0,160)});
    setChecked(v=>({...v,[id]:false}));
    await loadAgentPayments();
    await onRefresh?.();
@@ -100,6 +100,7 @@ export default function OwnerPaymentInbox({language='en',invoices=[],members=[],
    <p className="mykioo-payment-inbox-alert"><AlertTriangle size={17}/>{claim?
     tr('Agent reported a payment. This is NOT proof that your account received it.','L’agent a signalé un paiement. Cela ne prouve PAS sa réception sur votre compte.'):
     tr('Agent order awaits payment verification. No receipt has been independently confirmed; check your bank or wallet first.','La commande attend votre vérification. Aucun paiement n’a été confirmé indépendamment ; consultez d’abord votre banque ou portefeuille.')}</p>
+   {!isPackage&&<label className="mykioo-payment-inbox-reference">{tr('Verified bank / wallet reference (optional)','Référence bancaire ou crypto vérifiée (facultative)')}<input type="text" maxLength={160} value={verifiedReferences[id]??reference} onChange={e=>setVerifiedReferences(v=>({...v,[id]:e.target.value}))} placeholder={tr('Transaction reference','Référence de transaction')}/></label>}
    <label className="mykioo-payment-inbox-confirm"><input type="checkbox" checked={!!checked[id]} disabled={Boolean(busyId)} onChange={e=>setChecked(v=>({...v,[id]:e.target.checked}))}/>
     {tr('I checked my actual bank or wallet balance and matched this amount to this transaction.','J’ai vérifié mon véritable compte bancaire ou portefeuille et rapproché ce montant de cette transaction.')}</label>
    <button type="button" disabled={!checked[id]||Boolean(busyId)} className="mykioo-payment-inbox-verify" onClick={()=>verifyAgent(p,kind)}>
@@ -141,6 +142,6 @@ export default function OwnerPaymentInbox({language='en',invoices=[],members=[],
    {openInvoices.length===0&&openPackages.length===0&&<p className="mykioo-payment-inbox-empty">{tr('No outstanding payment instructions.','Aucune instruction de paiement en attente.')}</p>}
   </div>}
   {!loading&&view==='history'&&<div className="mykioo-payment-inbox-history-list">{[...historyInvoices.map(p=>historySummary('invoice',p)),...historyPackages.map(p=>historySummary('package',p)),...historyOrders.map(p=>historySummary('order',p))]}{historyInvoices.length+historyPackages.length+historyOrders.length===0&&<p>{tr('No verified payment records to show.','Aucun paiement vérifié à afficher.')}</p>}</div>}
-  <p className="mykioo-payment-inbox-footnote">{tr('Financial verification: consult your bank, Zelle or blockchain wallet. A reference number, screenshot or customer statement is not proof of received funds. Agent payments use owner-only secure verification.','Vérification financière : consultez votre banque, Zelle ou portefeuille crypto. Une référence, une capture ou une déclaration client ne prouve pas la réception des fonds. Les paiements agents sont vérifiés par les contrôles sécurisés réservés au propriétaire.')}</p>
+  <p className="mykioo-payment-inbox-footnote">{tr('Financial verification: consult your bank, Zelle or blockchain wallet. A reference number, screenshot or customer statement is not proof of received funds. The inbox shows the most recent 200 invoices, 150 agent packages and 100 agent orders. Agent payments use owner-only secure verification.','Vérification financière : consultez votre banque, Zelle ou portefeuille crypto. Une référence, une capture ou une déclaration client ne prouve pas la réception des fonds. Cette boîte présente les 200 dernières factures, 150 forfaits agents et 100 commandes agents. Les paiements agents sont vérifiés par les contrôles sécurisés réservés au propriétaire.')}</p>
  </section>;
 }
