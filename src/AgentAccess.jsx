@@ -5,6 +5,7 @@ import {priceCAD} from './PackagePricing';
 import {MemberSetupGuides} from './SetupGuides';
 import {MemberSupportFAQ} from './SupportFAQ';
 import SupportThread from './SupportThread';
+import {CalendarDays,BookOpen,LifeBuoy,Megaphone,Download,ArrowRight} from 'lucide-react';
 import WebsiteAnnouncements,{useWebsiteAnnouncements} from './WebsiteAnnouncements';
 
 // Agent quotes are shown in this dashboard; assigned customers see no pricing.
@@ -229,7 +230,7 @@ export function AgentDashboard({user,language='en',logout,agent}){
   </div>;
 }
 
-export function AgentCustomerDashboard({user,language='en',logout}){
+export function AgentCustomerDashboard({user,language='en',logout,onLanguageChange}){
   const t=(en,fr)=>tr(language,en,fr);
   const [subscriptions,setSubscriptions]=useState([]),[renewals,setRenewals]=useState([]),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[ticketSubject,setTicketSubject]=useState(''),[ticketBody,setTicketBody]=useState(''),[ticketBusy,setTicketBusy]=useState(false),[ticketNotice,setTicketNotice]=useState('');
   const [agentId,setAgentId]=useState(null);
@@ -304,17 +305,38 @@ export function AgentCustomerDashboard({user,language='en',logout}){
     }catch{setTicketNotice(t('Support request failed. Please try again.','Échec de la demande. Réessayez.'));}
     finally{setTicketBusy(false);}
   }
-  return <div className="dashboard"><main className="dash-content" style={{maxWidth:760,margin:'0 auto'}}>
-    <header className="dash-header"><strong>MYKIOO</strong><button className="outline-button" onClick={logout}>{t('Sign out','Déconnexion')}</button></header>
+  return <div className="dashboard mykioo-agent-customer-portal"><main className="dash-content" style={{maxWidth:760,margin:'0 auto'}}>
+    <header className="dash-header mykioo-agent-customer-header"><strong>MYKIOO</strong><div className="mykioo-agent-customer-header-actions"><div className="mykioo-language-switch" role="group" aria-label={t('Language','Langue')}>
+ <button type="button" className={language==='en'?'selected':''} aria-pressed={language==='en'} onClick={()=>onLanguageChange?.('en')}>EN</button>
+ <button type="button" className={language==='fr'?'selected':''} aria-pressed={language==='fr'} onClick={()=>onLanguageChange?.('fr')}>FR</button>
+ </div><button type="button" className="outline-button" onClick={logout}>{t('Sign out','Déconnexion')}</button></div></header>
     <h1>{section==='guides'?t('Setup & help','Installation et aide'):section==='support'?t('Support center','Centre d’assistance'):section==='announcements'?t('Announcements','Annonces'):section==='apps'?t('App downloads','Téléchargement des applications'):t('My service','Mon service')}</h1>
     <p className="page-sub">{t('Access your service, setup guides and support here, without MYKIOO retail or wholesale prices.','Consultez votre service, vos guides et votre assistance sans afficher les tarifs publics ou de gros MYKIOO.')}</p>
     <nav className="mykioo-agent-customer-tabs" aria-label={t('Customer navigation','Navigation client')}>
-      {[{id:'service',en:'My service',fr:'Mon service'},{id:'guides',en:'Setup & help guides',fr:'Guides et aide'},{id:'support',en:'Support tickets',fr:'Demandes d’assistance'},{id:'announcements',en:'Announcements',fr:'Annonces'},{id:'apps',en:'App downloads',fr:'Téléchargements d’applications'}].map(item=><button key={item.id} type="button" className={section===item.id?'selected':''} aria-current={section===item.id?'page':undefined} onClick={()=>setSection(item.id)}>{t(item.en,item.fr)}{item.id==='support'&&tickets.length>0?' ('+tickets.length+')':item.id==='announcements'&&safeAnnouncementCount>0?' ('+safeAnnouncementCount+')':''}</button>)}
+      {[
+       {id:'service',en:'My service',fr:'Mon service',shortEn:'Service',shortFr:'Service',Icon:CalendarDays},
+       {id:'apps',en:'App downloads',fr:'Téléchargements',shortEn:'Apps',shortFr:'Applis',Icon:Download},
+       {id:'guides',en:'Setup & help guides',fr:'Guides et aide',shortEn:'Guides',shortFr:'Guides',Icon:BookOpen},
+       {id:'support',en:'Support tickets',fr:'Demandes d’assistance',shortEn:'Support',shortFr:'Aide',Icon:LifeBuoy},
+       {id:'announcements',en:'Announcements',fr:'Annonces',shortEn:'Updates',shortFr:'Infos',Icon:Megaphone}
+      ].map(item=><button key={item.id} type="button" className={section===item.id?'selected':''} aria-current={section===item.id?'page':undefined} onClick={()=>setSection(item.id)}>
+       <item.Icon size={19} aria-hidden="true"/><span className="mykioo-customer-nav-full">{t(item.en,item.fr)}</span><span className="mykioo-customer-nav-short">{t(item.shortEn,item.shortFr)}</span>
+       {item.id==='support'&&tickets.length>0&&<span className="mykioo-customer-nav-count" aria-label={t('Support tickets','Demandes d’assistance')}>{tickets.length}</span>}
+       {item.id==='announcements'&&safeAnnouncementCount>0&&<span className="mykioo-customer-nav-count" aria-label={t('Announcements','Annonces')}>{safeAnnouncementCount}</span>}
+      </button>)}
     </nav>
     <WebsiteAnnouncements language={language} audience="agent_customer"/>
     {section==='announcements'&&<section className="mykioo-support-card"><h2>{t('Latest MYKIOO announcements','Dernières annonces MYKIOO')}</h2><p>{t('Service maintenance, app updates, channel issues and important notices. No subscription or reseller prices are shown here.','Maintenance du service, mises à jour des applications, problèmes de chaînes et avis importants. Aucun tarif d’abonnement ni prix revendeur n’est affiché ici.')}</p>{safeAnnouncementCount===0&&<p>{t('There are no announcements for your account right now.','Aucune annonce n’est disponible pour votre compte actuellement.')}</p>}</section>}
     {section==='apps'&&<section className="mykioo-support-card mykioo-agent-customer-app-directory"><h2>{t('App downloads and device compatibility','Téléchargements et compatibilité des appareils')}</h2><p>{t('Browse MYKIOO’s third-party app download directory, choose your device, and follow the installation guide. App downloads are separate from your subscription pricing.','Consultez le répertoire des applications tierces MYKIOO, choisissez votre appareil et suivez le guide d’installation. Les téléchargements d’applications sont distincts des tarifs d’abonnement.')}</p><a className="mykioo-agent-customer-app-button" href="/apps/">{t('Open app download library','Ouvrir la bibliothèque des applications')}</a><button type="button" className="outline-button" onClick={()=>setSection('guides')}>{t('View installation guides','Voir les guides d’installation')}</button></section>}
     {section==='service'&&<>
+     <section className="mykioo-customer-start-here"><h2>{t('How can we help you today?','De quoi avez-vous besoin aujourd’hui ?')}</h2>
+      <p>{t('Your agent manages your subscription. MYKIOO helps with apps, setup and technical support.','Votre agent gère votre abonnement. MYKIOO vous aide avec les applications, l’installation et le dépannage.')}</p>
+      <div className="mykioo-customer-start-actions">
+       <button type="button" onClick={()=>setSection('apps')}><Download size={20}/><span>{t('Install an app','Installer une application')}</span><ArrowRight size={16}/></button>
+       <button type="button" onClick={()=>setSection('guides')}><BookOpen size={20}/><span>{t('Setup guides','Guides d’installation')}</span><ArrowRight size={16}/></button>
+       <button type="button" onClick={()=>setSection('support')}><LifeBuoy size={20}/><span>{t('Get support','Obtenir de l’aide')}</span><ArrowRight size={16}/></button>
+      </div>
+     </section>
     {subscriptions.length===0?<section className="mykioo-support-card">{t('No active subscription details available yet.','Aucun abonnement disponible pour le moment.')}</section>:
     subscriptions.map(s=><section key={s.id} className="mykioo-support-card"><h2>{s.service_name||'MYKIOO TV'}</h2>
       <p>{t('Status','Statut')}: <strong>{s.status}</strong></p>
