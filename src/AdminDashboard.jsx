@@ -382,6 +382,13 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
    <button type="button" className="admin-nav" onClick={logout}><LogOut size={18}/>{tr('Sign out','Déconnexion')}</button>
   </div>
  </aside>
+ <nav className="mykioo-owner-mobile-shortcuts" aria-label={tr('Owner quick navigation','Navigation rapide du propriétaire')}>
+  <button type="button" className={tab==='overview'?'active':''} aria-current={tab==='overview'?'page':undefined} onClick={()=>navigate('overview')}><ShieldCheck size={21}/><span>{tr('Home','Accueil')}</span></button>
+  <button type="button" className={tab==='subscriptions'?'active':''} aria-current={tab==='subscriptions'?'page':undefined} onClick={()=>navigate('subscriptions')}><CalendarDays size={21}/><span>{tr('Services','Services')}</span></button>
+  <button type="button" className={tab==='agents'?'active':''} aria-current={tab==='agents'?'page':undefined} onClick={()=>navigate('agents')}><Users size={21}/><span>{tr('Agents','Agents')}</span></button>
+  <button type="button" className={tab==='support'?'active':''} aria-current={tab==='support'?'page':undefined} onClick={()=>navigate('support')}><Headphones size={21}/><span>{tr('Support','Assistance')}</span></button>
+  <button type="button" className={mobileNav?'active':''} aria-expanded={mobileNav} aria-controls="mykioo-owner-sidebar" onClick={()=>setMobileNav(x=>!x)}><Menu size={21}/><span>{tr('More','Menu')}</span></button>
+ </nav>
  <main className="admin-main">
   <header className="admin-bar">
    <button className="admin-mobile-toggle" type="button" onClick={()=>setMobileNav(v=>!v)}
