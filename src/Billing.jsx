@@ -6,6 +6,7 @@ import {useRememberedState} from './useRememberedState';
 import OwnerDiscountCodes from './DiscountCodes';
 import {Wallet,RefreshCw,Copy,CheckCircle2,ShieldAlert,AlertTriangle,FileText,Receipt,Clock3,Send,Settings,Bitcoin} from 'lucide-react';
 import './Billing.css';
+import OwnerPaymentInbox from './OwnerPaymentInbox.jsx';
 
 const endpoint='https://porpqvphytecuidomcgy.supabase.co/functions/v1/mykioo-billing';
 const methodNames={interac:'Interac e-Transfer',zelle:'Zelle',btc:'Bitcoin (BTC)',shib:'Shiba Inu (SHIB)'};
@@ -202,14 +203,14 @@ export function MemberBilling({userId,language='en',highlightInvoiceId=null}){
   <div className="mykioo-billing-list">{visibleInvoices.map(inv=><InvoiceCard key={inv.id} invoice={inv} language={language} busy={busy} onAction={action}/>)}</div>
  </section>;
 }
-export function OwnerBilling({language='en',userId='',requests=[],members=[],onSaved}){
+export function OwnerBilling({language='en',userId='',requests=[],members=[],onSaved,onOpenAgents}){
  const tr=(en,fr)=>trFor(language,en,fr);
  const [settings,setSettings]=useState(null),[invoices,setInvoices]=useState([]),[loading,setLoading]=useState(true);
  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[requestId,setRequestId]=useState('');
  const [cad,setCad]=useState('80'),[usd,setUsd]=useState('');
  const [cryptoAddress,setCryptoAddress]=useState(''),[cryptoAmount,setCryptoAmount]=useState('');
  const [packagePrices,setPackagePrices]=useState([]),[usdDrafts,setUsdDrafts]=useState({});
- const [ownerPage,setOwnerPage]=useRememberedState('mykioo-ui:owner:'+userId+':billing-view','payments');
+ const [ownerPage,setOwnerPage]=useRememberedState('mykioo-ui:owner:'+userId+':billing-view-v2','inbox');
  const [invoiceFilter,setInvoiceFilter]=useRememberedState('mykioo-ui:owner:'+userId+':billing-filter','review');
  const [form,setForm]=useState({default_cad:'80',default_usd:'60',interac_destination:'',zelle_destination:''});
  const reload=useCallback(async()=>{
@@ -288,18 +289,20 @@ export function OwnerBilling({language='en',userId='',requests=[],members=[],onS
   await action({action:'save_usd_prices',prices});
  }
  return <section className="mykioo-billing">
-  <div className="mykioo-billing-head"><div><h2><Wallet size={23}/>{tr('Payment verification & crypto invoices','Vérification des paiements et factures crypto')}</h2>
-   <p>{tr('Bank customers submit payment confirmation with their subscription request. You issue invoices only for BTC and SHIB. Verify every payment before activating.','Les clients bancaires soumettent leur confirmation avec la demande. Vous émettez des factures uniquement pour BTC et SHIB. Vérifiez chaque paiement avant activation.')}</p></div>
+  <div className="mykioo-billing-head"><div><h2><Wallet size={23}/>{tr('Payments & receipts','Paiements et reçus')}</h2>
+   <p>{tr('Review subscriptions, agent package purchases and agent orders together. Confirm real funds in your bank or wallet before marking anything paid.','Retrouvez ici les paiements d’abonnements, de forfaits agents et de commandes agents. Vérifiez les fonds réellement reçus dans votre banque ou portefeuille avant toute confirmation.')}</p></div>
    <button type="button" onClick={()=>reload().catch(()=>setError(tr('Could not refresh','Actualisation impossible')))}><RefreshCw size={17}/>{tr('Refresh','Actualiser')}</button></div>
   {error&&<p className="mykioo-billing-error" role="alert">{error}</p>}{notice&&<p className="mykioo-billing-notice" role="status">{notice}</p>}
   
    <div className="mykioo-owner-billing-tabs" role="tablist" aria-label={tr('Billing sections','Sections de facturation')}>
-    <button type="button" role="tab" aria-selected={ownerPage==='payments'} onClick={()=>setOwnerPage('payments')}>{tr('Verify payments','Vérifier les paiements')}{reviewCount>0&&<span className="mykioo-owner-billing-count">{reviewCount}</span>}</button>
+    <button type="button" role="tab" aria-selected={ownerPage==='inbox'} onClick={()=>setOwnerPage('inbox')}>{tr('Payment Inbox','Paiements à traiter')}</button>
+     <button type="button" role="tab" aria-selected={ownerPage==='payments'} onClick={()=>setOwnerPage('payments')}>{tr('All invoices','Toutes les factures')}{reviewCount>0&&<span className="mykioo-owner-billing-count">{reviewCount}</span>}</button>
     <button type="button" role="tab" aria-selected={ownerPage==='crypto'} onClick={()=>setOwnerPage('crypto')}>{tr('Crypto invoices','Factures crypto')}{cryptoCount>0&&<span className="mykioo-owner-billing-count">{cryptoCount}</span>}</button>
     <button type="button" role="tab" aria-selected={ownerPage==='discounts'} onClick={()=>setOwnerPage('discounts')}>{tr('Discount codes','Codes de réduction')}</button>
      <button type="button" role="tab" aria-selected={ownerPage==='settings'} onClick={()=>setOwnerPage('settings')}>{tr('Payment settings','Paramètres de paiement')}</button>
    </div>
    {loading?<p className="mykioo-billing-muted">{tr('Loading billing…','Chargement de la facturation…')}</p>:<>
+     {ownerPage==='inbox'&&<OwnerPaymentInbox language={language} invoices={invoices} members={members} onOpenAgents={onOpenAgents} onRefresh={async()=>{await reload();await onSaved?.()}} renderInvoice={inv=><InvoiceCard key={inv.id} invoice={inv} memberName={accounts.get(inv.member_id)} language={language} owner busy={busy} onAction={action}/>}/>}
     {ownerPage==='discounts'&&<div className="mykioo-owner-billing-pane"><OwnerDiscountCodes language={language} userId={userId}/></div>}
      {ownerPage==='settings'&&<div className="mykioo-owner-billing-pane">
      <p className="mykioo-billing-muted">{tr('Set receiving contacts and USD prices for future transactions.','Configurez les coordonnées de réception et les prix USD pour les prochaines transactions.')}</p>
