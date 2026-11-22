@@ -42,7 +42,7 @@ const ownerNavGroups=[
 ];
 const ownerLabels={
  overview:['Overview','Vue d’ensemble'],members:['Members','Membres'],agents:['Agents','Agents'],invitations:['Invitations','Invitations'],
- subscriptions:['Subscriptions','Abonnements'],'create-request':['Create request','Créer une demande'],orders:['Orders','Commandes'],billing:['Billing','Facturation'],
+ subscriptions:['Subscriptions','Abonnements'],'create-request':['Create request','Créer une demande'],orders:['Orders','Commandes'],billing:['Payments & receipts','Paiements et reçus'],
  guides:['Help content','Contenu d’aide'],announcements:['Website announcements','Annonces du site'],apps:['App Downloads','Téléchargement d’applications'],support:['Support','Assistance'],activity:['Activity history','Historique des activités'],
  notifications:['Notifications','Notifications'],mail:['Mail Center','Messagerie'],security:['Account security','Sécurité du compte']
 };
@@ -54,7 +54,7 @@ const ownerDescriptions={
  subscriptions:['Review requests, manage services and handle renewals.','Consultez les demandes, gérez les services et les renouvellements.'],
  'create-request':['Submit a new or renewal subscription request for an approved member.','Soumettez une nouvelle demande d’abonnement ou de renouvellement pour un membre approuvé.'],
  orders:['Review order records and their status.','Consultez les commandes et leurs statuts.'],
- billing:['Set up receiving details, verify transfers and manage crypto invoices.','Configurez les paiements, vérifiez les virements et gérez les factures crypto.'],
+ billing:['Review all reported payments, confirm bank or wallet receipts, and manage invoices.','Consultez tous les paiements signalés, confirmez les fonds reçus et gérez les factures.'],
  guides:['Maintain help articles and device setup instructions.','Gérez les articles d’aide et les instructions d’installation.'],
  announcements:['Create, edit, schedule, hide and delete bilingual website notices.','Créez, modifiez, planifiez, masquez et supprimez les annonces bilingues du site.'],
  apps:['Manage download links and Downloader codes for compatible devices.','Gérez les liens d’applications et les codes Downloader pour les appareils compatibles.'],
@@ -385,7 +385,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
  <nav className="mykioo-owner-mobile-shortcuts" aria-label={tr('Owner quick navigation','Navigation rapide du propriétaire')}>
   <button type="button" className={tab==='overview'?'active':''} aria-current={tab==='overview'?'page':undefined} onClick={()=>navigate('overview')}><ShieldCheck size={21}/><span>{tr('Home','Accueil')}</span></button>
   <button type="button" className={tab==='subscriptions'?'active':''} aria-current={tab==='subscriptions'?'page':undefined} onClick={()=>navigate('subscriptions')}><CalendarDays size={21}/><span>{tr('Services','Services')}</span></button>
-  <button type="button" className={tab==='agents'?'active':''} aria-current={tab==='agents'?'page':undefined} onClick={()=>navigate('agents')}><Users size={21}/><span>{tr('Agents','Agents')}</span></button>
+  <button type="button" className={tab==='billing'?'active':''} aria-current={tab==='billing'?'page':undefined} onClick={()=>navigate('billing')}><Receipt size={21}/><span>{tr('Payments','Paiements')}</span></button>
   <button type="button" className={tab==='support'?'active':''} aria-current={tab==='support'?'page':undefined} onClick={()=>navigate('support')}><Headphones size={21}/><span>{tr('Support','Assistance')}</span></button>
   <button type="button" className={mobileNav?'active':''} aria-expanded={mobileNav} aria-controls="mykioo-owner-sidebar" onClick={()=>setMobileNav(x=>!x)}><Menu size={21}/><span>{tr('More','Menu')}</span></button>
  </nav>
@@ -465,7 +465,7 @@ export default function AdminDashboard({user,logout,logo,fallbackLogo,language='
      <SubscriptionRequests owner view="form" userId={user.id} members={rows.members||[]} subscriptions={rows.subscriptions||[]} requests={rows.subscription_requests||[]} cancellations={rows.cancellation_requests||[]} language={language} onSaved={()=>refresh({silent:true})}/>
     </div>
    </section>}
-  {tab==='billing'&&<OwnerBilling language={language} userId={user.id} requests={rows.subscription_requests||[]} members={rows.members||[]} onSaved={()=>refresh({silent:true})}/>}{tab==='activity'&&<ActivityHistory members={rows.members||[]} language={language}/>}{tab==='notifications'&&<NotificationCenter owner items={notifications} language={language} markRead={markNotificationRead} clearNotifications={clearNotifications} onSelect={section=>setTab(section)}/>}{tab==='guides'&&<section className="admin-workspace-section">
+  {tab==='billing'&&<OwnerBilling language={language} userId={user.id} requests={rows.subscription_requests||[]} members={rows.members||[]} onSaved={()=>refresh({silent:true})} onOpenAgents={()=>navigate('agents')}/>}{tab==='activity'&&<ActivityHistory members={rows.members||[]} language={language}/>}{tab==='notifications'&&<NotificationCenter owner items={notifications} language={language} markRead={markNotificationRead} clearNotifications={clearNotifications} onSelect={section=>setTab(section)}/>}{tab==='guides'&&<section className="admin-workspace-section">
   <div className="admin-subnav" role="tablist" aria-label={tr('Help content sections','Sections du contenu d’aide')}>
    {guideViews.map(view=><button type="button" role="tab" key={view.id} aria-selected={guideView===view.id} onClick={()=>setGuideView(view.id)}>
     <view.Icon size={16}/>{tr(view.en,view.fr)}
