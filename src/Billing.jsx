@@ -211,7 +211,7 @@ export function OwnerBilling({language='en',userId='',requests=[],members=[],onS
  const [cryptoAddress,setCryptoAddress]=useState(''),[cryptoAmount,setCryptoAmount]=useState('');
  const [packagePrices,setPackagePrices]=useState([]),[usdDrafts,setUsdDrafts]=useState({});
  const [ownerPage,setOwnerPage]=useRememberedState('mykioo-ui:owner:'+userId+':billing-view-v2','inbox');
- const [invoiceFilter,setInvoiceFilter]=useRememberedState('mykioo-ui:owner:'+userId+':billing-filter','review');
+ const [invoiceFilter,setInvoiceFilter]=useRememberedState('mykioo-ui:owner:'+userId+':billing-filter-v2','all');
  const [form,setForm]=useState({default_cad:'80',default_usd:'60',interac_destination:'',zelle_destination:''});
  const reload=useCallback(async()=>{
   const [s,i,pr]=await Promise.all([
