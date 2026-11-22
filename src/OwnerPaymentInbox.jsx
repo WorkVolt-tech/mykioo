@@ -6,7 +6,11 @@ import './OwnerPaymentInbox.css';
 
 const methods={interac:'Interac e-Transfer',zelle:'Zelle',btc:'Bitcoin (BTC)',shib:'SHIB (Ethereum)'};
 const time=(date,fr)=>date?new Date(date).toLocaleString(fr?'fr-CA':'en-CA',{dateStyle:'medium',timeStyle:'short'}):'—';
-const currency=(value,curr='CAD')=>value==null||Number.isNaN(Number(value))?'—':new Intl.NumberFormat('en-CA',{style:'currency',currency:curr||'CAD',maximumFractionDigits:curr==='BTC'?8:curr==='SHIB'?0:2}).format(Number(value));
+const currency=(value,curr='CAD')=>{
+ if(value==null||!Number.isFinite(Number(value)))return '—';
+ if(curr==='BTC'||curr==='SHIB')return new Intl.NumberFormat('en-CA',{maximumFractionDigits:curr==='BTC'?8:2}).format(Number(value))+' '+curr;
+ return new Intl.NumberFormat('en-CA',{style:'currency',currency:curr||'CAD',maximumFractionDigits:2}).format(Number(value));
+};
 
 export default function OwnerPaymentInbox({language='en',invoices=[],members=[],renderInvoice,onRefresh,onOpenAgents}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
