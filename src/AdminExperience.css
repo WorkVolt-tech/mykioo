@@ -180,3 +180,16 @@
  .admin-layout .admin-table-wrap{overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
  .admin-layout .admin-subnav{scroll-padding-inline:8px;-webkit-overflow-scrolling:touch}
 }
+
+
+/* Persistent quick navigation on small owner screens; full sidebar remains in More. */
+.mykioo-owner-mobile-shortcuts{display:none}
+@media(max-width:850px){
+ .mykioo-owner-mobile-shortcuts{position:fixed;bottom:0;left:0;right:0;z-index:70;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;padding:6px 5px calc(8px + env(safe-area-inset-bottom,0px));background:rgba(23,20,32,.97);border-top:1px solid rgba(221,188,134,.37);border-radius:14px 14px 0 0;box-shadow:0 -9px 28px rgba(0,0,0,.32);backdrop-filter:blur(18px)}
+ .mykioo-owner-mobile-shortcuts>button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:55px;padding:5px 2px;border:1px solid transparent;border-radius:9px;background:transparent;color:#dcd0df;font:750 10px/1.2 inherit;text-align:center;cursor:pointer;white-space:nowrap}
+ .mykioo-owner-mobile-shortcuts>button svg{color:#dfb77c;flex-shrink:0}
+ .mykioo-owner-mobile-shortcuts>button.active{background:#3b3046;border-color:#977658;color:#fff0d4}
+ .mykioo-owner-mobile-shortcuts>button:focus-visible{outline:2px solid #edcf96;outline-offset:-1px}
+ .admin-layout .admin-main{padding-bottom:calc(125px + env(safe-area-inset-bottom,0px))}
+}
+@media(max-width:360px){.mykioo-owner-mobile-shortcuts>button{font-size:9px}}
