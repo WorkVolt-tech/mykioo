@@ -1,0 +1,71 @@
+
+/* Unified owner finance inbox — a focused verification task flow */
+.mykioo-payment-inbox{min-width:0;padding:clamp(15px,2.4vw,25px);border:1px solid rgba(216,177,110,.46);background:linear-gradient(140deg,#29222f,#171925 76%);border-radius:17px;box-shadow:0 15px 45px rgba(0,0,0,.14);color:#f8f0f7}
+.mykioo-payment-inbox *{box-sizing:border-box}
+.mykioo-payment-inbox-heading{display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:16px;margin-bottom:18px}
+.mykioo-payment-inbox-heading>div{flex:1 1 290px}
+.mykioo-payment-inbox-eyebrow{display:flex;align-items:center;gap:7px;color:#dabe8f;font-size:10px;letter-spacing:.09em;font-weight:850}
+.mykioo-payment-inbox-heading h2{font-family:Outfit,sans-serif;color:#f6dfb8;font-size:clamp(22px,2.6vw,30px);margin:8px 0!important;line-height:1.2}
+.mykioo-payment-inbox-heading p{font-size:13px;color:#d5c6da;line-height:1.6;margin:0!important;max-width:740px}
+.mykioo-payment-inbox-refresh{display:inline-flex;justify-content:center;align-items:center;gap:7px;min-height:43px;padding:10px 13px!important;border:1px solid #ac8c6b;border-radius:9px;background:#31283a;color:#f3d8ab;font-size:12px;font-weight:800;cursor:pointer}
+.mykioo-payment-inbox-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:20px 0}
+.mykioo-payment-inbox-totals>button{min-height:92px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:7px;background:#211e2c;border:1px solid #51485b;border-radius:11px;padding:16px;color:#dfd0df;text-align:left;cursor:pointer}
+.mykioo-payment-inbox-totals>button:hover{border-color:#d9bd8c}
+.mykioo-payment-inbox-totals>button.active{background:linear-gradient(132deg,#43354a,#2a263a);border-color:#e3c28c}
+.mykioo-payment-inbox-totals>button strong{font-family:Outfit,sans-serif;font-size:27px;line-height:1;color:#f4d9aa}
+.mykioo-payment-inbox-totals>button span{font-size:12px;line-height:1.45;font-weight:750}
+.mykioo-payment-inbox-search{display:grid;gap:8px;max-width:540px;margin:0 0 18px;color:#e5d2b1;font-size:12px;font-weight:750}
+.mykioo-payment-inbox-search input{min-height:44px;border:1px solid #8b7165;background:#211c2b;color:#f4edf8;border-radius:9px;font-size:13px;padding:10px 13px;max-width:100%;width:100%}
+.mykioo-payment-inbox-search input:focus-visible,.mykioo-payment-inbox button:focus-visible{outline:2px solid #e8c795;outline-offset:3px}
+.mykioo-payment-inbox-card,.mykioo-payment-inbox-invoice{border:1px solid rgba(214,176,115,.39);background:#211d2b;border-radius:13px;padding:clamp(13px,1.8vw,19px);margin:0 0 14px}
+.mykioo-payment-inbox-invoice{background:#211d2b}
+.mykioo-payment-inbox-invoice>.mykioo-payment-inbox-kind{margin-bottom:13px}
+.mykioo-payment-inbox-invoice .mykioo-billing-invoice{border-color:rgba(211,174,119,.4)}
+.mykioo-payment-inbox-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:15px}
+.mykioo-payment-inbox-card-head>div{min-width:0;flex:1 1 170px}
+.mykioo-payment-inbox-card-head h3{margin:6px 0!important;font-size:17px!important;line-height:1.35;color:#fff0cf;overflow-wrap:anywhere}
+.mykioo-payment-inbox-card-head small{font-size:12px;color:#c4b2d0;overflow-wrap:anywhere}
+.mykioo-payment-inbox-kind{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#e2c188}
+.mykioo-payment-inbox-amount{font:800 23px/1.2 Outfit,sans-serif;color:#f1d39c;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mykioo-payment-inbox-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;padding:14px;border-radius:10px;background:#181721;border:1px solid rgba(215,187,142,.19)}
+.mykioo-payment-inbox-facts>div{min-width:0;display:grid;align-content:start;gap:4px}
+.mykioo-payment-inbox-facts span{font-size:11px;color:#bfb1c8}
+.mykioo-payment-inbox-facts strong{font-size:13px;font-weight:750;color:#f7ebdb;overflow-wrap:anywhere}
+.mykioo-payment-inbox-wrap{word-break:break-word}
+.mykioo-payment-inbox-alert{display:flex;align-items:flex-start;gap:9px;padding:12px;background:rgba(165,105,39,.13);border:1px solid #9e754a;border-radius:9px;color:#f5d9b1;font-size:12px;line-height:1.55;margin:13px 0}
+.mykioo-payment-inbox-alert svg{flex:none;margin-top:2px;color:#efc28b}
+.mykioo-payment-inbox-confirm{display:flex!important;flex-direction:row!important;align-items:start;gap:10px!important;padding:10px 0;font-size:12px!important;font-weight:650;color:#e6d7e8;line-height:1.55}
+.mykioo-payment-inbox-confirm input{flex:none;margin-top:3px;min-width:19px;min-height:19px;accent-color:#dabc82}
+.mykioo-payment-inbox-verify{display:inline-flex;justify-content:center;align-items:center;gap:8px;min-height:46px;padding:11px 17px!important;border:1px solid #e8c88e;border-radius:9px;color:#211a23;background:#e4c48b;font-size:12px;font-weight:850;cursor:pointer}
+.mykioo-payment-inbox-verify:not(:disabled):hover{background:#f6dca6}
+.mykioo-payment-inbox-verify:disabled{opacity:.48;cursor:not-allowed}
+.mykioo-payment-inbox-note,.mykioo-payment-inbox-footnote{font-size:12px;color:#c5bbcd;line-height:1.65;margin:15px 0 3px}
+.mykioo-payment-inbox-footnote{border-top:1px solid rgba(211,179,128,.28);padding-top:12px}
+.mykioo-payment-inbox-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:25px 20px;border:1px dashed #695773;border-radius:12px;text-align:center;color:#d9c6dc;font-size:13px}
+.mykioo-payment-inbox-empty svg{color:#c2d9a6}
+.mykioo-payment-inbox-empty strong{color:#efddbf}
+.mykioo-payment-inbox-empty small{color:#baaec2}
+.mykioo-payment-inbox-wait{font-size:13px;color:#eddec6}
+.mykioo-payment-inbox-error,.mykioo-payment-inbox-success{padding:12px 14px;margin:12px 0;border:1px solid #bb8069;border-radius:9px;background:#41252d;color:#ffe6ce;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.mykioo-payment-inbox-success{border-color:#82ab79;background:#203529;color:#d0ecd1}
+.mykioo-payment-inbox-secondary{display:grid;gap:12px}
+.mykioo-payment-inbox-secondary article{padding:15px;background:#211d2b;border:1px solid #584a5e;border-radius:11px;min-width:0}
+.mykioo-payment-inbox-secondary article>strong{color:#f6ddb0}
+.mykioo-payment-inbox-secondary article>p{font-size:12px;line-height:1.5;color:#c4b5cc;overflow-wrap:anywhere}
+.mykioo-payment-inbox-secondary article>button{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:9px 12px;border:1px solid #d3ad74;border-radius:8px;background:#3a2d40;color:#e8ce9e;font-size:12px;font-weight:750}
+.mykioo-payment-inbox-history-list{display:grid;gap:10px}
+.mykioo-payment-inbox-history{display:flex;flex-wrap:wrap;justify-content:space-between;gap:7px 13px;align-items:center;padding:12px 14px;background:#201d2b;border:1px solid #524758;border-radius:9px;font-size:12px;color:#c7b9cc}
+.mykioo-payment-inbox-history strong{color:#f2d5a6}
+@media(max-width:680px){
+ .mykioo-payment-inbox{padding:13px;border-radius:11px}
+ .mykioo-payment-inbox-totals{gap:6px;margin:14px 0}
+ .mykioo-payment-inbox-totals>button{min-height:82px;padding:10px 9px}
+ .mykioo-payment-inbox-totals>button strong{font-size:24px}
+ .mykioo-payment-inbox-totals>button span{font-size:10px}
+ .mykioo-payment-inbox-card-head{gap:9px}
+ .mykioo-payment-inbox-card-head h3{font-size:14px!important}
+ .mykioo-payment-inbox-amount{font-size:19px}
+ .mykioo-payment-inbox-facts{gap:10px;padding:11px;grid-template-columns:1fr}
+ .mykioo-payment-inbox-verify,.mykioo-payment-inbox-refresh{width:100%}
+ .mykioo-payment-inbox-card,.mykioo-payment-inbox-invoice{padding:12px}
+}
