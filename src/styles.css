@@ -1498,3 +1498,24 @@
 .mykioo-owner-help-filters label{display:grid;gap:7px;color:#f0d6a6;font-size:12px;font-weight:750}
 .mykioo-owner-help-filters input,.mykioo-owner-help-filters select{width:100%;min-width:0;min-height:43px;padding:10px 11px;border:1px solid #806f7e;border-radius:8px;color:#f8edf6;background:#251e30;font-size:13px}
 @media(max-width:650px){.mykioo-owner-help-filters{grid-template-columns:1fr;padding:11px}}
+
+
+/* Shared Android installation guide — app choices no longer repeat entire setup tutorials. */
+.mykioo-unified-android{border:1px solid rgba(231,190,128,.6)!important;background:linear-gradient(135deg,#302637,#1b1b2a)!important}
+.mykioo-unified-android>.mykioo-guide-detail{padding:clamp(14px,2vw,22px)}
+.mykioo-unified-android h3{color:#f4ddb1;font-size:19px;line-height:1.4;margin:0 0 8px}
+.mykioo-unified-android h4{color:#ebca91;font-size:15px;margin:19px 0 9px}
+.mykioo-unified-android p{line-height:1.65}
+.mykioo-unified-android .mykioo-guide-device-choices{margin-top:9px}
+.mykioo-unified-all-steps{margin:13px 0;padding:10px 12px;border:1px solid rgba(215,181,132,.38);border-radius:9px}
+.mykioo-unified-all-steps summary{cursor:pointer;color:#f4d5a1;font-size:12px;font-weight:750}
+.mykioo-unified-all-steps li{padding:5px 0;line-height:1.6;color:#e2d6e5;font-size:12px}
+.mykioo-unified-app-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:11px;margin:13px 0}
+.mykioo-unified-app{padding:14px;border:1px solid rgba(221,186,126,.38);border-radius:11px;background:#211e2c;display:grid;align-content:start;gap:10px;min-width:0}
+.mykioo-unified-app>strong{color:#f4daae;font-size:15px}
+.mykioo-unified-app>code{overflow-wrap:anywhere;white-space:normal;font-size:11px;color:#e2dae8}
+.mykioo-unified-app .mykioo-guide-download-actions{margin:0;display:flex;flex-wrap:wrap;gap:8px}
+.mykioo-unified-app .mykioo-guide-download-actions>*{min-height:37px}
+.mykioo-unified-app .mykioo-guide-downloader-code{margin:0;font-size:12px}
+.mykioo-unified-android>div>small{display:block;color:#d3c3d2;font-size:11px;line-height:1.65;margin-top:15px}
+@media(max-width:650px){.mykioo-unified-app-list{grid-template-columns:1fr}.mykioo-unified-android h3{font-size:17px}}
