@@ -282,7 +282,7 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId='',agentCu
 export function OwnerSetupGuideEditor({language='en'}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const {guides,loading,error:readError,refresh}=useSetupGuides();
- const [form,setForm]=useState(fresh),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[error,setError]=useState(''),[filter,setFilter]=useState('all');
+ const [form,setForm]=useState(fresh),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[error,setError]=useState(''),[filter,setFilter]=useState('all'),[ownerPlatform,setOwnerPlatform]=useState('all'),[ownerSearch,setOwnerSearch]=useState('');
  const set=(name,value)=>{setForm(current=>({...current,[name]:value}));setNotice('');setError('')};
  async function save(e){
   e.preventDefault();if(saving)return;
@@ -332,8 +332,12 @@ export function OwnerSetupGuideEditor({language='en'}){
    <div className="mykioo-guide-owner-top"><h3>{tr('Your guides','Vos guides')} ({guides.length})</h3><select value={filter} onChange={e=>setFilter(e.target.value)}>
     <option value="all">{tr('All','Tous')}</option><option value="published">{tr('Published','Publiés')}</option><option value="draft">{tr('Drafts','Brouillons')}</option></select>
    </div>
+   <div className="mykioo-owner-help-filters">
+     <label>{tr('Search guide titles and steps','Rechercher des titres et étapes')}<input type="search" value={ownerSearch} onChange={e=>setOwnerSearch(e.target.value)} placeholder={tr('App name or device','Application ou appareil')}/></label>
+     <label>{tr('Device','Appareil')}<select value={ownerPlatform} onChange={e=>setOwnerPlatform(e.target.value)}><option value="all">{tr('All devices','Tous les appareils')}</option>{platformOptions.filter(p=>p.id!=='general').map(p=><option key={p.id} value={p.id}>{fr?p.fr:p.en}</option>)}</select></label>
+   </div>
    {loading?<p>{tr('Loading…','Chargement…')}</p>:guides.length===0?<p>{tr('No guides created yet. Start with a frequently asked question.','Aucun guide créé. Commencez par une question fréquente.')}</p>:
-    guides.filter(g=>filter==='all'||(filter==='published'?g.published:!g.published)).sort(orderGuides).map(g=><article className="mykioo-guide-owner-row" key={g.id}>
+    guides.filter(g=>(filter==='all'||(filter==='published'?g.published:!g.published))&&(ownerPlatform==='all'||g.platform===ownerPlatform)&&(!ownerSearch.trim()||[g.title_en,g.title_fr,g.summary_en,g.summary_fr,g.steps_en,g.steps_fr].join(' ').toLowerCase().includes(ownerSearch.trim().toLowerCase()))).sort(orderGuides).map(g=><article className="mykioo-guide-owner-row" key={g.id}>
      <span><strong>{fr?g.title_fr:g.title_en}</strong><small>{titleFor(categoryOptions,g.category,fr)} · {guidePlatformLabel(g,fr)}</small>
       <small className={g.published?'mykioo-guide-published':'mykioo-guide-draft'}>{g.published?tr('Published','Publié'):tr('Draft / private','Brouillon / privé')}</small></span>
      <button type="button" onClick={()=>{setForm({id:g.id,title_en:g.title_en,title_fr:g.title_fr,summary_en:g.summary_en,summary_fr:g.summary_fr,steps_en:g.steps_en,steps_fr:g.steps_fr,category:g.category,platform:g.platform,published:g.published,sort_order:g.sort_order});setNotice('');setError('');}}><Pencil size={14}/>{tr('Edit','Modifier')}</button>
