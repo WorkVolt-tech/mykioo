@@ -91,21 +91,23 @@ export function MemberSupportFAQ({language='en',category='other',subject='',onOp
  const {guides}=useSetupGuides();
  const [search,setSearch]=useState('');
  const [showAll,setShowAll]=useState(false);
+ const [topic,setTopic]=useState(category==='all'?'all':category);
  const query=(search.trim()||subject.trim()).toLocaleLowerCase();
+ const activeCategory=search.trim()?'all':topic;
  const words=query.length>=3?query.split(/\s+/).filter(w=>w.length>=3):[];
  const visible=useMemo(()=>{
   const ranked=faqs.filter(f=>f.published&&(!agentCustomer||(f.category!=='billing'&&!/(?:\$|\bCAD\b|\bUSD\b|\bprices?\b|\bpricing\b|\bwholesale\b|\breseller\b|\bdiscount\b|\bpaiement\b|\bprix\b|\btarifs?\b|\bremise\b|\brevendeur\b|\bfacturation\b)/i.test([f.question_en,f.question_fr,f.answer_en,f.answer_fr].join(' '))))).map(f=>{
-   const categoryBoost=f.category===category?6:f.category==='other'?1:0;
+   const categoryBoost=f.category===activeCategory?6:f.category==='other'?1:0;
    const match=scoreText([f.question_en,f.question_fr].join(' '),words)*4+
      scoreText([f.answer_en,f.answer_fr].join(' '),words);
    return {faq:f,rank:categoryBoost+match,match};
-  }).filter(({faq,match})=>words.length?match>0:showAll||faq.category===category||faq.category==='other')
+  }).filter(({faq,match})=>words.length?match>0:showAll||activeCategory==='all'||faq.category===activeCategory)
     .sort((a,b)=>b.rank-a.rank||a.faq.sort_order-b.faq.sort_order);
-  return ranked.slice(0,showAll?20:5).map(x=>x.faq);
- },[faqs,category,query,showAll,agentCustomer]);
+  return ranked.slice(0,showAll?200:activeCategory==='all'?8:12).map(x=>x.faq);
+ },[faqs,activeCategory,query,showAll,agentCustomer]);
  const suggested=useMemo(()=>{
   const guidesPublished=guides.filter(g=>g.published&&(!agentCustomer||(['setup','troubleshooting'].includes(g.category)&&!/(?:\$|\bCAD\b|\bUSD\b|\bprices?\b|\bpricing\b|\bwholesale\b|\breseller\b|\bdiscount\b|\bpaiement\b|\bprix\b|\btarifs?\b|\bremise\b|\brevendeur\b|\bfacturation\b)/i.test([g.title_en,g.title_fr,g.summary_en,g.summary_fr,g.steps_en,g.steps_fr].join(' ')))));
-  const guideCategory={login:'account',billing:'account',setup:'setup',streaming:'troubleshooting',channels:'troubleshooting',other:null}[category];
+  const guideCategory={login:'account',billing:'account',setup:'setup',streaming:'troubleshooting',channels:'troubleshooting',other:null}[activeCategory];
   const scored=guidesPublished.map(g=>{
    const c=guideCategory&&g.category===guideCategory?5:0;
    const m=scoreText([g.title_en,g.title_fr,g.summary_en,g.summary_fr].join(' '),words)*3;
@@ -113,7 +115,7 @@ export function MemberSupportFAQ({language='en',category='other',subject='',onOp
   }).filter(item=>words.length?item.score>0:!guideCategory||item.guide.category===guideCategory)
     .sort((a,b)=>b.score-a.score||a.guide.sort_order-b.guide.sort_order);
   return scored.slice(0,3).map(x=>x.guide);
- },[guides,category,query,agentCustomer]);
+ },[guides,activeCategory,query,agentCustomer]);
  const published=faqs.filter(f=>f.published&&(!agentCustomer||(f.category!=='billing'&&!/(?:\$|\bCAD\b|\bUSD\b|\bprices?\b|\bpricing\b|\bwholesale\b|\breseller\b|\bdiscount\b|\bpaiement\b|\bprix\b|\btarifs?\b|\bremise\b|\brevendeur\b|\bfacturation\b)/i.test([f.question_en,f.question_fr,f.answer_en,f.answer_fr].join(' '))))).length;
  return <section className="mykioo-faq-member">
   <div className="mykioo-faq-heading"><Lightbulb size={22}/><div>
@@ -122,6 +124,11 @@ export function MemberSupportFAQ({language='en',category='other',subject='',onOp
   </div></div>
   <label className="mykioo-faq-search"><Search size={17}/><input type="search" value={search} onChange={e=>{setSearch(e.target.value);setShowAll(false)}}
    placeholder={tr('Search common questions…','Rechercher des questions fréquentes…')} aria-label={tr('Search common questions','Rechercher des questions fréquentes')}/></label>
+  <div className="mykioo-faq-topics" aria-label={tr('Help topics','Sujets d’aide')}>
+    {[{id:'all',en:'All questions',fr:'Toutes les questions'},...categories.filter(c=>!agentCustomer||c.id!=='billing')].map(c=><button key={c.id} type="button" className={activeCategory===c.id?'selected':''} aria-pressed={activeCategory===c.id} onClick={()=>{setTopic(c.id);setSearch('');setShowAll(false)}}>
+      {fr?c.fr:c.en}
+    </button>)}
+  </div>
   {!search.trim()&&subject.trim().length>=3&&<p className="mykioo-faq-suggestions-note">
    {tr('Suggested for your ticket subject:','Suggestions selon le sujet de votre demande :')} <strong>{subject.trim()}</strong>
   </p>}
