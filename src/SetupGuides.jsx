@@ -227,13 +227,22 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId='',agentCu
   <div className="mykioo-guide-intro">
    <BookOpen size={26}/>
    <div><h2>{tr('Setup & help guides','Guides d’installation et d’aide')}</h2>
-    <p>{tr('New to this? First choose your device below, then open its installation guide. If you use a Fire Stick, first check whether it runs Vega OS or Fire OS. Vega OS users should start with “Vega OS Fire Sticks — Why Android apps do not install”; Fire OS users can follow “START HERE — First-time Fire TV Stick setup.” Follow one instruction at a time and press “Done — next step” only after you have completed it.','C’est votre première fois ? Choisissez d’abord votre appareil ci-dessous, puis ouvrez son guide. Si vous utilisez un Fire Stick, vérifiez d’abord s’il fonctionne sous Vega OS ou Fire OS. Sous Vega OS, ouvrez « Fire Stick Vega OS — Pourquoi les applications Android ne s’installent pas »; sous Fire OS, suivez « COMMENCEZ ICI — Première installation Fire TV Stick ». Suivez une instruction à la fois et appuyez sur « Terminé — étape suivante » seulement après l’avoir effectuée.')}</p></div>
+    <p>{tr('Choose your device to see the relevant guides. Open one guide and follow the steps in order.','Choisissez votre appareil pour voir les guides adaptés. Ouvrez un guide et suivez les étapes dans l’ordre.')}</p></div>
   </div>
+  <div className="mykioo-guide-device-chooser">
+    <h3>{tr('1. Choose your device','1. Choisissez votre appareil')}</h3>
+    <div className="mykioo-guide-device-choices">
+      {[{id:'fire_tv',en:'Fire Stick',fr:'Fire Stick'},{id:'android_tv',en:'Android TV / Google TV',fr:'Android TV / Google TV'},{id:'android',en:'Android phone',fr:'Téléphone Android'},{id:'ios',en:'iPhone / iPad',fr:'iPhone / iPad'},{id:'smart_tv',en:'Smart TV / Apple TV',fr:'Smart TV / Apple TV'},{id:'all',en:'All devices',fr:'Tous les appareils'}].map(d=><button key={d.id} type="button" className={platform===d.id?'selected':''} aria-pressed={platform===d.id} onClick={()=>{setPlatform(d.id);setCategory('all');setSearch('')}}>{fr?d.fr:d.en}</button>)}
+    </div>
+  </div>
+  <details className="mykioo-guide-common-tips"><summary>{tr('App not installing? Storage & compatibility tips','Application impossible à installer ? Conseils de stockage et compatibilité')}</summary>
   <div className="mykioo-vega-explainer" role="note">
    <strong>{tr('App won’t download or install? Check free storage.','L’application ne se télécharge pas ou ne s’installe pas ? Vérifiez l’espace libre.')}</strong>
    <p>{tr('Low storage can prevent apps such as OwnTV from downloading or installing on a Fire Stick or another device. Open your device’s storage settings and uninstall apps you no longer use to free up space. Then restart the device and try the download and installation again.','Un manque d’espace peut empêcher le téléchargement ou l’installation d’applications comme OwnTV sur un Fire Stick ou un autre appareil. Ouvrez les paramètres de stockage de votre appareil et désinstallez les applications que vous n’utilisez plus pour libérer de l’espace. Redémarrez ensuite l’appareil et réessayez le téléchargement et l’installation.')}</p>
   </div>
+  </details>
   <p className="mykioo-request-policy-note" role="note">{tr("All apps listed here, including V12, belong to third-party developers. MYKIOO does not own or develop these apps. They are shared as optional players. Choose a compatible app according to your personal preferences.","Toutes les applications présentées ici, y compris V12, appartiennent à des développeurs tiers. MYKIOO n’en est ni le propriétaire ni le développeur. Elles sont proposées comme options de lecture. Choisissez une application compatible selon vos préférences personnelles.")}</p>
+  <div className="mykioo-guide-filter-heading"><h3>{tr("2. Find your guide","2. Trouvez votre guide")}</h3><p>{tr("Search or filter if needed.","Recherchez ou filtrez au besoin.")}</p></div>
   <div className="mykioo-guide-filters">
    <label><Search size={16}/><input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder={tr('Search help guides…','Rechercher dans les guides…')} aria-label={tr('Search help guides','Rechercher dans les guides')}/></label>
    <select aria-label={tr('Guide category','Catégorie de guide')} value={category} onChange={e=>setCategory(e.target.value)}>
