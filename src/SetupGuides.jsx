@@ -276,7 +276,7 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId='',agentCu
   (category==='all'||category==='setup')&&['all','fire_tv','android_tv','android'].includes(platform);
  const showUnifiedAndroid=!hasLinkedGuide&&['all','android','android_tv'].includes(platform)&&['all','setup'].includes(category)&&(!search.trim()||/android|yestream|v12|player|install|apk|application|télécharg|installation|lecteur/i.test(search));
  const visible=safeGuides.filter(g=>{
-  if(showUnifiedAndroid&&isRepeatedAndroidAppGuide(g))return false;
+  if(!hasLinkedGuide&&isRepeatedAndroidAppGuide(g))return false;
   if(hasLinkedGuide)return g.id===linkedId;
   const term=search.trim().toLocaleLowerCase();
   return (!term||[g.title_en,g.title_fr,g.summary_en,g.summary_fr,g.steps_en,g.steps_fr].some(x=>(x||'').toLocaleLowerCase().includes(term)))
