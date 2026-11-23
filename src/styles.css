@@ -1456,3 +1456,39 @@
  .workspace .mykioo-overview-news,.workspace .hero-panel{display:none}
  .workspace .dash-content{padding-top:21px}
 }
+
+
+/* Help UX: make the next action visible, and let users browse by topic/device. */
+.mykioo-help-start{margin:0 0 20px;padding:clamp(15px,2.5vw,23px);border:1px solid rgba(219,183,121,.43);border-radius:14px;background:linear-gradient(140deg,#2a2332,#191924)}
+.mykioo-help-head{display:flex;align-items:flex-start;gap:12px;margin:0 0 18px}
+.mykioo-help-head>svg{flex:none;color:#edc890}
+.mykioo-help-head h2{font:800 clamp(19px,2.1vw,26px)/1.25 Outfit,sans-serif;color:#f6dfb6;margin:0 0 7px}
+.mykioo-help-head p{margin:0;color:#cec3d2;font-size:13px;line-height:1.6}
+.mykioo-help-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.mykioo-help-choices button{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0;min-height:130px;padding:16px;border:1px solid #6f5d73;border-radius:11px;background:#241f2e;color:#e2bd86;text-align:left;cursor:pointer;font-family:inherit}
+.mykioo-help-choices button:hover,.mykioo-help-choices button.selected{border-color:#f0ce95;background:#3a2c40}
+.mykioo-help-choices strong{color:#fff1d7;font-size:14px;font-weight:800}
+.mykioo-help-choices small{font-size:12px;line-height:1.55;color:#c8bad0}
+.mykioo-help-browse,.mykioo-help-back-link{margin-top:14px;min-height:42px;padding:10px 14px;border:1px solid #917a66;border-radius:9px;background:#30283a;color:#f1d6aa;font-family:inherit;font-weight:750;font-size:12px;cursor:pointer}
+.mykioo-help-hint{padding:15px 5px;color:#d4c6d9;font-size:13px}
+.mykioo-faq-topics,.mykioo-guide-device-choices{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 16px}
+.mykioo-faq-topics button,.mykioo-guide-device-choices button{min-height:41px;max-width:100%;padding:9px 13px;border:1px solid #816c72;border-radius:9px;background:#2a2435;color:#f0d9ae;font-size:12px;font-weight:750;font-family:inherit;cursor:pointer}
+.mykioo-faq-topics button.selected,.mykioo-guide-device-choices button.selected{background:#e3c58f;border-color:#efdaad;color:#261d26}
+.mykioo-guide-device-chooser{margin:16px 0;padding:15px 17px;border:1px solid #8d765b;border-radius:12px;background:#272332}
+.mykioo-guide-device-chooser h3,.mykioo-guide-filter-heading h3{margin:0 0 8px;color:#f1d7aa;font-size:16px}
+.mykioo-guide-filter-heading{margin:15px 0 6px}
+.mykioo-guide-filter-heading p{margin:0;color:#d8c8d9;font-size:12px}
+.mykioo-guide-common-tips{margin:14px 0;border:1px solid rgba(214,177,113,.35);border-radius:10px;background:rgba(205,160,80,.06);padding:13px}
+.mykioo-guide-common-tips summary{cursor:pointer;color:#ecd4a8;font-size:12px;font-weight:750}
+.mykioo-guide-common-tips .mykioo-vega-explainer{margin:12px 0 0}
+.mykioo-help-choices button:focus-visible,.mykioo-faq-topics button:focus-visible,.mykioo-guide-device-choices button:focus-visible{outline:2px solid #f1d2a0;outline-offset:2px}
+@media(max-width:620px){
+ .mykioo-help-start{padding:13px}
+ .mykioo-help-choices{gap:8px}
+ .mykioo-help-choices button{min-height:121px;padding:12px}
+ .mykioo-help-choices strong{font-size:12px}
+ .mykioo-help-choices small{font-size:11px}
+ .mykioo-faq-topics button,.mykioo-guide-device-choices button{font-size:11px;padding:9px 10px}
+ .mykioo-guide-device-chooser{padding:12px}
+}
+@media(max-width:380px){.mykioo-help-choices{grid-template-columns:1fr}.mykioo-help-choices button{min-height:85px}}
