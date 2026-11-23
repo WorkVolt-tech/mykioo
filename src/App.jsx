@@ -43,7 +43,7 @@ function Login({onLogin,language='en',onLanguageChange,recoveryComplete=false}){
 }
 const memberSections=['Overview','Subscription','My subscriptions','Payments','Setup guides','Support','Invitations','Notifications','My profile'];
 
-function Shell({user,member,subscriptions,logout,language='en',onLanguageChange,onNameSaved,agent=null}){const agentSection=agent?.status==='active'?'Agent workspace':'Become an Agent';const nav=['Overview',...memberSections.slice(1),agentSection];const ticketFileInputRef=useRef(null);const {notifications,unread:notificationUnread,markRead:markNotificationRead,clearNotifications:clearNotifications}=useNotifications(user.id);const [serviceAlerts]=useServiceAlerts();const tr=(en,fr)=>language==='fr'?fr:en;const [active,setActive]=usePageSection(nav,'Overview','member:'+user.id),[mobile,setMobile]=useState(false),[editName,setEditName]=useState(member.display_name||''),[profileError,setProfileError]=useState(''),[profileNotice,setProfileNotice]=useState(''),[profileSaving,setProfileSaving]=useState(false),[tickets,setTickets]=useState([]),[ticketSubject,setTicketSubject]=useState(''),[ticketCategory,setTicketCategory]=useState('other'),[ticketDevice,setTicketDevice]=useState(''),[ticketApp,setTicketApp]=useState(''),[ticketErrorDetails,setTicketErrorDetails]=useState(''),[ticketMessage,setTicketMessage]=useState(''),[ticketFiles,setTicketFiles]=useState([]),[ticketFileError,setTicketFileError]=useState(''),[ticketLoading,setTicketLoading]=useState(false),[ticketSaving,setTicketSaving]=useState(false),[ticketError,setTicketError]=useState(''),[ticketNotice,setTicketNotice]=useState('');const {counts:unreadCounts,total:unreadTotal,sync:syncUnread}=useSupportUnread(user.id,tickets);useResumeScroll('member:'+user.id,active);useEffect(()=>{
+function Shell({user,member,subscriptions,logout,language='en',onLanguageChange,onNameSaved,agent=null}){const agentSection=agent?.status==='active'?'Agent workspace':'Become an Agent';const nav=['Overview',...memberSections.slice(1),agentSection];const ticketFileInputRef=useRef(null);const {notifications,unread:notificationUnread,markRead:markNotificationRead,clearNotifications:clearNotifications}=useNotifications(user.id);const [serviceAlerts]=useServiceAlerts();const tr=(en,fr)=>language==='fr'?fr:en;const [active,setActive]=usePageSection(nav,'Overview','member:'+user.id),[helpView,setHelpView]=useState('start'),[mobile,setMobile]=useState(false),[editName,setEditName]=useState(member.display_name||''),[profileError,setProfileError]=useState(''),[profileNotice,setProfileNotice]=useState(''),[profileSaving,setProfileSaving]=useState(false),[tickets,setTickets]=useState([]),[ticketSubject,setTicketSubject]=useState(''),[ticketCategory,setTicketCategory]=useState('other'),[ticketDevice,setTicketDevice]=useState(''),[ticketApp,setTicketApp]=useState(''),[ticketErrorDetails,setTicketErrorDetails]=useState(''),[ticketMessage,setTicketMessage]=useState(''),[ticketFiles,setTicketFiles]=useState([]),[ticketFileError,setTicketFileError]=useState(''),[ticketLoading,setTicketLoading]=useState(false),[ticketSaving,setTicketSaving]=useState(false),[ticketError,setTicketError]=useState(''),[ticketNotice,setTicketNotice]=useState('');const {counts:unreadCounts,total:unreadTotal,sync:syncUnread}=useSupportUnread(user.id,tickets);useResumeScroll('member:'+user.id,active);useEffect(()=>{
  if(!mobile)return;
  const onEscape=e=>{if(e.key==='Escape')setMobile(false)};
  document.addEventListener('keydown',onEscape);
@@ -165,14 +165,29 @@ return <div className="dashboard">{mobile&&<button type="button" className="myki
   <SubscriptionDirectory subscriptions={subscriptions} members={[member]} language={language}/>
   <SubscriptionRequests userId={user.id} subscriptions={subscriptions} language={language} view="history"/>
   <button type="button" className="mykioo-nav-secondary-link" onClick={()=>setActive('Subscription')}><CalendarDays size={17}/>{tr('New subscription or renewal','Nouvel abonnement ou renouvellement')}</button>
- </section>}{active==='Invitations'&&<MemberInvitations userId={user.id} language={language}/>} {active==='Payments'&&<MemberBilling userId={user.id} language={language}/>}{active==='Notifications'&&<NotificationCenter items={notifications} language={language} markRead={markNotificationRead} clearNotifications={clearNotifications} onSelect={section=>setActive(section==='Subscription'?'My subscriptions':section)}/>}{active==='Support'&&<section className="mykioo-support">
+ </section>}{active==='Invitations'&&<MemberInvitations userId={user.id} language={language}/>} {active==='Payments'&&<MemberBilling userId={user.id} language={language}/>}{active==='Notifications'&&<NotificationCenter items={notifications} language={language} markRead={markNotificationRead} clearNotifications={clearNotifications} onSelect={section=>setActive(section==='Subscription'?'My subscriptions':section)}/>}{active==='Support'&&<section className="mykioo-support mykioo-help-center">
+ <div className="mykioo-help-start">
+  <div className="mykioo-help-head"><LifeBuoy size={26}/><div><h2>{tr('How can we help?','Comment pouvons-nous vous aider ?')}</h2><p>{tr('Choose what you need. We’ll show only the useful steps.','Choisissez votre besoin. Nous afficherons uniquement les étapes utiles.')}</p></div></div>
+  <div className="mykioo-help-choices">
+   <button type="button" className={helpView==='fix'?'selected':''} onClick={()=>setHelpView('fix')}><MonitorPlay size={24}/><strong>{tr('Fix a problem','Résoudre un problème')}</strong><small>{tr('Buffering, playback and missing channels','Chargement, lecture et chaînes manquantes')}</small></button>
+   <button type="button" onClick={()=>setActive('Setup guides')}><Download size={24}/><strong>{tr('Install an app','Installer une application')}</strong><small>{tr('Choose your device and follow the guide','Choisissez votre appareil et suivez le guide')}</small></button>
+   <button type="button" className={helpView==='contact'?'selected':''} onClick={()=>setHelpView('contact')}><LifeBuoy size={24}/><strong>{tr('Contact support','Contacter l’assistance')}</strong><small>{tr('Send your problem to MYKIOO','Envoyez votre problème à MYKIOO')}</small></button>
+   <button type="button" className={helpView==='tickets'?'selected':''} onClick={()=>setHelpView('tickets')}><History size={24}/><strong>{tr('My requests','Mes demandes')}</strong><small>{tr('Read replies and follow up','Lire les réponses et faire un suivi')}{unreadTotal>0?' · '+unreadTotal+' '+tr('unread','non lus'):''}</small></button>
+  </div>
+  <button type="button" className="mykioo-help-browse" onClick={()=>setHelpView(helpView==='questions'?'start':'questions')}>{tr('Browse common questions','Parcourir les questions fréquentes')}</button>
+ </div>
+ {helpView==='start'&&<p className="mykioo-help-hint">{tr('Select an option above to get started.','Choisissez une option ci-dessus pour commencer.')}</p>}
+ {helpView==='fix'&&<>
  <ServiceAlertBanner alerts={serviceAlerts} language={language}/>
  <ServiceAlertHistory alerts={serviceAlerts} language={language}/>
  <TroubleshootingAssistant language={language} onOpenGuides={()=>setActive('Setup guides')} onPrepareTicket={details=>{
-  setTicketCategory(details.category);setTicketDevice(details.device);setTicketApp(details.app);setTicketErrorDetails(details.error);setTicketSubject(details.subject);setTicketMessage(details.message);
+  setHelpView('contact');setTicketCategory(details.category);setTicketDevice(details.device);setTicketApp(details.app);setTicketErrorDetails(details.error);setTicketSubject(details.subject);setTicketMessage(details.message);
   window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>document.getElementById('mykioo-member-support-form')?.scrollIntoView({behavior:'smooth',block:'start'})));
  }}/>
- <MemberSupportFAQ language={language} category={ticketCategory} subject={ticketSubject} onOpenGuides={()=>setActive('Setup guides')}/>
+ </>}
+ {helpView==='fix'&&<MemberSupportFAQ language={language} category={ticketCategory} subject={ticketSubject} onOpenGuides={()=>setActive('Setup guides')}/>}
+ {helpView==='questions'&&<MemberSupportFAQ language={language} category="all" onOpenGuides={()=>setActive('Setup guides')}/>}
+ {helpView==='contact'&&<>
  <div className="mykioo-support-card" id="mykioo-member-support-form">
   <h2>{tr('Contact MYKIOO support','Contacter l’assistance MYKIOO')}</h2>
   <div className="mykioo-support-phone">
@@ -231,16 +246,17 @@ return <div className="dashboard">{mobile&&<button type="button" className="myki
    <button type="submit" disabled={ticketSaving}>{ticketSaving?tr('Sending…','Envoi…'):tr('Submit support request','Envoyer la demande')}</button>
   </form>
  </div>
+ </>}
  {ticketError&&<p role="alert" className="mykioo-profile-error">{ticketError}</p>}
  {ticketNotice&&<p role="status" className="mykioo-profile-success">{ticketNotice}</p>}
- <div className="mykioo-support-card">
+ {(helpView==='tickets'||(helpView==='contact'&&ticketNotice))&&<div className="mykioo-support-card">
   <div className="mykioo-support-header"><h2>{tr('Your requests','Vos demandes')}</h2><button onClick={loadTickets} disabled={ticketLoading}>{tr('Refresh','Actualiser')}</button></div>
   {ticketLoading?<p>{tr('Loading…','Chargement…')}</p>:tickets.length===0?<p>{tr('No support requests yet.','Aucune demande d’assistance pour le moment.')}</p>:<div className="mykioo-ticket-list">{tickets.map(t=><article className="mykioo-ticket" key={t.id}><div className="mykioo-ticket-heading"><strong>{t.subject}</strong><span className="mykioo-category-badge">{tr(({login:'Login',streaming:'Playback',channels:'Channels',billing:'Billing',setup:'Setup',other:'Other'})[t.category]||'Other',({login:'Connexion',streaming:'Lecture',channels:'Chaînes',billing:'Facturation',setup:'Installation',other:'Autre'})[t.category]||'Autre')}</span>{unreadCounts[t.id]>0&&<span className="mykioo-unread-dot">{unreadCounts[t.id]}</span>}<span className="mykioo-ticket-status">{tr(({open:'Open',in_progress:'In progress',resolved:'Resolved',closed:'Closed'})[t.status]||t.status,({open:'Ouvert',in_progress:'En cours',resolved:'Résolu',closed:'Fermé'})[t.status]||t.status)}</span></div><p>{t.message}</p>{(t.device_type||t.app_name||t.error_details)&&<div className="mykioo-ticket-diagnostic-summary">
  {t.device_type&&<span><strong>{tr('Device','Appareil')}:</strong> {tr(({fire_tv:'Fire TV / Fire Stick',android_tv:'Android TV / Google TV',apple_tv:'Apple TV',smart_tv:'Smart TV',ios:'iPhone / iPad',android:'Android phone / tablet',web:'Web browser',other:'Other'})[t.device_type]||t.device_type,({fire_tv:'Fire TV / Fire Stick',android_tv:'Android TV / Google TV',apple_tv:'Apple TV',smart_tv:'Téléviseur intelligent',ios:'iPhone / iPad',android:'Téléphone / tablette Android',web:'Navigateur Web',other:'Autre'})[t.device_type]||t.device_type)}</span>}
  {t.app_name&&<span><strong>{tr('App','Application')}:</strong> {t.app_name}</span>}
  {t.error_details&&<span><strong>{tr('Error','Erreur')}:</strong> {t.error_details}</span>}
  </div>}<small>{new Date(t.created_at).toLocaleDateString(language==='fr'?'fr-CA':'en-CA')}</small><RelatedIssue issueId={t.main_issue_id} language={language}/><SupportThread ticket={t} userId={user.id} language={language} unread={unreadCounts[t.id]||0} onRead={syncUnread} onStatusChanged={()=>loadTickets({silent:true})}/></article>)}</div>}
- </div>
+ </div>}
  </section>}{active==='My profile'&&<section className="mykioo-profile-card">
  <div className="mykioo-profile-head"><UserRound size={24}/><div><h2>{tr('Your preferred name','Votre nom préféré')}</h2><p>{tr('It can be a nickname, stage name, or any name you want us to call you. It does not need to be your real name.','Il peut s’agir d’un surnom, d’un nom d’artiste ou de tout autre nom. Vous n’avez pas besoin d’utiliser votre vrai nom.')}</p></div></div>
  <form onSubmit={saveProfileName}>
