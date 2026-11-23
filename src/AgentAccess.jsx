@@ -236,7 +236,7 @@ export function AgentCustomerDashboard({user,language='en',logout,onLanguageChan
   const [agentId,setAgentId]=useState(null);
   const availableAnnouncements=useWebsiteAnnouncements();
   const safeAnnouncementCount=availableAnnouncements.filter(a=>a.is_published&&(a.audience==='agent_customer'||a.audience==='all'&&a.agent_customer_safe)&&Date.parse(a.starts_at)<=Date.now()&&(!a.ends_at||Date.parse(a.ends_at)>Date.now())).length;
-  const [section,setSection]=useState('service'),[tickets,setTickets]=useState([]),[ticketsBusy,setTicketsBusy]=useState(true),[ticketLoadError,setTicketLoadError]=useState(''),[ticketCategory,setTicketCategory]=useState('other');
+  const [section,setSection]=useState('service'),[tickets,setTickets]=useState([]),[ticketsBusy,setTicketsBusy]=useState(true),[ticketLoadError,setTicketLoadError]=useState(''),[helpPane,setHelpPane]=useState('start'),[ticketCategory,setTicketCategory]=useState('other');
   async function refreshTickets(){
     setTicketsBusy(true);
     const {data,error}=await supabase.from('mykioo_support_tickets')
@@ -358,9 +358,18 @@ export function AgentCustomerDashboard({user,language='en',logout,onLanguageChan
     </>}
     {section==='guides'&&<><p className="mykioo-agent-customer-app-link"><a href="/apps/">{t('Browse compatible third-party app downloads','Voir les téléchargements d’applications tierces compatibles')}</a></p><MemberSetupGuides language={language} userId={user.id} agentCustomer onOpenSupport={()=>setSection('support')}/></>}
     {section==='support'&&<>
+     <div className="mykioo-help-start"><div className="mykioo-help-head"><LifeBuoy size={24}/><div><h2>{t('How can we help?','Comment pouvons-nous vous aider ?')}</h2><p>{t('For prices and billing, contact your agent. MYKIOO handles setup and technical support.','Pour les prix et paiements, contactez votre agent. MYKIOO s’occupe de l’installation et du dépannage.')}</p></div></div><div className="mykioo-help-choices">
+      <button type="button" onClick={()=>setSection('guides')}><BookOpen size={22}/><strong>{t('Install an app','Installer une application')}</strong><small>{t('Device guides','Guides par appareil')}</small></button>
+      <button type="button" className={helpPane==='answers'?'selected':''} onClick={()=>setHelpPane('answers')}><LifeBuoy size={22}/><strong>{t('Find an answer','Trouver une réponse')}</strong><small>{t('Common questions','Questions fréquentes')}</small></button>
+      <button type="button" className={helpPane==='contact'?'selected':''} onClick={()=>setHelpPane('contact')}><LifeBuoy size={22}/><strong>{t('Contact support','Contacter l’assistance')}</strong><small>{t('Send a technical question','Envoyer une question technique')}</small></button>
+      <button type="button" className={helpPane==='tickets'?'selected':''} onClick={()=>setHelpPane('tickets')}><LifeBuoy size={22}/><strong>{t('My requests','Mes demandes')}</strong><small>{t('See replies and follow up','Lire les réponses et faire un suivi')}</small></button>
+     </div></div>
+     {helpPane==='start'&&<p className="mykioo-help-hint">{t('Choose an option above.','Choisissez une option ci-dessus.')}</p>}
+     {helpPane==='answers'&&<MemberSupportFAQ language={language} category="all" agentCustomer onOpenGuides={()=>setSection('guides')}/>}
+     {helpPane==='contact'&&<>
     <section className="mykioo-support-card"><h2>{t('Open a support ticket','Ouvrir une demande d’assistance')}</h2>
       <p>{t('For setup and playback issues, MYKIOO can help. For subscription prices or payment, contact your agent.','MYKIOO peut vous aider pour l’installation et la lecture. Pour les tarifs ou paiements, contactez votre agent.')}</p>
-      <MemberSupportFAQ language={language} category={ticketCategory} subject={ticketSubject} agentCustomer onOpenGuides={()=>setSection('guides')}/>
+      
       <form onSubmit={submitTicket}>
         <label>{t('Issue category','Catégorie de problème')}<select value={ticketCategory} onChange={e=>setTicketCategory(e.target.value)}><option value="setup">{t('Setup / installation','Installation')}</option><option value="streaming">{t('Playback / buffering','Lecture / chargement')}</option><option value="channels">{t('Channels','Chaînes')}</option><option value="login">{t('Login / account','Connexion / compte')}</option><option value="other">{t('Other technical issue','Autre problème technique')}</option></select></label>
         <label>{t('Subject','Sujet')}<input value={ticketSubject} onChange={e=>setTicketSubject(e.target.value)} minLength={3} maxLength={120} required/></label>
@@ -369,7 +378,8 @@ export function AgentCustomerDashboard({user,language='en',logout,onLanguageChan
       </form>
       {ticketNotice&&<p role="status">{ticketNotice}</p>}
     </section>
-    <section className="mykioo-support-card"><h2>{t('My support conversations','Mes conversations avec l’assistance')}</h2>
+     </>}
+    {(helpPane==='tickets'||(helpPane==='contact'&&ticketNotice))&&<section className="mykioo-support-card"><h2>{t('My support conversations','Mes conversations avec l’assistance')}</h2>
       <p>{t('Open a conversation to read and reply to MYKIOO support.','Ouvrez une conversation pour lire les réponses et répondre à MYKIOO.')}</p>
       {ticketLoadError&&<p role="alert">{t('Could not load your tickets.','Impossible de charger vos demandes.')} {ticketLoadError}</p>}
       {ticketsBusy?<p>{t('Loading tickets…','Chargement des demandes…')}</p>:tickets.length===0?<p>{t('No tickets yet.','Aucune demande pour le moment.')}</p>:
@@ -379,7 +389,7 @@ export function AgentCustomerDashboard({user,language='en',logout,onLanguageChan
          <SupportThread ticket={ticket} userId={user.id} language={language} onStatusChanged={refreshTickets}/>
         </article>)}</div>}
       <button type="button" className="outline-button" onClick={refreshTickets} disabled={ticketsBusy}>{t('Refresh conversations','Actualiser les conversations')}</button>
-    </section>
+    </section>}
     </>}
   </main></div>;
 }
