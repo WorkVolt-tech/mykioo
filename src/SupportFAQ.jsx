@@ -153,7 +153,7 @@ export function OwnerFAQEditor({language='en'}){
  const {faqs,loading,error:loadError,refresh}=useFAQs();
  const {guides}=useSetupGuides();
  const [form,setForm]=useState(empty),[saving,setSaving]=useState(false),
-   [notice,setNotice]=useState(''),[error,setError]=useState(''),[filter,setFilter]=useState('all');
+   [notice,setNotice]=useState(''),[error,setError]=useState(''),[filter,setFilter]=useState('all'),[ownerTopic,setOwnerTopic]=useState('all'),[ownerSearch,setOwnerSearch]=useState('');
  const update=(field,value)=>{setForm(old=>({...old,[field]:value}));setError('');setNotice('')};
  async function save(e){
   e.preventDefault();if(saving)return;
@@ -210,9 +210,13 @@ export function OwnerFAQEditor({language='en'}){
      <option value="published">{tr('Published','Publiées')}</option><option value="draft">{tr('Drafts','Brouillons')}</option>
     </select>
    </div>
+   <div className="mykioo-owner-help-filters">
+     <label>{tr('Search questions','Rechercher des questions')}<input type="search" value={ownerSearch} onChange={e=>setOwnerSearch(e.target.value)} placeholder={tr('Question, answer or keyword','Question, réponse ou mot-clé')}/></label>
+     <label>{tr('Topic','Sujet')}<select value={ownerTopic} onChange={e=>setOwnerTopic(e.target.value)}><option value="all">{tr('All topics','Tous les sujets')}</option>{categories.map(c=><option value={c.id} key={c.id}>{fr?c.fr:c.en}</option>)}</select></label>
+   </div>
    {loading?<p>{tr('Loading…','Chargement…')}</p>:
     faqs.length===0?<p>{tr('No FAQs yet. Add answers to common member questions above.','Aucune FAQ. Ajoutez ci-dessus des réponses aux questions fréquentes.')}</p>:
-    faqs.filter(f=>filter==='all'||(filter==='published'?f.published:!f.published)).map(f=><article className="mykioo-faq-manage-item" key={f.id}>
+    faqs.filter(f=>(filter==='all'||(filter==='published'?f.published:!f.published))&&(ownerTopic==='all'||f.category===ownerTopic)&&(!ownerSearch.trim()||[f.question_en,f.question_fr,f.answer_en,f.answer_fr].join(' ').toLowerCase().includes(ownerSearch.trim().toLowerCase()))).map(f=><article className="mykioo-faq-manage-item" key={f.id}>
      <div><strong>{fr?f.question_fr:f.question_en}</strong><small>{label(f.category,fr)} · {f.published?tr('Published','Publiée'):tr('Draft','Brouillon')}</small></div>
      <button type="button" onClick={()=>{setForm({id:f.id,question_en:f.question_en,question_fr:f.question_fr,answer_en:f.answer_en,answer_fr:f.answer_fr,category:f.category,guide_id:f.guide_id||'',sort_order:f.sort_order,published:f.published});setError('');setNotice('')}}><Pencil size={14}/>{tr('Edit','Modifier')}</button>
      <button type="button" disabled={saving} onClick={()=>changePublished(f)}>{f.published?<EyeOff size={14}/>:<Eye size={14}/>}
