@@ -356,7 +356,7 @@ export function AgentCustomerDashboard({user,language='en',logout,onLanguageChan
      {serviceNotice&&<p role="status">{serviceNotice}</p>}
     </section>
     </>}
-    {section==='guides'&&<><p className="mykioo-agent-customer-app-link"><a href="/apps/">{t('Browse compatible third-party app downloads','Voir les téléchargements d’applications tierces compatibles')}</a></p><MemberSetupGuides language={language} userId={user.id} agentCustomer onOpenSupport={()=>setSection('support')}/></>}
+    {section==='guides'&&<><p className="mykioo-agent-customer-app-link"><a href="/apps/">{t('Browse compatible third-party app downloads','Voir les téléchargements d’applications tierces compatibles')}</a></p><MemberSetupGuides language={language} userId={user.id} agentCustomer onOpenSupport={()=>{setHelpPane('contact');setSection('support')}}/></>}
     {section==='support'&&<>
      <div className="mykioo-help-start"><div className="mykioo-help-head"><LifeBuoy size={24}/><div><h2>{t('How can we help?','Comment pouvons-nous vous aider ?')}</h2><p>{t('For prices and billing, contact your agent. MYKIOO handles setup and technical support.','Pour les prix et paiements, contactez votre agent. MYKIOO s’occupe de l’installation et du dépannage.')}</p></div></div><div className="mykioo-help-choices">
       <button type="button" onClick={()=>setSection('guides')}><BookOpen size={22}/><strong>{t('Install an app','Installer une application')}</strong><small>{t('Device guides','Guides par appareil')}</small></button>
