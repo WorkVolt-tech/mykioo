@@ -202,6 +202,63 @@ function GuideCard({guide,language='en',owner=false,userId='',linkedGuide=false}
  </article>;
 }
 
+
+// Consolidated installation instructions: device-specific navigation, shared application links.
+// Published legacy app guides remain in Supabase for admin editing and direct guide links.
+const isRepeatedAndroidAppGuide=g=>['android','android_tv'].includes(g.platform)&&/^(YeStream|V12 Mate|V12 Player)\s*[—-]/i.test(g.title_en||'');
+const androidAppChoices=[
+ {name:'YeStream',url:'http://apk.streamsky.online/yestream.apk',code:'2940403'},
+ {name:'V12 Player',url:'http://apk.streamsky.online/v12.apk',code:'340694'},
+ {name:'V12 Mate',url:'http://apk.streamsky.online/v12mate.apk'}
+];
+function UnifiedAndroidInstall({language,initialDevice='android_tv'}){
+ const fr=language==='fr',t=(en,frText)=>fr?frText:en;
+ const [device,setDevice]=useState(initialDevice==='android'?'android':'android_tv'),[step,setStep]=useState(0),[copied,setCopied]=useState('');
+ const steps=[
+ t('Connect your device to Wi-Fi or mobile data. Have your MYKIOO service server address, username and password ready; these are different from your MYKIOO website login.','Connectez votre appareil au Wi-Fi ou aux données mobiles. Préparez l’adresse du serveur, votre identifiant et votre mot de passe de service MYKIOO; ils sont différents de ceux du site MYKIOO.'),
+ device==='android'
+ ?t('On a phone or tablet, open a trusted browser. You can download an APK directly from the chosen app link below.','Sur un téléphone ou une tablette, ouvrez un navigateur fiable. Vous pouvez télécharger directement un APK depuis le lien de l’application choisie ci-dessous.')
+ :t('On Android TV / Google TV, open the official app store and find Downloader by AFTVnews if available. Navigate using your remote.','Sur Android TV / Google TV, ouvrez la boutique officielle et recherchez Downloader d’AFTVnews s’il est offert. Naviguez avec votre télécommande.'),
+ device==='android'
+ ?t('Choose one app below, download its APK, then open Downloads or Files and select the APK. If asked, allow installation only from the browser/file manager you trusted.','Choisissez une application ci-dessous, téléchargez son APK, puis ouvrez Téléchargements ou Fichiers et sélectionnez le fichier. Si demandé, autorisez l’installation uniquement depuis la source fiable.')
+ :t('Launch Downloader, enter the shared MYKIOO code 6050216 or a selected app link below, and select Go. If requested, allow installation from Downloader only.','Lancez Downloader, entrez le code partagé MYKIOO 6050216 ou le lien de l’application choisie ci-dessous, puis Go. Si demandé, autorisez l’installation uniquement depuis Downloader.'),
+ t('Follow the Android installer prompts, then open the installed player in your device’s Apps list. Do not bypass security warnings or disable Play Protect.','Suivez les étapes d’installation Android, puis ouvrez le lecteur dans la liste des applications. Ne contournez pas les avertissements de sécurité et ne désactivez pas Play Protect.'),
+ t('Choose server / Xtream-style login if offered, then enter the supplied full service URL, username and password. These are not your MYKIOO website credentials.','Choisissez la connexion par serveur / type Xtream si proposée, puis saisissez l’URL complète du service, le nom d’utilisateur et le mot de passe reçus. Ils sont différents de ceux du site MYKIOO.'),
+ t('Test a channel. If something fails, contact support with the error message (never send your password). Revoke the temporary install-unknown-apps permission afterward.','Essayez une chaîne. En cas de problème, contactez l’assistance avec le message d’erreur (sans envoyer le mot de passe). Retirez ensuite l’autorisation temporaire d’installer des applications inconnues.')
+ ];
+ const copy=async value=>{try{await navigator.clipboard.writeText(value);setCopied(value)}catch{setCopied('')}};
+ return <article className="mykioo-guide-card mykioo-unified-android" id="mykioo-android-install">
+  <div className="mykioo-guide-detail">
+   <h3>{t('Install Android IPTV apps — one guide','Installer les applications IPTV Android — un guide')}</h3>
+   <p>{t('One installation process. Choose your device first, then choose YeStream, V12 Player or V12 Mate at the end.','Une seule méthode d’installation. Choisissez d’abord votre appareil, puis YeStream, V12 Player ou V12 Mate à la fin.')}</p>
+   <h4>{t('1. Choose your Android device','1. Choisissez votre appareil Android')}</h4>
+   <div className="mykioo-guide-device-choices">
+    <button type="button" className={device==='android'?'selected':''} aria-pressed={device==='android'} onClick={()=>{setDevice('android');setStep(0)}}>{t('Phone / tablet','Téléphone / tablette')}</button>
+    <button type="button" className={device==='android_tv'?'selected':''} aria-pressed={device==='android_tv'} onClick={()=>{setDevice('android_tv');setStep(0)}}>{t('Android TV / Google TV','Android TV / Google TV')}</button>
+   </div>
+   <h4>{t('2. Installation steps','2. Étapes d’installation')}</h4>
+   <div className="mykioo-guide-wizard">
+    <div className="mykioo-guide-progress-header"><strong>{t('Step','Étape')} {step+1} {t('of','sur')} {steps.length}</strong><span>{Math.round((step+1)/steps.length*100)}%</span></div>
+    <div className="mykioo-guide-progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={step+1}><span style={{width:Math.round((step+1)/steps.length*100)+'%'}}/></div>
+    <div className="mykioo-guide-current-step"><small>{t('Do this now','À faire maintenant')}</small><p>{steps[step]}</p></div>
+    <div className="mykioo-guide-step-actions">
+     <button type="button" disabled={step===0} onClick={()=>setStep(n=>Math.max(0,n-1))}>{t('Previous','Précédent')}</button>
+     <button type="button" disabled={step===steps.length-1} onClick={()=>setStep(n=>Math.min(steps.length-1,n+1))}>{step===steps.length-1?t('Complete','Terminé'):t('Next step','Étape suivante')}</button>
+    </div>
+    <details className="mykioo-unified-all-steps"><summary>{t('View all steps','Voir toutes les étapes')}</summary><ol>{steps.map((v,i)=><li key={i}>{v}</li>)}</ol></details>
+   </div>
+   <h4>{t('3. Choose your app and download','3. Choisissez votre application et téléchargez-la')}</h4>
+   <p>{t('Install only one compatible player. These are third-party APKs, not apps developed or controlled by MYKIOO.','Installez un seul lecteur compatible. Ce sont des APK tiers, non développés ou contrôlés par MYKIOO.')}</p>
+   <div className="mykioo-unified-app-list">{androidAppChoices.map(app=><div className="mykioo-unified-app" key={app.name}>
+    <strong>{app.name}</strong><code>{app.url}</code>
+    <div className="mykioo-guide-download-actions"><a href={app.url} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/>{t('Download link','Lien de téléchargement')}</a><button type="button" onClick={()=>copy(app.url)}><Copy size={15}/>{copied===app.url?t('Copied!','Copié !'):t('Copy link','Copier le lien')}</button></div>
+    {app.code&&<div className="mykioo-guide-downloader-code"><span>{t('Optional third-party Downloader code','Code Downloader tiers facultatif')}: <strong>{app.code}</strong></span><button type="button" onClick={()=>copy(app.code)}><Copy size={15}/>{copied===app.code?t('Copied!','Copié !'):t('Copy code','Copier le code')}</button></div>}
+   </div>)}</div>
+   <div className="mykioo-guide-downloader-code"><span>{t('MYKIOO shared Downloader code','Code Downloader partagé MYKIOO')}: <strong>6050216</strong></span><button type="button" onClick={()=>copy('6050216')}><Copy size={15}/>{copied==='6050216'?t('Copied!','Copié !'):t('Copy code','Copier le code')}</button></div>
+   <small>{t('These third-party APK links use unencrypted HTTP. Verify the source before downloading. Optional Downloader codes may point to different versions. If your device blocks the installer for safety, stop rather than bypassing security.','Ces liens APK tiers utilisent HTTP non chiffré. Vérifiez la source avant le téléchargement. Les codes Downloader facultatifs peuvent mener à différentes versions. Si votre appareil bloque l’installation par sécurité, ne contournez pas la protection.')}</small>
+  </div>
+ </article>;
+}
 export function MemberSetupGuides({language='en',onOpenSupport,userId='',agentCustomer=false}){
  const fr=language==='fr',tr=(en,french)=>fr?french:en;
  const {guides,loading,error}=useSetupGuides();
@@ -217,7 +274,9 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId='',agentCu
  const hasLinkedGuide=linkedId===androidDownloaderGuide.id||safeGuides.some(g=>g.id===linkedId);
  const showDownloaderGuide=hasLinkedGuide?linkedId===androidDownloaderGuide.id:
   (category==='all'||category==='setup')&&['all','fire_tv','android_tv','android'].includes(platform);
+ const showUnifiedAndroid=!hasLinkedGuide&&['all','android','android_tv'].includes(platform)&&['all','setup'].includes(category)&&(!search.trim()||/android|yestream|v12|player|install|apk|application|télécharg|installation|lecteur/i.test(search));
  const visible=safeGuides.filter(g=>{
+  if(showUnifiedAndroid&&isRepeatedAndroidAppGuide(g))return false;
   if(hasLinkedGuide)return g.id===linkedId;
   const term=search.trim().toLocaleLowerCase();
   return (!term||[g.title_en,g.title_fr,g.summary_en,g.summary_fr,g.steps_en,g.steps_fr].some(x=>(x||'').toLocaleLowerCase().includes(term)))
@@ -267,10 +326,10 @@ export function MemberSetupGuides({language='en',onOpenSupport,userId='',agentCu
   </div>}
   {error&&<p role="alert" className="mykioo-profile-error">{tr('Could not load guides. Please refresh this page.','Impossible de charger les guides. Veuillez actualiser cette page.')}</p>}
   {loading?<p className="mykioo-guide-empty">{tr('Loading guides…','Chargement des guides…')}</p>:
-   (visible.length===0&&!showDownloaderGuide)?<div className="mykioo-guide-empty">
+   (visible.length===0&&!showDownloaderGuide&&!showUnifiedAndroid)?<div className="mykioo-guide-empty">
     <BookOpen size={24}/><strong>{safeGuides.length===0?tr('Guides are being prepared.','Les guides sont en préparation.'):tr('No guides match your search.','Aucun guide ne correspond à votre recherche.')}</strong>
     <p>{tr('Need assistance? You can contact MYKIOO Support.','Besoin d’aide ? Vous pouvez contacter l’assistance MYKIOO.')}</p>
-   </div>:<div className="mykioo-guide-list">{showDownloaderGuide&&<GuideCard key={androidDownloaderGuide.id} guide={androidDownloaderGuide} language={language} userId={userId} linkedGuide={linkedId===androidDownloaderGuide.id}/>} {visible.map(g=><GuideCard key={g.id} guide={g} language={language} userId={userId} linkedGuide={linkedId===g.id}/>)}</div>}
+   </div>:<div className="mykioo-guide-list">{showUnifiedAndroid&&<UnifiedAndroidInstall language={language} initialDevice={platform}/>} {showDownloaderGuide&&!showUnifiedAndroid&&<GuideCard key={androidDownloaderGuide.id} guide={androidDownloaderGuide} language={language} userId={userId} linkedGuide={linkedId===androidDownloaderGuide.id}/>} {visible.map(g=><GuideCard key={g.id} guide={g} language={language} userId={userId} linkedGuide={linkedId===g.id}/>)}</div>}
   <div className="mykioo-guide-help">
    <div><strong>{tr('Still need help?','Vous avez encore besoin d’aide ?')}</strong>
     <p>{tr('Send a support request. Please allow up to 24 hours for an initial reply.','Envoyez une demande d’assistance. Veuillez prévoir jusqu’à 24 heures pour une première réponse.')}</p></div>
