@@ -1492,3 +1492,9 @@
  .mykioo-guide-device-chooser{padding:12px}
 }
 @media(max-width:380px){.mykioo-help-choices{grid-template-columns:1fr}.mykioo-help-choices button{min-height:85px}}
+
+/* Easy filtering for owner-managed help articles and setup guides */
+.mykioo-owner-help-filters{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px;align-items:end;margin:12px 0 18px;padding:14px;border:1px solid rgba(215,183,124,.36);border-radius:10px;background:rgba(39,32,46,.65)}
+.mykioo-owner-help-filters label{display:grid;gap:7px;color:#f0d6a6;font-size:12px;font-weight:750}
+.mykioo-owner-help-filters input,.mykioo-owner-help-filters select{width:100%;min-width:0;min-height:43px;padding:10px 11px;border:1px solid #806f7e;border-radius:8px;color:#f8edf6;background:#251e30;font-size:13px}
+@media(max-width:650px){.mykioo-owner-help-filters{grid-template-columns:1fr;padding:11px}}
