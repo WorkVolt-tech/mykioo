@@ -250,7 +250,7 @@ function UnifiedAndroidInstall({language,initialDevice='android_tv'}){
    <h4>{t('3. Choose your app and download','3. Choisissez votre application et téléchargez-la')}</h4>
    <p>{t('Install only one compatible player. These are third-party APKs, not apps developed or controlled by MYKIOO.','Installez un seul lecteur compatible. Ce sont des APK tiers, non développés ou contrôlés par MYKIOO.')}</p>
    <div className="mykioo-unified-app-list">{androidAppChoices.map(app=><div className="mykioo-unified-app" key={app.name}>
-    <strong>{app.name}</strong><code>{app.url}</code>
+    <strong>{app.name}</strong>{app.name==='YeStream'&&<p className="mykioo-yestream-credentials">{t('YeStream requires all three service details: server URL (Host), username, and password. Use your service activation details, not the MYKIOO website login.','YeStream nécessite les trois renseignements du service : URL du serveur (hôte), nom d’utilisateur et mot de passe. Utilisez vos informations d’activation du service, et non celles du site MYKIOO.')}</p>}<code>{app.url}</code>
     <div className="mykioo-guide-download-actions"><a href={app.url} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/>{t('Download link','Lien de téléchargement')}</a><button type="button" onClick={()=>copy(app.url)}><Copy size={15}/>{copied===app.url?t('Copied!','Copié !'):t('Copy link','Copier le lien')}</button></div>
     {app.code&&<div className="mykioo-guide-downloader-code"><span>{t('Optional third-party Downloader code','Code Downloader tiers facultatif')}: <strong>{app.code}</strong></span><button type="button" onClick={()=>copy(app.code)}><Copy size={15}/>{copied===app.code?t('Copied!','Copié !'):t('Copy code','Copier le code')}</button></div>}
    </div>)}</div>
